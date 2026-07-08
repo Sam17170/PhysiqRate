@@ -119,7 +119,7 @@ function getProfile()  { return get(keys.profile)  || {}; }
 function saveProfile(p){ set(keys.profile, p); }
 function getCustomMacros() { return get("pq_custom_macros") || null; }
 function saveCustomMacros(m) { set("pq_custom_macros", m); }
-function isPremium()   { return get(keys.premium) === true; }
+function isPremium()   { const v = localStorage.getItem(keys.premium); return v === true || v === "true"; }
 function setPremium(v) { set(keys.premium, v); }
 
 function getUsage()    { return get(keys.usage) || { count: 0, weeklyUsed: null }; }
@@ -1247,8 +1247,9 @@ function ViewAnalyze({ premium }) {
     if (params.get("success") === "true") {
       const sessionId = params.get("session_id");
       if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
-      set(keys.premium, true);
-      // Rechargement propre — supprime les params Stripe de l URL
+      // Sauvegarde Pro directement sans helper pour éviter les problèmes de sérialisation
+      localStorage.setItem("pq_premium", "true");
+      // Rechargement propre
       window.location.replace(window.location.pathname);
     }
     
