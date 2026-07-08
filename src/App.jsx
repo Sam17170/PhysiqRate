@@ -1247,38 +1247,11 @@ function ViewAnalyze({ premium }) {
     if (params.get("success") === "true") {
       const sessionId = params.get("session_id");
       if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
-      // Active le Pro immédiatement
       set(keys.premium, true);
-      // Nettoie l'URL sans recharger
-      window.history.replaceState({}, "", window.location.pathname);
-      // Force re-render propre
-      setPremiumState(true);
-
-      // Affiche modal création de compte si pas connecté
-      const token = localStorage.getItem("pq_token");
-      if (!token && sessionId) {
-        setTimeout(() => {
-          fetch("/api/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sessionId })
-          }).then(r=>r.json()).then(data=>{
-            const email = data.email;
-            if (email) {
-              setPostPaymentEmail(email);
-              setShowPostPayment(true);
-            } else {
-              // Fallback — demande l'email manuellement
-              setPostPaymentEmail("unknown");
-              setShowPostPayment(true);
-            }
-          }).catch(()=>{
-            setPostPaymentEmail("unknown");
-            setShowPostPayment(true);
-          });
-        }, 800);
-      }
+      // Rechargement propre — supprime les params Stripe de l URL
+      window.location.replace(window.location.pathname);
     }
+    
     if (params.get("canceled") === "true") {
       window.history.replaceState({}, "", window.location.pathname);
     }
