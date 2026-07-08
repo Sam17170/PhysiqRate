@@ -1078,6 +1078,14 @@ function AuthModal({ onSuccess, onClose, blocking = false }) {
             body: JSON.stringify({ token: loginData.token })
           });
           const me = await meRes.json();
+
+          // Compte non trouvé dans notre base — bloque la connexion
+          if (me.error === "account_not_found") {
+            setError("Ce compte n'existe pas dans Physiqrate. Crée ton compte après un paiement.");
+            setLoading(false);
+            return;
+          }
+
           onSuccess({ email, is_pro: me.is_pro, token: loginData.token });
         } else {
           setError("Compte créé mais erreur de connexion. Réessaie.");
@@ -2730,16 +2738,35 @@ export default function App() {
 
       {showAuth && (
         <AuthModal
-          onSuccess={({ email, is_pro, token }) => {
+          onSuccess={async ({ email, is_pro, token }) => {
             setUser({ email });
             if (is_pro) {
               setPremium(true); setPremiumState(true);
+              setShowAuth(false);
             } else {
-              // Pas Pro dans Supabase → retire le Pro local
+              // Pas Pro dans Supabase — vérifie si un paiement est en attente
+              const sessionId = localStorage.getItem("pq_stripe_session");
+              if (sessionId) {
+                try {
+                  // Tente de transférer le Pro vers ce compte
+                  const res = await fetch("/api/auth", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "transfer_pro", email, sessionId })
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setPremium(true); setPremiumState(true);
+                    setShowAuth(false);
+                    return;
+                  }
+                } catch {}
+              }
+              // Vraiment pas Pro
               setPremium(false); setPremiumState(false);
               localStorage.removeItem("pq_stripe_session");
+              setShowAuth(false);
             }
-            setShowAuth(false);
           }}
           onClose={()=>{ if(premium && !localStorage.getItem("pq_token")) return; setShowAuth(false); }}
           blocking={premium && !localStorage.getItem("pq_token")}
