@@ -1804,18 +1804,23 @@ function ViewProfil() {
         </div>
         <button
           onClick={async()=>{
-            const customerId = localStorage.getItem("pq_stripe_customer");
-            if (!customerId) {
+            const sessionId = localStorage.getItem("pq_stripe_session");
+            if (!sessionId) {
               alert("Pour gérer ton abonnement, contacte-nous à support@physiqrate.com");
               return;
             }
-            const res = await fetch("/api/portal", {
-              method:"POST",
-              headers:{"Content-Type":"application/json"},
-              body:JSON.stringify({customerId})
-            });
-            const data = await res.json();
-            if (data.url) window.location.href = data.url;
+            try {
+              const res = await fetch("/api/portal", {
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({sessionId})
+              });
+              const data = await res.json();
+              if (data.url) window.location.href = data.url;
+              else alert("Erreur — contacte support@physiqrate.com");
+            } catch {
+              alert("Erreur de connexion. Réessaie.");
+            }
           }}
           style={{...css.btnSec,marginBottom:"4px"}}>
           Gérer mon abonnement
