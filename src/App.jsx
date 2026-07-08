@@ -2520,6 +2520,8 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
           <button onClick={()=>{
             localStorage.removeItem("pq_token");
             localStorage.removeItem("pq_email");
+            localStorage.removeItem("pq_premium");
+            localStorage.removeItem("pq_stripe_session");
             window.location.reload();
           }} style={{...css.btnSec,marginBottom:0,fontSize:"12px",color:"#444"}}>
             Se déconnecter
@@ -2836,7 +2838,7 @@ export default function App() {
             <div style={{fontSize:"13px",color:"#555",marginBottom:"24px",lineHeight:"1.6"}}>
               Crée ton compte pour accéder à Physiqrate Pro sur tous tes appareils.
             </div>
-            <button style={{...css.btn(C.gold),marginBottom:"10px"}} onClick={()=>{
+            <button style={{...css.btn(C.gold),marginBottom:"0"}} onClick={()=>{
               const sessionId = localStorage.getItem("pq_stripe_session");
               if (sessionId) {
                 fetch("/api/verify", {
@@ -2853,10 +2855,6 @@ export default function App() {
               }
             }}>
               Créer mon compte Pro
-            </button>
-            <button style={{background:"transparent",border:"none",color:"#333",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
-              onClick={()=>setShowAuth(true)}>
-              J'ai déjà un compte — me connecter
             </button>
           </div>
         </div>
