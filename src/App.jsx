@@ -1062,34 +1062,8 @@ function AuthModal({ onSuccess, onClose, blocking = false }) {
       localStorage.setItem("pq_email", email);
 
       if (mode === "signup") {
-        // Confirmation email désactivée — connecte directement
-        const loginRes = await fetch("/api/auth", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "login", email, password })
-        });
-        const loginData = await loginRes.json();
-        if (loginData.token) {
-          localStorage.setItem("pq_token", loginData.token);
-          localStorage.setItem("pq_email", email);
-          const meRes = await fetch("/api/me", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: loginData.token })
-          });
-          const me = await meRes.json();
-
-          // Compte non trouvé dans notre base — bloque la connexion
-          if (me.error === "account_not_found") {
-            setError("Ce compte n'existe pas dans Physiqrate. Crée ton compte après un paiement.");
-            setLoading(false);
-            return;
-          }
-
-          onSuccess({ email, is_pro: me.is_pro, token: loginData.token });
-        } else {
-          setError("Compte créé mais erreur de connexion. Réessaie.");
-        }
+        // Confirmation email activée — demande à l'utilisateur de vérifier son email
+        setSuccess("Compte créé ! Vérifie ta boîte mail et clique sur le lien de confirmation, puis connecte-toi.");
       } else {
         // Récupère statut Pro
         const meRes = await fetch("/api/me", {
