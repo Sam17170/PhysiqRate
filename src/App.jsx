@@ -1335,6 +1335,7 @@ function ViewJour() {
   const [showMealForm, setShowMealForm] = useState(false);
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showSavedFoods, setShowSavedFoods] = useState(false);
   const [scannedProduct, setScannedProduct] = useState(null);
   const [mealForm, setMealForm] = useState({ name:"", calories:"", protein:"", carbs:"", fat:"" });
   const [sessionForm, setSessionForm] = useState({ type:"", duration:"60" });
@@ -1504,25 +1505,42 @@ function ViewJour() {
         )}
         {journal.meals.map((meal,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:"rgba(255,255,255,0.03)",borderRadius:"10px",marginBottom:"6px"}}>
-            <div>
+            <div style={{flex:1}}>
               <div style={{fontSize:"13px",fontWeight:"600"}}>{meal.name}</div>
               <div style={{fontSize:"10px",color:C.muted}}>{meal.time} · P:{meal.protein}g G:{meal.carbs}g L:{meal.fat}g</div>
             </div>
-            <div style={{fontSize:"13px",color:C.gold,fontWeight:"700"}}>{meal.calories} kcal</div>
+            <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+              <div style={{fontSize:"13px",color:C.gold,fontWeight:"700"}}>{meal.calories} kcal</div>
+              <button onClick={()=>{
+                const updated = {...journal, meals: journal.meals.filter((_,idx)=>idx!==i)};
+                save(updated);
+                showToast("Repas supprimé");
+              }} style={{background:"transparent",border:"none",color:"#444",fontSize:"16px",cursor:"pointer",padding:"4px",lineHeight:1}}>×</button>
+            </div>
           </div>
         ))}
 
-        {/* Aliments enregistrés */}
-        {getSavedFoods().length > 0 && !showMealForm && !showScanner && (
-          <div style={{marginBottom:"10px"}}>
-            <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",marginBottom:"8px"}}>MES ALIMENTS</div>
-            <div style={{display:"flex",gap:"8px",overflowX:"auto",paddingBottom:"4px"}}>
-              {getSavedFoods().slice(0,10).map((food,i)=>(
-                <div key={i}
-                  onClick={()=>setScannedProduct(food)}
-                  style={{flexShrink:0,padding:"8px 12px",background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:"10px",cursor:"pointer",minWidth:"120px"}}>
-                  <div style={{fontSize:"12px",fontWeight:"600",color:C.text,marginBottom:"2px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"140px"}}>{food.name}</div>
-                  <div style={{fontSize:"10px",color:C.muted}}>{food.calories} kcal/100g</div>
+        {/* Modal aliments enregistrés */}
+        {showSavedFoods && (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"20px"}}>
+            <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"24px",width:"100%",maxWidth:"420px",marginBottom:"10px",maxHeight:"70vh",overflowY:"auto"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
+                <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px"}}>MES ALIMENTS</div>
+                <button onClick={()=>setShowSavedFoods(false)} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>
+              </div>
+              {getSavedFoods().length === 0 ? (
+                <div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:"12px"}}>
+                  Aucun aliment enregistré.{"
+"}Scanne un produit et coche "Enregistrer cet aliment".
+                </div>
+              ) : getSavedFoods().map((food,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:"12px",marginBottom:"8px"}}>
+                  <div style={{flex:1,cursor:"pointer"}} onClick={()=>{setShowSavedFoods(false);setScannedProduct(food);}}>
+                    <div style={{fontSize:"13px",fontWeight:"600"}}>{food.name}</div>
+                    <div style={{fontSize:"10px",color:C.muted}}>{food.brand && `${food.brand} · `}{food.calories} kcal · P:{food.protein}g G:{food.carbs}g L:{food.fat}g <span style={{color:"#444"}}>(pour 100g)</span></div>
+                  </div>
+                  <button onClick={()=>{removeSavedFood(food.name); setShowSavedFoods(false); setTimeout(()=>setShowSavedFoods(true),50);}}
+                    style={{background:"transparent",border:"none",color:"#333",fontSize:"16px",cursor:"pointer",padding:"4px 8px",flexShrink:0}}>×</button>
                 </div>
               ))}
             </div>
@@ -1534,7 +1552,11 @@ function ViewJour() {
             <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"10px"}}>NOUVEAU REPAS</div>
             <div style={{display:"flex",gap:"8px",marginBottom:"8px"}}>
               <button style={{flex:1,padding:"10px",borderRadius:"10px",border:`1.5px solid rgba(255,215,0,0.3)`,background:"rgba(255,215,0,0.06)",color:C.gold,fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setShowMealForm(false);setShowScanner(true);}}>
-                Scanner un code-barres
+                Scanner
+              </button>
+              <button style={{flex:1,padding:"10px",borderRadius:"10px",border:`1.5px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:"#aaa",fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative"}} onClick={()=>setShowSavedFoods(true)}>
+                Mes aliments
+                {getSavedFoods().length > 0 && <span style={{position:"absolute",top:"-6px",right:"-6px",background:C.gold,color:"#000",borderRadius:"10px",fontSize:"9px",fontWeight:"800",padding:"1px 5px",minWidth:"16px",textAlign:"center"}}>{getSavedFoods().length}</span>}
               </button>
             </div>
             <input style={formInput} placeholder="Nom du repas" value={mealForm.name} onChange={e=>setMealForm({...mealForm,name:e.target.value})}/>
@@ -1550,9 +1572,15 @@ function ViewJour() {
             </div>
           </div>
         ) : (
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",border:`1.5px dashed rgba(255,215,0,0.2)`,borderRadius:"10px",cursor:"pointer",marginTop:"4px"}} onClick={()=>setShowMealForm(true)}>
-            <div style={{fontSize:"13px",color:C.muted}}>Ajouter un aliment</div>
-            <div style={{color:C.muted,fontSize:"20px",fontWeight:"300"}}>+</div>
+          <div style={{display:"flex",gap:"8px",marginTop:"4px"}}>
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",border:`1.5px dashed rgba(255,215,0,0.2)`,borderRadius:"10px",cursor:"pointer"}} onClick={()=>setShowMealForm(true)}>
+              <div style={{fontSize:"13px",color:C.muted}}>Ajouter un aliment</div>
+              <div style={{color:C.muted,fontSize:"20px",fontWeight:"300"}}>+</div>
+            </div>
+            <button style={{padding:"10px 14px",border:`1px solid ${C.border}`,borderRadius:"10px",background:"rgba(255,255,255,0.03)",color:"#aaa",fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",flexShrink:0}} onClick={()=>setShowSavedFoods(true)}>
+              Mes aliments
+              {getSavedFoods().length > 0 && <span style={{position:"absolute",top:"-6px",right:"-6px",background:C.gold,color:"#000",borderRadius:"10px",fontSize:"9px",fontWeight:"800",padding:"1px 5px",minWidth:"16px",textAlign:"center"}}>{getSavedFoods().length}</span>}
+            </button>
           </div>
         )}
       </div>
