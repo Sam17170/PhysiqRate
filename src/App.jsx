@@ -965,10 +965,17 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
           </>
         )}
 
+        {/* Email toujours éditable — Apple Pay peut avoir un email différent */}
+        <span style={css.label}>Email</span>
+        <input style={css.input} type="email"
+          value={email}
+          onChange={e=>setEmail(e.target.value)}
+          autoCapitalize="none"
+          placeholder="ton@email.com"
+        />
         {!needsEmail && (
-          <div style={{background:"rgba(255,215,0,0.06)",border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"10px",padding:"10px 14px",marginBottom:"16px",textAlign:"left"}}>
-            <div style={{fontSize:"10px",color:C.muted,marginBottom:"3px"}}>EMAIL</div>
-            <div style={{fontSize:"13px",fontWeight:"600"}}>{email}</div>
+          <div style={{fontSize:"11px",color:"#444",marginTop:"4px",marginBottom:"8px"}}>
+            Email utilisé pour le paiement — modifie si nécessaire
           </div>
         )}
 
@@ -1247,10 +1254,12 @@ function ViewAnalyze({ premium }) {
     if (params.get("success") === "true") {
       const sessionId = params.get("session_id");
       if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
-      // Sauvegarde Pro directement sans helper pour éviter les problèmes de sérialisation
       localStorage.setItem("pq_premium", "true");
-      // Rechargement propre
-      window.location.replace(window.location.pathname);
+      // Nettoie l URL sans rechargement
+      window.history.replaceState({}, "", window.location.pathname);
+      setPremiumState(true);
+      // Ouvre la modal de connexion obligatoire
+      setShowAuth(true);
     }
     
     if (params.get("canceled") === "true") {
@@ -2553,7 +2562,15 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [view, setView] = useState("analyser");
-  const [premium, setPremiumState] = useState(isPremium());
+  const [premium, setPremiumState] = useState(() => {
+    // Vérifie les params URL avant d'initialiser (retour Stripe)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") {
+      localStorage.setItem("pq_premium", "true");
+      return true;
+    }
+    return isPremium();
+  });
   const [showPaywall, setShowPaywall] = useState(false);
   const [showPWA, setShowPWA] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
