@@ -900,6 +900,94 @@ function ProductModal({ product, onConfirm, onClose }) {
   );
 }
 
+
+// ─── AUTH MODAL ───────────────────────────────────────────────────────────────
+function AuthModal({ onSuccess, onClose }) {
+  const [mode, setMode] = useState("login"); // login | signup
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  async function handleSubmit() {
+    if (!email || !password) { setError("Email et mot de passe requis."); return; }
+    if (password.length < 6) { setError("Mot de passe minimum 6 caractères."); return; }
+    setLoading(true); setError(null);
+
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: mode, email, password })
+      });
+      const data = await res.json();
+
+      if (data.error) { setError(data.error); setLoading(false); return; }
+
+      // Sauvegarde token et email
+      localStorage.setItem("pq_token", data.token);
+      localStorage.setItem("pq_email", email);
+
+      if (mode === "signup") {
+        setSuccess("Compte créé ! Vérifie ton email pour confirmer.");
+      } else {
+        // Récupère statut Pro
+        const meRes = await fetch("/api/me", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: data.token })
+        });
+        const me = await meRes.json();
+        onSuccess({ email, is_pro: me.is_pro, token: data.token });
+      }
+    } catch {
+      setError("Erreur de connexion. Réessaie.");
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(10px)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
+          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px"}}>{mode === "login" ? "CONNEXION" : "CRÉER UN COMPTE"}</div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>
+        </div>
+
+        {success ? (
+          <div style={{textAlign:"center",padding:"20px"}}>
+            <div style={{fontSize:"14px",color:C.green,marginBottom:"16px",lineHeight:"1.6"}}>{success}</div>
+            <button style={css.btn(C.gold)} onClick={onClose}>Fermer</button>
+          </div>
+        ) : (
+          <>
+            <span style={css.label}>Email</span>
+            <input style={css.input} type="email" placeholder="ton@email.com" value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none"/>
+
+            <span style={css.label}>Mot de passe</span>
+            <input style={css.input} type="password" placeholder="6 caractères minimum" value={password} onChange={e=>setPassword(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+
+            {error && <div style={{fontSize:"12px",color:C.red,marginTop:"10px",lineHeight:"1.5"}}>{error}</div>}
+
+            <button style={{...css.btn(C.gold),marginTop:"18px",opacity:loading?0.6:1}} onClick={handleSubmit} disabled={loading}>
+              {loading ? "Chargement…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
+            </button>
+
+            <div style={{textAlign:"center",marginTop:"12px"}}>
+              <button style={{background:"transparent",border:"none",color:"#555",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
+                onClick={()=>{setMode(mode==="login"?"signup":"login");setError(null);}}>
+                {mode === "login" ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── MACRO EDITOR ─────────────────────────────────────────────────────────────
 function MacroEditor({ targets, custom, onSave }) {
   const init = custom || { protein: targets.protein, carbs: targets.carbs, fat: targets.fat };
@@ -969,6 +1057,11 @@ function ViewAnalyze({ premium }) {
   const [error, setError] = useState(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showPWA, setShowPWA] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [user, setUser] = useState(() => {
+    const email = localStorage.getItem("pq_email");
+    return email ? { email } : null;
+  });
 
   useEffect(() => {
     // Capture install prompt on Android
@@ -988,16 +1081,54 @@ function ViewAnalyze({ premium }) {
     // Handle Stripe success redirect
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
-      setPremium(true); setPremiumState(true);
-      // Save session ID to retrieve customer ID later
       const sessionId = params.get("session_id");
       if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
+      setPremium(true); setPremiumState(true);
       window.history.replaceState({}, "", window.location.pathname);
       setTimeout(() => alert("Bienvenue dans Physiqrate Pro ! Analyses illimitées activées."), 500);
     }
     if (params.get("canceled") === "true") {
       window.history.replaceState({}, "", window.location.pathname);
     }
+
+    // Vérifie le statut Pro via Supabase si connecté
+    const verifyPro = async () => {
+      const token = localStorage.getItem("pq_token");
+      if (!token) {
+        // Fallback ancien système session Stripe
+        const sessionId = localStorage.getItem("pq_stripe_session");
+        if (!sessionId) return;
+        try {
+          const res = await fetch("/api/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId })
+          });
+          const data = await res.json();
+          if (data.active) { setPremium(true); setPremiumState(true); }
+        } catch {}
+        return;
+      }
+      try {
+        const res = await fetch("/api/me", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token })
+        });
+        const data = await res.json();
+        if (data.email) {
+          setUser({ email: data.email });
+          localStorage.setItem("pq_email", data.email);
+          if (data.is_pro) { setPremium(true); setPremiumState(true); }
+          else { setPremium(false); setPremiumState(false); }
+        } else {
+          // Token expiré
+          localStorage.removeItem("pq_token");
+          localStorage.removeItem("pq_email");
+        }
+      } catch {}
+    };
+    verifyPro();
   }, []);
   const [daysLeft, setDaysLeft] = useState(0);
   const [showWeightModal, setShowWeightModal] = useState(false);
@@ -2139,6 +2270,41 @@ function ViewProfil() {
           })()}
         </div>
       )}
+    {/* Section compte utilisateur */}
+    <div style={{...css.card,marginTop:"4px"}}>
+      <div style={css.cardTitle}>MON COMPTE</div>
+      {user ? (
+        <>
+          <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"14px"}}>
+            <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"rgba(255,215,0,0.15)",border:`1px solid rgba(255,215,0,0.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",fontWeight:"700",color:C.gold,flexShrink:0}}>
+              {user.email[0].toUpperCase()}
+            </div>
+            <div>
+              <div style={{fontSize:"13px",fontWeight:"600"}}>{user.email}</div>
+              <div style={{fontSize:"11px",color:premium?C.green:C.muted}}>{premium?"Abonné Pro":"Gratuit"}</div>
+            </div>
+          </div>
+          <button onClick={()=>{
+            localStorage.removeItem("pq_token");
+            localStorage.removeItem("pq_email");
+            setUser(null);
+            setPremium(false); setPremiumState(false);
+          }} style={{...css.btnSec,marginBottom:0,fontSize:"12px",color:"#444"}}>
+            Se déconnecter
+          </button>
+        </>
+      ) : (
+        <>
+          <div style={{fontSize:"12px",color:"#555",marginBottom:"14px",lineHeight:"1.5"}}>
+            Crée un compte pour que ton abonnement Pro soit lié à ton email et accessible sur tous tes appareils.
+          </div>
+          <button style={css.btn(C.gold)} onClick={()=>setShowAuth(true)}>
+            Créer un compte / Se connecter
+          </button>
+        </>
+      )}
+    </div>
+
     {/* Section abonnement Pro */}
     {isPremium() && (
       <div style={{...css.card,marginTop:"4px"}}>
@@ -2225,6 +2391,11 @@ export default function App() {
   const [premium, setPremiumState] = useState(isPremium());
   const [showPaywall, setShowPaywall] = useState(false);
   const [showPWA, setShowPWA] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [user, setUser] = useState(() => {
+    const email = localStorage.getItem("pq_email");
+    return email ? { email } : null;
+  });
 
   useEffect(() => {
     // Capture install prompt on Android
@@ -2244,16 +2415,54 @@ export default function App() {
     // Handle Stripe success redirect
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
-      setPremium(true); setPremiumState(true);
-      // Save session ID to retrieve customer ID later
       const sessionId = params.get("session_id");
       if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
+      setPremium(true); setPremiumState(true);
       window.history.replaceState({}, "", window.location.pathname);
       setTimeout(() => alert("Bienvenue dans Physiqrate Pro ! Analyses illimitées activées."), 500);
     }
     if (params.get("canceled") === "true") {
       window.history.replaceState({}, "", window.location.pathname);
     }
+
+    // Vérifie le statut Pro via Supabase si connecté
+    const verifyPro = async () => {
+      const token = localStorage.getItem("pq_token");
+      if (!token) {
+        // Fallback ancien système session Stripe
+        const sessionId = localStorage.getItem("pq_stripe_session");
+        if (!sessionId) return;
+        try {
+          const res = await fetch("/api/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId })
+          });
+          const data = await res.json();
+          if (data.active) { setPremium(true); setPremiumState(true); }
+        } catch {}
+        return;
+      }
+      try {
+        const res = await fetch("/api/me", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token })
+        });
+        const data = await res.json();
+        if (data.email) {
+          setUser({ email: data.email });
+          localStorage.setItem("pq_email", data.email);
+          if (data.is_pro) { setPremium(true); setPremiumState(true); }
+          else { setPremium(false); setPremiumState(false); }
+        } else {
+          // Token expiré
+          localStorage.removeItem("pq_token");
+          localStorage.removeItem("pq_email");
+        }
+      } catch {}
+    };
+    verifyPro();
   }, []);
   const [daysLeft] = useState(3);
 
@@ -2296,16 +2505,25 @@ export default function App() {
         <PWABanner onDismiss={()=>{ setShowPWA(false); localStorage.setItem("pq_pwa_dismissed","1"); }}/>
       )}
 
+      {showAuth && (
+        <AuthModal
+          onSuccess={({ email, is_pro, token }) => {
+            setUser({ email });
+            if (is_pro) { setPremium(true); setPremiumState(true); }
+            setShowAuth(false);
+          }}
+          onClose={() => setShowAuth(false)}
+        />
+      )}
+
       {/* NAV */}
       <div style={{width:"100%",maxWidth:"420px",paddingTop:"14px",marginBottom:"16px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px"}}>
           <Logo/>
           <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-            {/* Install icon — always visible in nav */}
+            {/* Install icon */}
             {!window.matchMedia("(display-mode: standalone)").matches && !window.navigator.standalone && (
-              <button
-                onClick={()=>setShowPWA(true)}
-                title="Installer l'app"
+              <button onClick={()=>setShowPWA(true)} title="Installer l'app"
                 style={{width:"32px",height:"32px",borderRadius:"8px",border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.gold,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2.5">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -2314,9 +2532,20 @@ export default function App() {
                 </svg>
               </button>
             )}
+            {/* Auth button */}
+            {!user ? (
+              <button onClick={()=>setShowAuth(true)}
+                style={{padding:"5px 12px",borderRadius:"20px",border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:"#aaa",fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit"}}>
+                Connexion
+              </button>
+            ) : null}
+            {/* Pro badge or upgrade */}
             {premium
               ? <div style={{fontSize:"11px",color:C.green,fontWeight:"700",border:`1px solid rgba(125,249,170,0.3)`,padding:"4px 10px",borderRadius:"20px"}}>✓ PRO</div>
-              : <button onClick={()=>setShowPaywall(true)} style={{padding:"5px 12px",borderRadius:"20px",border:`1px solid rgba(255,215,0,0.4)`,background:"rgba(255,215,0,0.08)",color:C.gold,fontSize:"11px",fontWeight:"700",cursor:"pointer",fontFamily:"inherit"}}>PREMIUM</button>
+              : <button onClick={()=>{ if(!user){setShowAuth(true);}else{setShowPaywall(true);} }}
+                  style={{padding:"5px 12px",borderRadius:"20px",border:`1px solid rgba(255,215,0,0.4)`,background:"rgba(255,215,0,0.08)",color:C.gold,fontSize:"11px",fontWeight:"700",cursor:"pointer",fontFamily:"inherit"}}>
+                  PREMIUM
+                </button>
             }
           </div>
         </div>
