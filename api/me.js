@@ -13,7 +13,7 @@ export default async function handler(req) {
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
   const { token } = body;
-  if (!token) return new Response(JSON.stringify({ error: "No token" }), { status: 401 });
+  if (!token) return new Response(JSON.stringify({ error: "No token" }), { status: 401, headers });
 
   // Récupère l'email depuis le token Supabase Auth
   const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -22,7 +22,7 @@ export default async function handler(req) {
   const user = await userRes.json();
   if (!user.email) return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers });
 
-  // Utilise service_role pour lire la table users
+  // Vérifie que le compte existe dans notre table users
   const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(user.email)}&select=is_pro`, {
     headers: {
       "apikey": SUPABASE_SERVICE,
@@ -30,7 +30,15 @@ export default async function handler(req) {
     }
   });
   const rows = await dbRes.json();
-  const isPro = rows?.[0]?.is_pro === true;
 
+  // Si l'email n'existe pas dans notre table → compte non reconnu
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return new Response(JSON.stringify({ 
+      error: "account_not_found",
+      message: "Ce compte n'existe pas. Crée ton compte après le paiement."
+    }), { status: 404, headers });
+  }
+
+  const isPro = rows[0].is_pro === true;
   return new Response(JSON.stringify({ email: user.email, is_pro: isPro }), { status: 200, headers });
 }
