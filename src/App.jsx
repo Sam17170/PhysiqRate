@@ -629,11 +629,9 @@ function BarcodeScanner({ onResult, onClose }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
-  const detectorRef = useRef(null);
   const intervalRef = useRef(null);
-  const [status, setStatus] = useState("starting");
+  const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
-  const fileRef = useRef(null);
 
   async function lookupBarcode(code) {
     try {
@@ -652,11 +650,11 @@ function BarcodeScanner({ onResult, onClose }) {
           fat: Math.round(n["fat_100g"] || 0),
         });
       } else {
-        setError("Produit non trouvé dans la base de données.");
+        setError("Produit non trouvé.");
         setStatus("error");
       }
     } catch {
-      setError("Erreur réseau. Vérifie ta connexion.");
+      setError("Erreur réseau.");
       setStatus("error");
     }
   }
@@ -666,115 +664,143 @@ function BarcodeScanner({ onResult, onClose }) {
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
   }
 
-  useEffect(() => {
-    const start = async () => {
-      // Vérifie si BarcodeDetector est disponible (Chrome Android)
-      const hasBarcodeDetector = "BarcodeDetector" in window;
-
-      if (hasBarcodeDetector) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment", width: 1280, height: 720 }
-          });
-          streamRef.current = stream;
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            await videoRef.current.play();
-          }
-          detectorRef.current = new window.BarcodeDetector({
-            formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39"]
-          });
-          setStatus("scanning");
-
-          intervalRef.current = setInterval(async () => {
-            if (!videoRef.current || !canvasRef.current) return;
-            const ctx = canvasRef.current.getContext("2d");
-            canvasRef.current.width = videoRef.current.videoWidth;
-            canvasRef.current.height = videoRef.current.videoHeight;
-            ctx.drawImage(videoRef.current, 0, 0);
-            try {
-              const barcodes = await detectorRef.current.detect(canvasRef.current);
-              if (barcodes.length > 0) {
-                clearInterval(intervalRef.current);
-                stopCamera();
-                setStatus("found");
-                await lookupBarcode(barcodes[0].rawValue);
-              }
-            } catch {}
-          }, 300);
-        } catch (err) {
-          if (err.name === "NotAllowedError") {
-            setError("Accès refusé. Va dans Réglages → ton navigateur → Caméra → Autoriser.");
-          } else {
-            setError("Caméra indisponible. Utilise la saisie manuelle.");
-          }
-          setStatus("error");
-        }
-      } else {
-        // iOS Safari — utilise input file avec capture caméra
-        setStatus("ios");
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
-    };
-
-    start();
-    return () => stopCamera();
-  }, []);
-
-  async function handleFileCapture(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setStatus("processing");
-    // Sur iOS, on ne peut pas détecter le code-barres sans BarcodeDetector
-    // On demande à l'utilisateur de saisir le code manuellement
-    const code = prompt("Code-barres détecté ? Entre les 13 chiffres sous le code-barres :");
-    if (code && code.length >= 8) {
-      setStatus("found");
-      await lookupBarcode(code.trim());
-    } else {
-      setStatus("ios");
+      setStatus("scanning");
+      startDetection();
+    } catch(err) {
+      if (err.name === "NotAllowedError") {
+        setError("Accès caméra refusé.\nVa dans Réglages → Safari → Caméra → Autoriser.");
+      } else {
+        setError("Caméra indisponible.");
+      }
+      setStatus("error");
     }
   }
+
+  function startDetection() {
+    // Try native BarcodeDetector first (Chrome/Android)
+    if ("BarcodeDetector" in window) {
+      const detector = new window.BarcodeDetector({
+        formats: ["ean_13","ean_8","upc_a","upc_e","code_128","code_39"]
+      });
+      intervalRef.current = setInterval(async () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const ctx = canvasRef.current.getContext("2d");
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        ctx.drawImage(videoRef.current, 0, 0);
+        try {
+          const barcodes = await detector.detect(canvasRef.current);
+          if (barcodes.length > 0) {
+            clearInterval(intervalRef.current);
+            setStatus("found");
+            await lookupBarcode(barcodes[0].rawValue);
+          }
+        } catch {}
+      }, 300);
+    } else {
+      // iOS Safari — use ZXing via CDN
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js";
+      script.onload = async () => {
+        try {
+          const codeReader = new window.ZXing.BrowserMultiFormatReader();
+          intervalRef.current = "zxing";
+          codeReader.decodeFromVideoElement(videoRef.current, async (result, err) => {
+            if (result) {
+              codeReader.reset();
+              setStatus("found");
+              await lookupBarcode(result.getText());
+            }
+          });
+          // Store reference for cleanup
+          window._zxingReader = codeReader;
+        } catch {
+          setError("Scanner non disponible. Saisis le code manuellement.");
+          setStatus("manual");
+        }
+      };
+      script.onerror = () => {
+        setError("Impossible de charger le scanner.");
+        setStatus("manual");
+      };
+      document.head.appendChild(script);
+    }
+  }
+
+  useEffect(() => {
+    startCamera();
+    return () => {
+      stopCamera();
+      if (window._zxingReader) { window._zxingReader.reset(); window._zxingReader = null; }
+    };
+  }, []);
 
   return (
     <div style={{position:"fixed",inset:0,background:"#000",zIndex:300,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
       <canvas ref={canvasRef} style={{display:"none"}}/>
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleFileCapture}/>
 
-      {status === "scanning" && (
-        <>
-          <video ref={videoRef} style={{width:"100%",height:"100%",objectFit:"cover"}} playsInline muted/>
-          {/* Overlay viseur */}
-          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
-            <div style={{width:"280px",height:"140px",border:`3px solid ${C.gold}`,borderRadius:"12px",boxShadow:`0 0 0 2000px rgba(0,0,0,0.5)`}}/>
-            <div style={{color:"white",fontSize:"13px",marginTop:"20px",textAlign:"center"}}>Place le code-barres dans le cadre</div>
+      {/* Video toujours monté pour iOS */}
+      <video ref={videoRef}
+        style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:status==="scanning"||status==="loading"?"block":"none"}}
+        playsInline muted autoPlay/>
+
+      {(status === "scanning" || status === "loading") && (
+        <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
+          {/* Viseur */}
+          <div style={{width:"280px",height:"140px",border:`3px solid ${C.gold}`,borderRadius:"12px",boxShadow:`0 0 0 2000px rgba(0,0,0,0.55)`,position:"relative"}}>
+            {/* Coins animés */}
+            {[["0","0","top","left"],["0","0","top","right"],["0","0","bottom","left"],["0","0","bottom","right"]].map((_,i)=>(
+              <div key={i} style={{position:"absolute",[["top","top","bottom","bottom"][i]]:"-3px",[["left","right","left","right"][i]]:"-3px",width:"20px",height:"20px",border:`3px solid ${C.gold}`,borderRadius:"3px",
+                borderRight:["0","3px","0","3px"][i]==="0"?"none":undefined,
+                borderLeft:["3px","0","3px","0"][i]==="0"?"none":undefined,
+                borderBottom:["0","0","3px","3px"][i]==="0"?"none":undefined,
+                borderTop:["3px","3px","0","0"][i]==="0"?"none":undefined,
+              }}/>
+            ))}
           </div>
-          <button style={{position:"absolute",top:"20px",right:"20px",background:"rgba(0,0,0,0.6)",border:`1px solid ${C.border}`,color:"white",borderRadius:"20px",padding:"8px 16px",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{stopCamera();onClose();}}>
-            Fermer
-          </button>
-        </>
-      )}
-
-      {status === "starting" && (
-        <div style={{textAlign:"center",padding:"20px"}}>
-          <div style={{fontSize:"13px",color:"#555",marginBottom:"12px"}}>Démarrage de la caméra…</div>
-          <button style={{...css.btnSec,width:"200px"}} onClick={onClose}>Annuler</button>
+          <div style={{color:"white",fontSize:"13px",marginTop:"20px",textShadow:"0 1px 4px #000"}}>
+            {status==="loading" ? "Démarrage de la caméra…" : "Place le code-barres dans le cadre"}
+          </div>
+          {status==="scanning" && <div style={{color:"#555",fontSize:"11px",marginTop:"6px"}}>Détection automatique</div>}
         </div>
       )}
 
-      {status === "ios" && (
-        <div style={{textAlign:"center",padding:"28px",maxWidth:"320px"}}>
-          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"20px"}}>SCANNER UN PRODUIT</div>
-          <div style={{fontSize:"14px",fontWeight:"700",marginBottom:"10px"}}>Deux options</div>
-          <button style={{...css.btn(C.gold),marginBottom:"10px"}} onClick={()=>fileRef.current?.click()}>
-            Prendre une photo du code-barres
+      {status === "found" && (
+        <div style={{textAlign:"center",color:C.green,fontSize:"16px",fontWeight:"700"}}>Produit trouvé !</div>
+      )}
+
+      {status === "error" && (
+        <div style={{textAlign:"center",padding:"28px",maxWidth:"300px"}}>
+          <div style={{fontSize:"13px",color:C.red,marginBottom:"20px",lineHeight:"1.7",whiteSpace:"pre-line"}}>{error}</div>
+          <button style={{...css.btn(C.gold),marginBottom:"10px"}} onClick={()=>{setStatus("loading");setError(null);startCamera();}}>
+            Réessayer
           </button>
-          <div style={{fontSize:"11px",color:"#444",marginBottom:"20px"}}>puis entre les chiffres manuellement</div>
-          <div style={{height:"1px",background:C.border,marginBottom:"20px"}}/>
-          <div style={{fontSize:"12px",color:"#666",marginBottom:"8px"}}>Ou entre le code directement :</div>
+          <button style={{...css.btnSec,marginBottom:"10px"}} onClick={()=>setStatus("manual")}>
+            Saisir le code manuellement
+          </button>
+          <button style={css.btnSec} onClick={()=>{stopCamera();onClose();}}>Annuler</button>
+        </div>
+      )}
+
+      {status === "manual" && (
+        <div style={{textAlign:"center",padding:"28px",maxWidth:"320px",width:"100%"}}>
+          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"20px"}}>SAISIE MANUELLE</div>
+          <div style={{fontSize:"13px",color:"#aaa",marginBottom:"16px",lineHeight:"1.5"}}>Entre les chiffres sous le code-barres</div>
           <input
             type="number"
             placeholder="Ex: 3017620422003"
-            style={{...css.input,marginBottom:"12px",textAlign:"center",letterSpacing:"2px"}}
+            autoFocus
+            style={{...css.input,marginBottom:"12px",textAlign:"center",fontSize:"16px",letterSpacing:"2px"}}
             onKeyDown={async(e)=>{
               if(e.key==="Enter" && e.target.value.length >= 8){
                 setStatus("found");
@@ -783,32 +809,21 @@ function BarcodeScanner({ onResult, onClose }) {
             }}
           />
           <div style={{fontSize:"11px",color:"#444",marginBottom:"16px"}}>Appuie sur Entrée pour chercher</div>
-          <button style={css.btnSec} onClick={onClose}>Annuler</button>
+          <button style={css.btnSec} onClick={()=>{stopCamera();onClose();}}>Annuler</button>
         </div>
       )}
 
-      {status === "processing" && (
-        <div style={{textAlign:"center",color:"white",fontSize:"13px"}}>Recherche du produit…</div>
-      )}
-
-      {status === "found" && (
-        <div style={{textAlign:"center",color:C.green,fontSize:"14px",fontWeight:"700"}}>Produit trouvé !</div>
-      )}
-
-      {status === "error" && (
-        <div style={{textAlign:"center",padding:"28px",maxWidth:"300px"}}>
-          <div style={{fontSize:"13px",color:C.red,marginBottom:"20px",lineHeight:"1.6"}}>{error}</div>
-          <button style={{...css.btn(C.gold),marginBottom:"10px"}} onClick={()=>setStatus("ios")}>
-            Saisir le code manuellement
-          </button>
-          <button style={css.btnSec} onClick={onClose}>Annuler</button>
-        </div>
+      {/* Bouton fermer toujours visible pendant le scan */}
+      {(status === "scanning" || status === "loading") && (
+        <button style={{position:"absolute",top:"20px",right:"20px",background:"rgba(0,0,0,0.6)",border:`1px solid ${C.border}`,color:"white",borderRadius:"20px",padding:"8px 16px",fontSize:"12px",cursor:"pointer",fontFamily:"inherit",zIndex:10}}
+          onClick={()=>{stopCamera();if(window._zxingReader){window._zxingReader.reset();window._zxingReader=null;}onClose();}}>
+          Fermer
+        </button>
       )}
     </div>
   );
 }
 
-// ─── PRODUCT QUANTITY MODAL ────────────────────────────────────────────────────
 function ProductModal({ product, onConfirm, onClose }) {
   const [quantity, setQuantity] = useState("100");
 
