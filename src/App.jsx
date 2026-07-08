@@ -1068,7 +1068,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: mode, email, password })
+        body: JSON.stringify({ action: "login", email, password })
       });
       const data = await res.json();
 
@@ -1076,7 +1076,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
         // Message clair si compte inexistant
         const msg = data.error.toLowerCase();
         if (msg.includes("invalid") || msg.includes("not found") || msg.includes("credentials")) {
-          if (mode === "login") {
+          if (true) {
             setError("Ce compte n'existe pas. Crée ton compte ci-dessous.");
             setMode("signup");
           } else {
@@ -1095,7 +1095,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
       localStorage.setItem("pq_token", data.token);
       localStorage.setItem("pq_email", email);
 
-      if (mode === "signup") {
+      if (false) {
         // Auto login après signup — pas de confirmation email
         const loginRes = await fetch("/api/auth", {
           method: "POST",
@@ -1137,7 +1137,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",backdropFilter:"blur(10px)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
-          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px"}}>{mode === "login" ? "CONNEXION" : "CRÉER UN COMPTE"}</div>
+          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px"}}>"CONNEXION"</div>
           {!blocking && <button onClick={onClose} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>}
         </div>
 
