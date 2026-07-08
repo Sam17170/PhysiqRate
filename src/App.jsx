@@ -712,6 +712,9 @@ function ViewAnalyze({ premium }) {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
       setPremium(true); setPremiumState(true);
+      // Save session ID to retrieve customer ID later
+      const sessionId = params.get("session_id");
+      if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
       window.history.replaceState({}, "", window.location.pathname);
       setTimeout(() => alert("Bienvenue dans Physiqrate Pro ! Analyses illimitées activées."), 500);
     }
@@ -1788,6 +1791,41 @@ function ViewProfil() {
           })()}
         </div>
       )}
+    {/* Section abonnement Pro */}
+    {isPremium() && (
+      <div style={{...css.card,marginTop:"4px"}}>
+        <div style={css.cardTitle}>MON ABONNEMENT</div>
+        <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"14px"}}>
+          <div style={{width:"8px",height:"8px",borderRadius:"50%",background:C.green}}/>
+          <span style={{fontSize:"13px",fontWeight:"600",color:C.green}}>Physiqrate Pro — Actif</span>
+        </div>
+        <div style={{fontSize:"12px",color:"#555",marginBottom:"14px",lineHeight:"1.5"}}>
+          Analyses illimitées · Scans nutrition illimités · Historique complet
+        </div>
+        <button
+          onClick={async()=>{
+            const customerId = localStorage.getItem("pq_stripe_customer");
+            if (!customerId) {
+              alert("Pour gérer ton abonnement, contacte-nous à support@physiqrate.com");
+              return;
+            }
+            const res = await fetch("/api/portal", {
+              method:"POST",
+              headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({customerId})
+            });
+            const data = await res.json();
+            if (data.url) window.location.href = data.url;
+          }}
+          style={{...css.btnSec,marginBottom:"4px"}}>
+          Gérer mon abonnement
+        </button>
+        <div style={{fontSize:"11px",color:"#333",textAlign:"center"}}>
+          Modifier ta carte · Annuler à tout moment
+        </div>
+      </div>
+    )}
+
     {/* Section installation PWA */}
     <div style={{...css.card, marginTop:"4px"}}>
       <div style={css.cardTitle}>INSTALLER L'APPLICATION</div>
@@ -1870,6 +1908,9 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
       setPremium(true); setPremiumState(true);
+      // Save session ID to retrieve customer ID later
+      const sessionId = params.get("session_id");
+      if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
       window.history.replaceState({}, "", window.location.pathname);
       setTimeout(() => alert("Bienvenue dans Physiqrate Pro ! Analyses illimitées activées."), 500);
     }
