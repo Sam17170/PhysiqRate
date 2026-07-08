@@ -2113,7 +2113,7 @@ function ViewProgression({ premium, onShowPaywall }) {
   );
 }
 
-function ViewProfil() {
+function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
   const [profile, setProfile] = useState(getProfile());
   const completion = getProfileCompletion(profile);
   const w = parseFloat(get(keys.weight) || profile.weight || 0);
@@ -2287,8 +2287,7 @@ function ViewProfil() {
           <button onClick={()=>{
             localStorage.removeItem("pq_token");
             localStorage.removeItem("pq_email");
-            setUser(null);
-            setPremium(false); setPremiumState(false);
+            window.location.reload();
           }} style={{...css.btnSec,marginBottom:0,fontSize:"12px",color:"#444"}}>
             Se déconnecter
           </button>
@@ -2298,7 +2297,7 @@ function ViewProfil() {
           <div style={{fontSize:"12px",color:"#555",marginBottom:"14px",lineHeight:"1.5"}}>
             Crée un compte pour que ton abonnement Pro soit lié à ton email et accessible sur tous tes appareils.
           </div>
-          <button style={css.btn(C.gold)} onClick={()=>setShowAuth(true)}>
+          <button style={css.btn(C.gold)} onClick={onShowAuth}>
             Créer un compte / Se connecter
           </button>
         </>
@@ -2564,7 +2563,7 @@ export default function App() {
       {view === "jour"        && <ViewJour/>}
       {view === "historique"  && <ViewHistorique/>}
       {view === "progression" && <ViewProgression premium={premium} onShowPaywall={()=>setShowPaywall(true)}/>}
-      {view === "profil"      && <ViewProfil/>}
+      {view === "profil"      && <ViewProfil user={user} premium={premium} onShowAuth={()=>setShowAuth(true)} setPremiumState={setPremiumState}/>}
     </div>
   );
 }
