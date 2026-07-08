@@ -116,7 +116,7 @@ const get = (k) => { try { const r = localStorage.getItem(k); return r ? JSON.pa
 const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 function getProfile()  { return get(keys.profile)  || {}; }
-function saveProfile(p){ set(keys.profile, p); }
+function saveProfile(p){ set(keys.profile, p); syncPush({ profile: p }); }
 function getCustomMacros() { return get("pq_custom_macros") || null; }
 function saveCustomMacros(m) { set("pq_custom_macros", m); }
 function isPremium()   { const v = localStorage.getItem(keys.premium); return v === true || v === "true"; }
@@ -154,11 +154,11 @@ function getHistory() { return get(keys.history) || []; }
 function getSavedFoods() { return get("pq_saved_foods") || []; }
 function saveFoodToList(food) {
   const list = getSavedFoods();
-  // Évite les doublons par nom
   const exists = list.find(f => f.name.toLowerCase() === food.name.toLowerCase());
   if (!exists) {
     list.unshift({ ...food, savedAt: new Date().toISOString() });
-    set("pq_saved_foods", list.slice(0, 50)); // max 50 aliments
+    set("pq_saved_foods", list.slice(0, 50));
+    syncPush({ savedFoods: [food] });
   }
 }
 function removeSavedFood(name) {
@@ -637,6 +637,31 @@ function PWABanner({ onDismiss }) {
   );
 }
 
+
+
+// ─── SUPABASE SYNC ────────────────────────────────────────────────────────────
+async function syncPush(data) {
+  const token = localStorage.getItem("pq_token");
+  if (!token) return;
+  try {
+    await fetch("/api/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "push", token, data })
+    });
+  } catch {}
+}
+
+async function syncPull(token, date) {
+  try {
+    const res = await fetch("/api/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "pull", token, data: { date } })
+    });
+    return await res.json();
+  } catch { return null; }
+}
 
 // ─── BARCODE SCANNER ──────────────────────────────────────────────────────────
 function BarcodeScanner({ onResult, onClose }) {
@@ -1720,7 +1745,13 @@ function ViewJour() {
   const remaining = goalCals ? goalCals - totalCals : null;
   const progress = goalCals ? Math.min(100, Math.round(totalCals / goalCals * 100)) : 0;
 
-  function save(data) { setJournal(data); saveTodayJournal(data); }
+  function save(data) {
+    setJournal(data);
+    saveTodayJournal(data);
+    // Sync vers Supabase
+    const today = new Date().toISOString().slice(0,10);
+    syncPush({ journal: { ...data, date: today } });
+  }
 
   const macros = journal.meals.reduce((acc, m) => ({
     protein: acc.protein + (m.protein||0),
@@ -2784,11 +2815,8 @@ export default function App() {
           onSuccess={async ({ email, is_pro, token }) => {
             setUser({ email });
             if (is_pro) {
-              // Compte Pro existant — accès direct
               setPremium(true); setPremiumState(true);
-              setShowAuth(false);
             } else {
-              // Compte gratuit — vérifie si un paiement en attente peut être transféré
               const sessionId = localStorage.getItem("pq_stripe_session");
               if (sessionId && premium) {
                 try {
@@ -2798,19 +2826,61 @@ export default function App() {
                     body: JSON.stringify({ action: "transfer_pro", email, sessionId })
                   });
                   const data = await res.json();
-                  if (data.success) {
-                    setPremium(true); setPremiumState(true);
-                    setShowAuth(false);
-                    return;
-                  }
+                  if (data.success) { setPremium(true); setPremiumState(true); }
                 } catch {}
+              } else {
+                setPremium(false); setPremiumState(false);
+                localStorage.removeItem("pq_stripe_session");
+                localStorage.removeItem("pq_premium");
               }
-              // Pas Pro du tout
-              setPremium(false); setPremiumState(false);
-              localStorage.removeItem("pq_stripe_session");
-              localStorage.removeItem("pq_premium");
-              setShowAuth(false);
             }
+            // Pull données depuis Supabase
+            const today = new Date().toISOString().slice(0,10);
+            syncPull(token, today).then(remote => {
+              if (!remote) { setShowAuth(false); return; }
+              if (remote.profile) {
+                const p = remote.profile;
+                if (p.gender) localStorage.setItem("pq_gender", p.gender);
+                if (p.age) localStorage.setItem("pq_age", String(p.age));
+                if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
+                if (p.height) localStorage.setItem("pq_height", String(p.height));
+                if (p.goal) localStorage.setItem("pq_goal", p.goal);
+                if (p.activity) localStorage.setItem("pq_activity", p.activity);
+              }
+              if (remote.journal) {
+                const key = "pq_journal_" + today;
+                const local = JSON.parse(localStorage.getItem(key) || '{"meals":[],"steps":0,"sessions":[],"water":0}');
+                if ((remote.journal.meals?.length || 0) >= (local.meals?.length || 0)) {
+                  localStorage.setItem(key, JSON.stringify({
+                    meals: remote.journal.meals || [],
+                    steps: remote.journal.steps || local.steps || 0,
+                    sessions: remote.journal.sessions || local.sessions || [],
+                    water: remote.journal.water || local.water || 0
+                  }));
+                }
+              }
+              if (remote.analyses?.length > 0) {
+                const localHistory = JSON.parse(localStorage.getItem("pq_history") || "[]");
+                const merged = [...localHistory];
+                for (const a of remote.analyses) {
+                  if (!merged.find(h => h.date === a.date && h.bodyfat === a.bodyfat)) {
+                    merged.push({ date: a.date, bodyfat: a.bodyfat, weight: a.weight, note: a.note, confidence: a.confidence });
+                  }
+                }
+                merged.sort((a,b) => b.date.localeCompare(a.date));
+                localStorage.setItem("pq_history", JSON.stringify(merged.slice(0,100)));
+              }
+              if (remote.savedFoods?.length > 0) {
+                const localFoods = JSON.parse(localStorage.getItem("pq_saved_foods") || "[]");
+                const merged = [...localFoods];
+                for (const f of remote.savedFoods) {
+                  if (!merged.find(lf => lf.name === f.name)) merged.push(f);
+                }
+                localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
+              }
+              setShowAuth(false);
+              window.location.reload();
+            }).catch(() => setShowAuth(false));
           }}
           onClose={()=>{ if(premium && !localStorage.getItem("pq_token")) return; setShowAuth(false); }}
           blocking={premium && !localStorage.getItem("pq_token")}
