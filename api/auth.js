@@ -24,78 +24,77 @@ export default async function handler(req) {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
   }
 
-  // Transfert Pro vers le bon email après paiement avec email différent
+  // Transfert Pro vers le bon email
   if (action === "transfer_pro") {
     if (!email || !sessionId) return new Response(JSON.stringify({ error: "Missing params" }), { status: 400, headers });
-
-    // Récupère la session Stripe pour trouver l'email original
     const stripeRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
       headers: { "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}` }
     });
     const session = await stripeRes.json();
     const stripeEmail = session.customer_details?.email || session.customer_email;
-
     if (stripeEmail && stripeEmail !== email) {
-      // Met à jour la ligne avec l'email Stripe pour y mettre le bon email
       await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(stripeEmail)}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_SERVICE,
-          "Authorization": `Bearer ${SUPABASE_SERVICE}`,
-          "Prefer": "return=minimal"
-        },
+        headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
         body: JSON.stringify({ email, is_pro: true })
       });
     } else {
-      // Même email — met juste à jour is_pro
       await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_SERVICE,
-          "Authorization": `Bearer ${SUPABASE_SERVICE}`,
-          "Prefer": "return=minimal"
-        },
+        headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
         body: JSON.stringify({ is_pro: true })
       });
     }
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
   }
 
-  const endpoint = action === "signup"
-    ? `${SUPABASE_URL}/auth/v1/signup`
-    : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
-
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON, "Authorization": `Bearer ${SUPABASE_ANON}` },
-    body: JSON.stringify({ email, password })
-  });
-
-  const data = await res.json();
-
-  if (data.error || data.error_description) {
-    const msg = data.error_description || data.error?.message || "Erreur d'authentification";
-    return new Response(JSON.stringify({ error: msg }), { status: 400, headers });
-  }
-
-  // Si signup réussi, crée l'entrée dans la table users avec is_pro false par défaut
-  if (action === "signup" && data.user) {
-    await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_SERVICE,
-        "Authorization": `Bearer ${SUPABASE_SERVICE}`,
-        "Prefer": "resolution=merge-duplicates,return=minimal"
-      },
-      body: JSON.stringify({ email: data.user.email, is_pro: false })
+  // LOGIN — vérifie que le compte existe dans users avant de connecter
+  if (action === "login") {
+    // Vérifie d'abord que l'email existe dans notre table users
+    const checkRes = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}&select=email`, {
+      headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
     });
+    const rows = await checkRes.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return new Response(JSON.stringify({ error: "Ce compte n'existe pas. Crée ton compte après le paiement." }), { status: 400, headers });
+    }
+
+    // Connecte l'utilisateur
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON, "Authorization": `Bearer ${SUPABASE_ANON}` },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.error || data.error_description) {
+      const msg = data.error_description || data.error?.message || "Mot de passe incorrect.";
+      return new Response(JSON.stringify({ error: msg }), { status: 400, headers });
+    }
+    return new Response(JSON.stringify({ token: data.access_token, user: { email } }), { status: 200, headers });
   }
 
-  return new Response(JSON.stringify({
-    token: data.access_token,
-    user: { email: data.user?.email }
-  }), { status: 200, headers });
+  // SIGNUP — crée le compte
+  if (action === "signup") {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON, "Authorization": `Bearer ${SUPABASE_ANON}` },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.error || data.error_description) {
+      const msg = data.error_description || data.error?.message || "Erreur d'inscription.";
+      return new Response(JSON.stringify({ error: msg }), { status: 400, headers });
+    }
+    // Crée l'entrée dans users avec is_pro false par défaut
+    if (data.user) {
+      await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({ email: data.user.email, is_pro: false })
+      });
+    }
+    return new Response(JSON.stringify({ token: data.access_token, user: { email: data.user?.email } }), { status: 200, headers });
+  }
+
+  return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers });
 }
