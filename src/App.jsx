@@ -903,7 +903,7 @@ function ProductModal({ product, onConfirm, onClose }) {
 
 
 // ─── POST PAYMENT ACCOUNT MODAL ───────────────────────────────────────────────
-function PostPaymentModal({ email: initialEmail, onSuccess }) {
+function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) {
   const [email, setEmail] = useState(initialEmail === "unknown" ? "" : initialEmail);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -988,7 +988,7 @@ function PostPaymentModal({ email: initialEmail, onSuccess }) {
 }
 
 // ─── AUTH MODAL ───────────────────────────────────────────────────────────────
-function AuthModal({ onSuccess, onClose }) {
+function AuthModal({ onSuccess, onClose, blocking = false }) {
   const [mode, setMode] = useState("login"); // login | signup
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -1055,7 +1055,7 @@ function AuthModal({ onSuccess, onClose }) {
       <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
           <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px"}}>{mode === "login" ? "CONNEXION" : "CRÉER UN COMPTE"}</div>
-          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>
+          {!blocking && <button onClick={onClose} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>}
         </div>
 
         {success ? (
@@ -2692,9 +2692,16 @@ export default function App() {
           onSuccess={({ email, is_pro, token }) => {
             setUser({ email });
             if (is_pro) { setPremium(true); setPremiumState(true); }
+            // Si utilisateur Pro sans compte, marque comme Pro après connexion
+            if (premium && !is_pro) {
+              // Mise à jour Supabase
+              fetch("/api/me", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({token}) })
+                .then(r=>r.json()).then(d=>{ if(d.is_pro){ setPremium(true); setPremiumState(true); }});
+            }
             setShowAuth(false);
           }}
-          onClose={() => setShowAuth(false)}
+          onClose={()=>{ if(premium && !user) return; setShowAuth(false); }}
+          blocking={premium && !user}
         />
       )}
 
@@ -2706,19 +2713,21 @@ export default function App() {
             setShowPostPayment(false);
             setPostPaymentEmail(null);
           }}
+          blocking={premium && !user}
         />
       )}
 
-      {/* Bloque toute l'app si Pro payé sans compte */}
-      {premium && !user && !showPostPayment && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.97)",backdropFilter:"blur(10px)",zIndex:150,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      {/* Bloque toute l'app si Pro payé sans compte — INCONTOURNABLE */}
+      {premium && !user && (
+        <div style={{position:"fixed",inset:0,background:"#09090f",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}
+          onClick={e=>e.stopPropagation()}>
           <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
             <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>COMPTE REQUIS</div>
             <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"8px"}}>Crée ton compte Pro</div>
             <div style={{fontSize:"13px",color:"#555",marginBottom:"24px",lineHeight:"1.6"}}>
               Tu as souscrit à Physiqrate Pro. Crée ton compte pour accéder à tes analyses sur tous tes appareils.
             </div>
-            <button style={css.btn(C.gold)} onClick={()=>setShowPostPayment(true)}>
+            <button style={css.btn(C.gold)} onClick={()=>setShowAuth(true)}>
               Créer mon compte
             </button>
             <div style={{marginTop:"12px"}}>
