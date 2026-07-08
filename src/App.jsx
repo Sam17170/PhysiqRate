@@ -626,12 +626,9 @@ function PWABanner({ onDismiss }) {
 
 // ─── BARCODE SCANNER ──────────────────────────────────────────────────────────
 function BarcodeScanner({ onResult, onClose }) {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-  const intervalRef = useRef(null);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
+  const quaggaRef = useRef(null);
 
   async function lookupBarcode(code) {
     try {
@@ -640,7 +637,7 @@ function BarcodeScanner({ onResult, onClose }) {
       if (data.status === 1 && data.product) {
         const p = data.product;
         const n = p.nutriments || {};
-        stopCamera();
+        if (quaggaRef.current) quaggaRef.current.stop();
         onResult({
           name: p.product_name_fr || p.product_name || "Produit scanné",
           brand: p.brands || "",
@@ -650,7 +647,7 @@ function BarcodeScanner({ onResult, onClose }) {
           fat: Math.round(n["fat_100g"] || 0),
         });
       } else {
-        setError("Produit non trouvé.");
+        setError("Produit non trouvé. Essaie un autre.");
         setStatus("error");
       }
     } catch {
@@ -659,148 +656,136 @@ function BarcodeScanner({ onResult, onClose }) {
     }
   }
 
-  function stopCamera() {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-  }
-
-  async function startCamera() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setStatus("scanning");
-      startDetection();
-    } catch(err) {
-      if (err.name === "NotAllowedError") {
-        setError("Accès caméra refusé.\nVa dans Réglages → Safari → Caméra → Autoriser.");
-      } else {
-        setError("Caméra indisponible.");
-      }
-      setStatus("error");
-    }
-  }
-
-  function startDetection() {
-    // Try native BarcodeDetector first (Chrome/Android)
-    if ("BarcodeDetector" in window) {
-      const detector = new window.BarcodeDetector({
-        formats: ["ean_13","ean_8","upc_a","upc_e","code_128","code_39"]
-      });
-      intervalRef.current = setInterval(async () => {
-        if (!videoRef.current || !canvasRef.current) return;
-        const ctx = canvasRef.current.getContext("2d");
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        ctx.drawImage(videoRef.current, 0, 0);
-        try {
-          const barcodes = await detector.detect(canvasRef.current);
-          if (barcodes.length > 0) {
-            clearInterval(intervalRef.current);
-            setStatus("found");
-            await lookupBarcode(barcodes[0].rawValue);
-          }
-        } catch {}
-      }, 300);
-    } else {
-      // iOS Safari — use ZXing via CDN
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js";
-      script.onload = async () => {
-        try {
-          const codeReader = new window.ZXing.BrowserMultiFormatReader();
-          intervalRef.current = "zxing";
-          codeReader.decodeFromVideoElement(videoRef.current, async (result, err) => {
-            if (result) {
-              codeReader.reset();
-              setStatus("found");
-              await lookupBarcode(result.getText());
-            }
-          });
-          // Store reference for cleanup
-          window._zxingReader = codeReader;
-        } catch {
-          setError("Scanner non disponible. Saisis le code manuellement.");
-          setStatus("manual");
-        }
-      };
-      script.onerror = () => {
-        setError("Impossible de charger le scanner.");
-        setStatus("manual");
-      };
-      document.head.appendChild(script);
-    }
-  }
-
   useEffect(() => {
-    startCamera();
+    // Charge Quagga2 via CDN
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js";
+    script.onload = () => {
+      const Quagga = window.Quagga;
+      quaggaRef.current = Quagga;
+
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector("#quagga-video"),
+          constraints: {
+            facingMode: "environment",
+            width: { min: 640, ideal: 1280 },
+            height: { min: 480, ideal: 720 },
+          },
+        },
+        locator: { patchSize: "medium", halfSample: true },
+        numOfWorkers: 2,
+        frequency: 10,
+        decoder: {
+          readers: ["ean_reader","ean_8_reader","upc_reader","upc_e_reader","code_128_reader"],
+        },
+        locate: true,
+      }, (err) => {
+        if (err) {
+          if (err.name === "NotAllowedError" || (err.message && err.message.includes("Permission"))) {
+            setError("Accès caméra refusé.\nVa dans Réglages → Safari → Caméra → Autoriser.");
+          } else {
+            setError("Impossible de démarrer la caméra.");
+          }
+          setStatus("error");
+          return;
+        }
+        Quagga.start();
+        setStatus("scanning");
+      });
+
+      let lastCode = null;
+      let codeCount = 0;
+
+      Quagga.onDetected(async (result) => {
+        const code = result.codeResult.code;
+        const errors = result.codeResult.decodedCodes
+          .filter(x => x.error !== undefined)
+          .map(x => x.error);
+        const avgError = errors.length ? errors.reduce((a,b) => a+b, 0) / errors.length : 1;
+
+        // Confirme le même code 2 fois pour éviter les faux positifs
+        if (avgError < 0.15) {
+          if (code === lastCode) {
+            codeCount++;
+            if (codeCount >= 2) {
+              Quagga.stop();
+              setStatus("found");
+              await lookupBarcode(code);
+            }
+          } else {
+            lastCode = code;
+            codeCount = 1;
+          }
+        }
+      });
+    };
+    script.onerror = () => {
+      setError("Impossible de charger le scanner.");
+      setStatus("manual");
+    };
+    document.head.appendChild(script);
+
     return () => {
-      stopCamera();
-      if (window._zxingReader) { window._zxingReader.reset(); window._zxingReader = null; }
+      if (quaggaRef.current) {
+        try { quaggaRef.current.stop(); } catch {}
+      }
     };
   }, []);
 
   return (
     <div style={{position:"fixed",inset:0,background:"#000",zIndex:300,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-      <canvas ref={canvasRef} style={{display:"none"}}/>
 
-      {/* Video toujours monté pour iOS */}
-      <video ref={videoRef}
-        style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:status==="scanning"||status==="loading"?"block":"none"}}
-        playsInline muted autoPlay/>
+      {/* Container vidéo Quagga */}
+      <div id="quagga-video" style={{
+        position:"absolute",inset:0,
+        display: status === "scanning" || status === "loading" ? "block" : "none"
+      }}/>
 
-      {(status === "scanning" || status === "loading") && (
-        <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
-          {/* Viseur */}
-          <div style={{width:"280px",height:"140px",border:`3px solid ${C.gold}`,borderRadius:"12px",boxShadow:`0 0 0 2000px rgba(0,0,0,0.55)`,position:"relative"}}>
-            {/* Coins animés */}
-            {[["0","0","top","left"],["0","0","top","right"],["0","0","bottom","left"],["0","0","bottom","right"]].map((_,i)=>(
-              <div key={i} style={{position:"absolute",[["top","top","bottom","bottom"][i]]:"-3px",[["left","right","left","right"][i]]:"-3px",width:"20px",height:"20px",border:`3px solid ${C.gold}`,borderRadius:"3px",
-                borderRight:["0","3px","0","3px"][i]==="0"?"none":undefined,
-                borderLeft:["3px","0","3px","0"][i]==="0"?"none":undefined,
-                borderBottom:["0","0","3px","3px"][i]==="0"?"none":undefined,
-                borderTop:["3px","3px","0","0"][i]==="0"?"none":undefined,
-              }}/>
-            ))}
-          </div>
+      {status === "loading" && (
+        <div style={{color:"white",fontSize:"13px",textAlign:"center",zIndex:10}}>
+          Chargement du scanner…
+        </div>
+      )}
+
+      {status === "scanning" && (
+        <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:10}}>
+          <div style={{width:"280px",height:"140px",border:`3px solid ${C.gold}`,borderRadius:"12px",boxShadow:`0 0 0 2000px rgba(0,0,0,0.55)`}}/>
           <div style={{color:"white",fontSize:"13px",marginTop:"20px",textShadow:"0 1px 4px #000"}}>
-            {status==="loading" ? "Démarrage de la caméra…" : "Place le code-barres dans le cadre"}
+            Place le code-barres dans le cadre
           </div>
-          {status==="scanning" && <div style={{color:"#555",fontSize:"11px",marginTop:"6px"}}>Détection automatique</div>}
+          <div style={{color:"#aaa",fontSize:"11px",marginTop:"6px"}}>Tiens le téléphone à 15-20cm</div>
         </div>
       )}
 
       {status === "found" && (
-        <div style={{textAlign:"center",color:C.green,fontSize:"16px",fontWeight:"700"}}>Produit trouvé !</div>
+        <div style={{color:C.green,fontSize:"16px",fontWeight:"700",zIndex:10}}>Produit trouvé !</div>
       )}
 
       {status === "error" && (
-        <div style={{textAlign:"center",padding:"28px",maxWidth:"300px"}}>
+        <div style={{textAlign:"center",padding:"28px",maxWidth:"300px",zIndex:10}}>
           <div style={{fontSize:"13px",color:C.red,marginBottom:"20px",lineHeight:"1.7",whiteSpace:"pre-line"}}>{error}</div>
-          <button style={{...css.btn(C.gold),marginBottom:"10px"}} onClick={()=>{setStatus("loading");setError(null);startCamera();}}>
+          <button style={{...css.btn(C.gold),marginBottom:"10px"}} onClick={()=>{ setStatus("loading"); setError(null); }}>
             Réessayer
           </button>
           <button style={{...css.btnSec,marginBottom:"10px"}} onClick={()=>setStatus("manual")}>
-            Saisir le code manuellement
+            Saisir manuellement
           </button>
-          <button style={css.btnSec} onClick={()=>{stopCamera();onClose();}}>Annuler</button>
+          <button style={css.btnSec} onClick={onClose}>Annuler</button>
         </div>
       )}
 
       {status === "manual" && (
-        <div style={{textAlign:"center",padding:"28px",maxWidth:"320px",width:"100%"}}>
+        <div style={{textAlign:"center",padding:"28px",maxWidth:"320px",width:"100%",zIndex:10}}>
           <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"20px"}}>SAISIE MANUELLE</div>
-          <div style={{fontSize:"13px",color:"#aaa",marginBottom:"16px",lineHeight:"1.5"}}>Entre les chiffres sous le code-barres</div>
+          <div style={{fontSize:"13px",color:"#aaa",marginBottom:"16px"}}>Entre les chiffres sous le code-barres</div>
           <input
             type="number"
             placeholder="Ex: 3017620422003"
             autoFocus
-            style={{...css.input,marginBottom:"12px",textAlign:"center",fontSize:"16px",letterSpacing:"2px"}}
+            style={{...css.input,marginBottom:"12px",textAlign:"center",fontSize:"16px",letterSpacing:"1px"}}
             onKeyDown={async(e)=>{
               if(e.key==="Enter" && e.target.value.length >= 8){
                 setStatus("found");
@@ -809,20 +794,20 @@ function BarcodeScanner({ onResult, onClose }) {
             }}
           />
           <div style={{fontSize:"11px",color:"#444",marginBottom:"16px"}}>Appuie sur Entrée pour chercher</div>
-          <button style={css.btnSec} onClick={()=>{stopCamera();onClose();}}>Annuler</button>
+          <button style={css.btnSec} onClick={onClose}>Annuler</button>
         </div>
       )}
 
-      {/* Bouton fermer toujours visible pendant le scan */}
       {(status === "scanning" || status === "loading") && (
-        <button style={{position:"absolute",top:"20px",right:"20px",background:"rgba(0,0,0,0.6)",border:`1px solid ${C.border}`,color:"white",borderRadius:"20px",padding:"8px 16px",fontSize:"12px",cursor:"pointer",fontFamily:"inherit",zIndex:10}}
-          onClick={()=>{stopCamera();if(window._zxingReader){window._zxingReader.reset();window._zxingReader=null;}onClose();}}>
+        <button style={{position:"absolute",top:"20px",right:"20px",background:"rgba(0,0,0,0.7)",border:`1px solid ${C.border}`,color:"white",borderRadius:"20px",padding:"8px 16px",fontSize:"12px",cursor:"pointer",fontFamily:"inherit",zIndex:20}}
+          onClick={()=>{ if(quaggaRef.current) try{quaggaRef.current.stop();}catch{}; onClose(); }}>
           Fermer
         </button>
       )}
     </div>
   );
 }
+
 
 function ProductModal({ product, onConfirm, onClose }) {
   const [quantity, setQuantity] = useState("100");
