@@ -8,10 +8,22 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
-  const { customerId } = body;
-  if (!customerId) return new Response(JSON.stringify({ error: "Missing customerId" }), { status: 400 });
+  const { sessionId } = body;
+  if (!sessionId) return new Response(JSON.stringify({ error: "Missing sessionId" }), { status: 400 });
 
-  const session = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
+  // 1. Récupère la session Stripe pour obtenir le customer ID
+  const sessionRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
+    headers: { "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}` }
+  });
+  const session = await sessionRes.json();
+
+  if (session.error) return new Response(JSON.stringify({ error: "Session invalide" }), { status: 400 });
+
+  const customerId = session.customer;
+  if (!customerId) return new Response(JSON.stringify({ error: "Pas de client trouvé" }), { status: 400 });
+
+  // 2. Crée une session portail client
+  const portalRes = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}`,
@@ -23,10 +35,10 @@ export default async function handler(req) {
     }).toString()
   });
 
-  const data = await session.json();
-  if (data.error) return new Response(JSON.stringify({ error: data.error.message }), { status: 500 });
+  const portal = await portalRes.json();
+  if (portal.error) return new Response(JSON.stringify({ error: portal.error.message }), { status: 500 });
 
-  return new Response(JSON.stringify({ url: data.url }), {
+  return new Response(JSON.stringify({ url: portal.url }), {
     status: 200,
     headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": origin }
   });
