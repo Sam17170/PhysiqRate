@@ -627,85 +627,125 @@ function PWABanner({ onDismiss }) {
 // ─── BARCODE SCANNER ──────────────────────────────────────────────────────────
 function BarcodeScanner({ onResult, onClose }) {
   const scannerRef = useRef(null);
+  const [status, setStatus] = useState("requesting"); // requesting | scanning | found | error
   const [error, setError] = useState(null);
-  const [scanning, setScanning] = useState(true);
+  const scannerInstance = useRef(null);
+
+  async function lookupBarcode(code) {
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+      const data = await res.json();
+      if (data.status === 1 && data.product) {
+        const p = data.product;
+        const n = p.nutriments || {};
+        onResult({
+          name: p.product_name_fr || p.product_name || "Produit scanné",
+          brand: p.brands || "",
+          calories: Math.round(n["energy-kcal_100g"] || n["energy-kcal"] || 0),
+          protein: Math.round(n["proteins_100g"] || 0),
+          carbs: Math.round(n["carbohydrates_100g"] || 0),
+          fat: Math.round(n["fat_100g"] || 0),
+        });
+      } else {
+        setError("Produit non trouvé. Essaie un autre code-barres.");
+        setStatus("error");
+      }
+    } catch {
+      setError("Erreur réseau. Vérifie ta connexion.");
+      setStatus("error");
+    }
+  }
 
   useEffect(() => {
     let scanner;
-    const loadScanner = async () => {
+    const start = async () => {
+      // 1. Demande permission caméra explicitement
       try {
+        await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      } catch (err) {
+        if (err.name === "NotAllowedError") {
+          setError("Accès à la caméra refusé. Va dans Réglages → Safari → Caméra → Autoriser, puis réessaie.");
+        } else {
+          setError("Caméra non disponible sur cet appareil.");
+        }
+        setStatus("error");
+        return;
+      }
+
+      // 2. Charge et démarre le scanner
+      try {
+        setStatus("scanning");
         const { Html5Qrcode } = await import("https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.esm.min.js");
         scanner = new Html5Qrcode("qr-reader");
+        scannerInstance.current = scanner;
         await scanner.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 150 } },
+          { fps: 10, qrbox: { width: 260, height: 140 } },
           async (code) => {
             await scanner.stop();
-            setScanning(false);
-            // Fetch from Open Food Facts
-            try {
-              const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
-              const data = await res.json();
-              if (data.status === 1 && data.product) {
-                const p = data.product;
-                const per100 = p.nutriments || {};
-                onResult({
-                  name: p.product_name || p.product_name_fr || "Produit scanné",
-                  brand: p.brands || "",
-                  calories: Math.round(per100["energy-kcal_100g"] || per100["energy-kcal"] || 0),
-                  protein: Math.round(per100["proteins_100g"] || 0),
-                  carbs: Math.round(per100["carbohydrates_100g"] || 0),
-                  fat: Math.round(per100["fat_100g"] || 0),
-                  per: 100,
-                });
-              } else {
-                setError("Produit non trouvé dans la base de données.");
-                setScanning(false);
-              }
-            } catch {
-              setError("Erreur lors de la recherche du produit.");
-              setScanning(false);
-            }
+            setStatus("found");
+            await lookupBarcode(code);
           },
           () => {}
         );
-      } catch (err) {
-        setError("Impossible d'accéder à la caméra.");
+      } catch {
+        setError("Erreur lors du démarrage du scanner.");
+        setStatus("error");
       }
     };
-    loadScanner();
-    return () => { if (scanner) scanner.stop().catch(()=>{}); };
+
+    start();
+    return () => {
+      if (scannerInstance.current) scannerInstance.current.stop().catch(()=>{});
+    };
   }, []);
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:300,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px"}}>
-      <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>SCANNER UN PRODUIT</div>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.97)",zIndex:300,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"20px"}}>SCANNER UN PRODUIT</div>
 
-      {scanning && !error && (
+      {status === "requesting" && (
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:"32px",marginBottom:"16px"}}>📷</div>
+          <div style={{fontSize:"14px",fontWeight:"700",marginBottom:"8px"}}>Accès à la caméra</div>
+          <div style={{fontSize:"12px",color:"#666",lineHeight:"1.6"}}>Autorise l'accès à la caméra dans la fenêtre qui apparaît pour scanner un code-barres</div>
+        </div>
+      )}
+
+      {status === "scanning" && (
         <>
-          <div id="qr-reader" ref={scannerRef} style={{width:"300px",borderRadius:"14px",overflow:"hidden",border:`2px solid ${C.gold}`}}/>
-          <div style={{fontSize:"12px",color:"#555",marginTop:"14px",textAlign:"center"}}>
+          <div id="qr-reader" style={{width:"300px",borderRadius:"16px",overflow:"hidden",border:`2px solid ${C.gold}`,boxShadow:`0 0 30px rgba(255,215,0,0.2)`}}/>
+          <div style={{fontSize:"12px",color:"#555",marginTop:"16px",textAlign:"center"}}>
             Place le code-barres dans le cadre
+          </div>
+          <div style={{fontSize:"11px",color:"#333",marginTop:"6px",textAlign:"center"}}>
+            Détection automatique
           </div>
         </>
       )}
 
-      {error && (
-        <div style={{textAlign:"center",padding:"20px"}}>
-          <div style={{fontSize:"13px",color:C.red,marginBottom:"16px"}}>{error}</div>
-          <button style={css.btn(C.gold)} onClick={()=>{setError(null);setScanning(true);}}>
+      {status === "found" && (
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:"32px",marginBottom:"12px"}}>✓</div>
+          <div style={{fontSize:"14px",color:C.green}}>Produit trouvé !</div>
+        </div>
+      )}
+
+      {status === "error" && (
+        <div style={{textAlign:"center",padding:"0 20px"}}>
+          <div style={{fontSize:"32px",marginBottom:"16px"}}>⚠️</div>
+          <div style={{fontSize:"13px",color:C.red,marginBottom:"20px",lineHeight:"1.6"}}>{error}</div>
+          <button style={{...css.btn(C.gold),marginBottom:"8px"}} onClick={()=>{setStatus("requesting");setError(null);}}>
             Réessayer
           </button>
         </div>
       )}
 
-      {!scanning && !error && (
-        <div style={{fontSize:"13px",color:C.green,marginBottom:"16px"}}>Produit trouvé !</div>
+      {status !== "found" && (
+        <button style={{...css.btnSec,marginTop:"24px",width:"200px"}} onClick={onClose}>
+          Annuler
+        </button>
       )}
-
-      <button style={{...css.btnSec,marginTop:"16px",width:"200px"}} onClick={onClose}>
-        Annuler
-      </button>
     </div>
   );
 }
