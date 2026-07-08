@@ -1530,8 +1530,8 @@ function ViewJour() {
               </div>
               {getSavedFoods().length === 0 ? (
                 <div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:"12px"}}>
-                  Aucun aliment enregistré.{"
-"}Scanne un produit et coche "Enregistrer cet aliment".
+                  <div>Aucun aliment enregistré.</div>
+                  <div style={{marginTop:"4px"}}>Scanne un produit et coche "Enregistrer cet aliment".</div>
                 </div>
               ) : getSavedFoods().map((food,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:"12px",marginBottom:"8px"}}>
