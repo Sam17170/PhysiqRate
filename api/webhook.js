@@ -15,23 +15,56 @@ async function verifyStripeSignature(body, signature, secret) {
   return hex === v1;
 }
 
-async function upsertUser(email, isPro, stripeCustomerId = null, sessionId = null) {
+async function upsertUserSQL(email, isPro, stripeCustomerId = null, sessionId = null) {
   if (!email) return;
-  const body = { email, is_pro: isPro };
-  if (stripeCustomerId) body.stripe_customer_id = stripeCustomerId;
-  if (sessionId) body.stripe_session_id = sessionId;
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
+  // Utilise l'API SQL de Supabase pour un vrai ON CONFLICT
+  const sql = `
+    INSERT INTO users (email, is_pro, stripe_customer_id, stripe_session_id)
+    VALUES ('${email.replace(/'/g, "''")}', ${isPro}, ${stripeCustomerId ? `'${stripeCustomerId}'` : 'NULL'}, ${sessionId ? `'${sessionId}'` : 'NULL'})
+    ON CONFLICT (email)
+    DO UPDATE SET is_pro = ${isPro}${stripeCustomerId ? `, stripe_customer_id = '${stripeCustomerId}'` : ''}${sessionId ? `, stripe_session_id = '${sessionId}'` : ''};
+  `;
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "apikey": SUPABASE_SERVICE,
-      "Authorization": `Bearer ${SUPABASE_SERVICE}`,
-      "Prefer": "resolution=merge-duplicates,return=minimal"
+      "Authorization": `Bearer ${SUPABASE_SERVICE}`
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ sql })
   });
-  return res.status;
+
+  // Fallback — essaie aussi via l'API REST standard
+  if (!res.ok) {
+    // Tente d'abord un PATCH (update)
+    const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_SERVICE,
+        "Authorization": `Bearer ${SUPABASE_SERVICE}`,
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify({ is_pro: isPro, stripe_customer_id: stripeCustomerId, stripe_session_id: sessionId })
+    });
+
+    // Si aucune ligne mise à jour, fait un INSERT
+    const patchText = await patchRes.text();
+    if (patchRes.status === 200 && patchText === '') {
+      await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_SERVICE,
+          "Authorization": `Bearer ${SUPABASE_SERVICE}`,
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({ email, is_pro: isPro, stripe_customer_id: stripeCustomerId, stripe_session_id: sessionId })
+      });
+    }
+  }
 }
 
 export default async function handler(req) {
@@ -52,7 +85,7 @@ export default async function handler(req) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     const email = session.customer_details?.email || session.customer_email;
-    await upsertUser(email, true, session.customer, session.id);
+    if (email) await upsertUserSQL(email, true, session.customer, session.id);
   }
 
   if (event.type === "customer.subscription.deleted") {
@@ -62,7 +95,7 @@ export default async function handler(req) {
         headers: { "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}` }
       });
       const customer = await custRes.json();
-      await upsertUser(customer.email, false);
+      if (customer.email) await upsertUserSQL(customer.email, false);
     } catch {}
   }
 
