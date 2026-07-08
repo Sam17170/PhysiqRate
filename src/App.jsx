@@ -1298,21 +1298,17 @@ function ViewAnalyze({ premium }) {
     // Handle Stripe success redirect
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
-      const sessionId = params.get("session_id");
-      if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
-      localStorage.setItem("pq_premium", "true");
+      // Nettoie l'URL
       window.history.replaceState({}, "", window.location.pathname);
-      setPremiumState(true);
-
-      // Récupère l'email depuis la session Stripe et ouvre la modal de création de compte
+      // Récupère l'email Stripe et ouvre la modal de création de compte
+      const sessionId = localStorage.getItem("pq_stripe_session");
       if (sessionId) {
         fetch("/api/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId })
         }).then(r => r.json()).then(data => {
-          const stripeEmail = data.email || "unknown";
-          setPostPaymentEmail(stripeEmail);
+          setPostPaymentEmail(data.email || "unknown");
           setShowPostPayment(true);
         }).catch(() => {
           setPostPaymentEmail("unknown");
@@ -2625,9 +2621,10 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
 export default function App() {
   const [view, setView] = useState("analyser");
   const [premium, setPremiumState] = useState(() => {
-    // Vérifie les params URL avant d'initialiser (retour Stripe)
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
+      const sessionId = params.get("session_id");
+      if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
       localStorage.setItem("pq_premium", "true");
       return true;
     }
