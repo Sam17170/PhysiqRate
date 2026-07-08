@@ -1802,29 +1802,13 @@ function ViewProfil() {
         <div style={{fontSize:"12px",color:"#555",marginBottom:"14px",lineHeight:"1.5"}}>
           Analyses illimitées · Scans nutrition illimités · Historique complet
         </div>
-        <button
-          onClick={async()=>{
-            const sessionId = localStorage.getItem("pq_stripe_session");
-            if (!sessionId) {
-              alert("Pour gérer ton abonnement, contacte-nous à support@physiqrate.com");
-              return;
-            }
-            try {
-              const res = await fetch("/api/portal", {
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({sessionId})
-              });
-              const data = await res.json();
-              if (data.url) window.location.href = data.url;
-              else alert("Erreur — contacte support@physiqrate.com");
-            } catch {
-              alert("Erreur de connexion. Réessaie.");
-            }
-          }}
-          style={{...css.btnSec,marginBottom:"4px"}}>
+        <a
+          href="https://billing.stripe.com/p/login/dRm5kFdx61v70SadROaEE00"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{...css.btnSec,marginBottom:"4px",display:"block",textDecoration:"none",textAlign:"center"}}>
           Gérer mon abonnement
-        </button>
+        </a>
         <div style={{fontSize:"11px",color:"#333",textAlign:"center"}}>
           Modifier ta carte · Annuler à tout moment
         </div>
