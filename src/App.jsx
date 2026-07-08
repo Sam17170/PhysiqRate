@@ -623,6 +623,147 @@ function PWABanner({ onDismiss }) {
   );
 }
 
+
+// ─── BARCODE SCANNER ──────────────────────────────────────────────────────────
+function BarcodeScanner({ onResult, onClose }) {
+  const scannerRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [scanning, setScanning] = useState(true);
+
+  useEffect(() => {
+    let scanner;
+    const loadScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.esm.min.js");
+        scanner = new Html5Qrcode("qr-reader");
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 150 } },
+          async (code) => {
+            await scanner.stop();
+            setScanning(false);
+            // Fetch from Open Food Facts
+            try {
+              const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+              const data = await res.json();
+              if (data.status === 1 && data.product) {
+                const p = data.product;
+                const per100 = p.nutriments || {};
+                onResult({
+                  name: p.product_name || p.product_name_fr || "Produit scanné",
+                  brand: p.brands || "",
+                  calories: Math.round(per100["energy-kcal_100g"] || per100["energy-kcal"] || 0),
+                  protein: Math.round(per100["proteins_100g"] || 0),
+                  carbs: Math.round(per100["carbohydrates_100g"] || 0),
+                  fat: Math.round(per100["fat_100g"] || 0),
+                  per: 100,
+                });
+              } else {
+                setError("Produit non trouvé dans la base de données.");
+                setScanning(false);
+              }
+            } catch {
+              setError("Erreur lors de la recherche du produit.");
+              setScanning(false);
+            }
+          },
+          () => {}
+        );
+      } catch (err) {
+        setError("Impossible d'accéder à la caméra.");
+      }
+    };
+    loadScanner();
+    return () => { if (scanner) scanner.stop().catch(()=>{}); };
+  }, []);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:300,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>SCANNER UN PRODUIT</div>
+
+      {scanning && !error && (
+        <>
+          <div id="qr-reader" ref={scannerRef} style={{width:"300px",borderRadius:"14px",overflow:"hidden",border:`2px solid ${C.gold}`}}/>
+          <div style={{fontSize:"12px",color:"#555",marginTop:"14px",textAlign:"center"}}>
+            Place le code-barres dans le cadre
+          </div>
+        </>
+      )}
+
+      {error && (
+        <div style={{textAlign:"center",padding:"20px"}}>
+          <div style={{fontSize:"13px",color:C.red,marginBottom:"16px"}}>{error}</div>
+          <button style={css.btn(C.gold)} onClick={()=>{setError(null);setScanning(true);}}>
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {!scanning && !error && (
+        <div style={{fontSize:"13px",color:C.green,marginBottom:"16px"}}>Produit trouvé !</div>
+      )}
+
+      <button style={{...css.btnSec,marginTop:"16px",width:"200px"}} onClick={onClose}>
+        Annuler
+      </button>
+    </div>
+  );
+}
+
+// ─── PRODUCT QUANTITY MODAL ────────────────────────────────────────────────────
+function ProductModal({ product, onConfirm, onClose }) {
+  const [quantity, setQuantity] = useState("100");
+
+  const q = parseFloat(quantity) || 100;
+  const factor = q / 100;
+  const cal = Math.round(product.calories * factor);
+  const prot = Math.round(product.protein * factor);
+  const carb = Math.round(product.carbs * factor);
+  const fat = Math.round(product.fat * factor);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"20px"}}>
+      <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"24px",width:"100%",maxWidth:"420px",marginBottom:"10px"}}>
+        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"12px"}}>PRODUIT SCANNÉ</div>
+        <div style={{fontSize:"16px",fontWeight:"700",marginBottom:"4px"}}>{product.name}</div>
+        {product.brand && <div style={{fontSize:"12px",color:"#555",marginBottom:"16px"}}>{product.brand}</div>}
+
+        <div style={{fontSize:"11px",color:C.muted,marginBottom:"6px"}}>Quantité consommée (g)</div>
+        <input
+          type="number"
+          value={quantity}
+          onChange={e=>setQuantity(e.target.value)}
+          style={{...css.input,fontSize:"20px",fontWeight:"700",textAlign:"center",marginBottom:"16px"}}
+        />
+
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"20px"}}>
+          {[{val:cal,label:"KCAL",color:C.gold},{val:`${prot}g`,label:"PROT.",color:"#7DF9FF"},{val:`${carb}g`,label:"GLUC.",color:"#FFB347"},{val:`${fat}g`,label:"LIP.",color:"#FF8C69"}].map((m,i)=>(
+            <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"10px",padding:"8px",textAlign:"center"}}>
+              <div style={{fontSize:"15px",fontWeight:"800",color:m.color}}>{m.val}</div>
+              <div style={{fontSize:"9px",color:C.muted,marginTop:"2px"}}>{m.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{fontSize:"10px",color:"#333",marginBottom:"16px",textAlign:"center"}}>
+          Valeurs pour {quantity || 0}g · Base : {product.calories} kcal/100g
+        </div>
+
+        <button style={{...css.btn(C.gold),marginBottom:"8px"}} onClick={()=>onConfirm({
+          name: product.name,
+          calories: cal,
+          protein: prot,
+          carbs: carb,
+          fat: fat,
+        })}>
+          Ajouter au journal
+        </button>
+        <button style={css.btnSec} onClick={onClose}>Annuler</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── MACRO EDITOR ─────────────────────────────────────────────────────────────
 function MacroEditor({ targets, custom, onSave }) {
   const init = custom || { protein: targets.protein, carbs: targets.carbs, fat: targets.fat };
@@ -1057,6 +1198,8 @@ function ViewJour() {
   const [journal, setJournal] = useState(getTodayJournal());
   const [showMealForm, setShowMealForm] = useState(false);
   const [showSessionForm, setShowSessionForm] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannedProduct, setScannedProduct] = useState(null);
   const [mealForm, setMealForm] = useState({ name:"", calories:"", protein:"", carbs:"", fat:"" });
   const [sessionForm, setSessionForm] = useState({ type:"", duration:"60" });
   const [toast, setToast] = useState({ visible:false, message:"" });
@@ -1112,6 +1255,30 @@ function ViewJour() {
   return (
     <div style={{width:"100%",maxWidth:"420px"}}>
       <Toast message={toast.message} visible={toast.visible}/>
+
+      {showScanner && (
+        <BarcodeScanner
+          onResult={(product) => {
+            setShowScanner(false);
+            setScannedProduct(product);
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
+      {scannedProduct && (
+        <ProductModal
+          product={scannedProduct}
+          onConfirm={(meal) => {
+            const now = new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+            const updated = { ...journal, meals: [...journal.meals, {...meal, time:now, detail:"Code-barres"}] };
+            save(updated);
+            showToast(`${meal.name} ajouté — ${meal.calories} kcal`);
+            setScannedProduct(null);
+          }}
+          onClose={() => setScannedProduct(null)}
+        />
+      )}
 
       {/* Invitation profil si incomplet */}
       {!profileComplete && (
@@ -1213,7 +1380,7 @@ function ViewJour() {
           <div style={formStyle}>
             <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"10px"}}>NOUVEAU REPAS</div>
             <div style={{display:"flex",gap:"8px",marginBottom:"8px"}}>
-              <button style={{flex:1,padding:"10px",borderRadius:"10px",border:`1.5px dashed rgba(255,215,0,0.3)`,background:"transparent",color:C.gold,fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>alert("Scanner code-barres — disponible bientôt")}>
+              <button style={{flex:1,padding:"10px",borderRadius:"10px",border:`1.5px solid rgba(255,215,0,0.3)`,background:"rgba(255,215,0,0.06)",color:C.gold,fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setShowMealForm(false);setShowScanner(true);}}>
                 Scanner un code-barres
               </button>
             </div>
