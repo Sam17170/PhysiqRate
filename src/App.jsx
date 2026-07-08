@@ -151,6 +151,20 @@ function recordNutritionScan() {
 }
 
 function getHistory() { return get(keys.history) || []; }
+function getSavedFoods() { return get("pq_saved_foods") || []; }
+function saveFoodToList(food) {
+  const list = getSavedFoods();
+  // Évite les doublons par nom
+  const exists = list.find(f => f.name.toLowerCase() === food.name.toLowerCase());
+  if (!exists) {
+    list.unshift({ ...food, savedAt: new Date().toISOString() });
+    set("pq_saved_foods", list.slice(0, 50)); // max 50 aliments
+  }
+}
+function removeSavedFood(name) {
+  const list = getSavedFoods().filter(f => f.name !== name);
+  set("pq_saved_foods", list);
+}
 function addToHistory(entry) {
   const h = getHistory();
   h.unshift({ ...entry, date: new Date().toISOString() });
@@ -811,31 +825,36 @@ function BarcodeScanner({ onResult, onClose }) {
 
 function ProductModal({ product, onConfirm, onClose }) {
   const [quantity, setQuantity] = useState("100");
+  const [saveFood, setSaveFood] = useState(!getSavedFoods().find(f => f.name === product.name));
 
   const q = parseFloat(quantity) || 100;
   const factor = q / 100;
   const cal = Math.round(product.calories * factor);
   const prot = Math.round(product.protein * factor);
   const carb = Math.round(product.carbs * factor);
-  const fat = Math.round(product.fat * factor);
+  const fat2 = Math.round(product.fat * factor);
+
+  const alreadySaved = !!getSavedFoods().find(f => f.name === product.name);
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"24px",width:"100%",maxWidth:"420px",marginBottom:"10px"}}>
-        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"12px"}}>PRODUIT SCANNÉ</div>
+        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"12px"}}>
+          {product.brand ? "PRODUIT SCANNÉ" : "ALIMENT"}
+        </div>
         <div style={{fontSize:"16px",fontWeight:"700",marginBottom:"4px"}}>{product.name}</div>
-        {product.brand && <div style={{fontSize:"12px",color:"#555",marginBottom:"16px"}}>{product.brand}</div>}
+        {product.brand && <div style={{fontSize:"12px",color:"#555",marginBottom:"12px"}}>{product.brand}</div>}
 
         <div style={{fontSize:"11px",color:C.muted,marginBottom:"6px"}}>Quantité consommée (g)</div>
         <input
           type="number"
           value={quantity}
           onChange={e=>setQuantity(e.target.value)}
-          style={{...css.input,fontSize:"20px",fontWeight:"700",textAlign:"center",marginBottom:"16px"}}
+          style={{...css.input,fontSize:"20px",fontWeight:"700",textAlign:"center",marginBottom:"12px"}}
         />
 
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"20px"}}>
-          {[{val:cal,label:"KCAL",color:C.gold},{val:`${prot}g`,label:"PROT.",color:"#7DF9FF"},{val:`${carb}g`,label:"GLUC.",color:"#FFB347"},{val:`${fat}g`,label:"LIP.",color:"#FF8C69"}].map((m,i)=>(
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"14px"}}>
+          {[{val:cal,label:"KCAL",color:C.gold},{val:`${prot}g`,label:"PROT.",color:"#7DF9FF"},{val:`${carb}g`,label:"GLUC.",color:"#FFB347"},{val:`${fat2}g`,label:"LIP.",color:"#FF8C69"}].map((m,i)=>(
             <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"10px",padding:"8px",textAlign:"center"}}>
               <div style={{fontSize:"15px",fontWeight:"800",color:m.color}}>{m.val}</div>
               <div style={{fontSize:"9px",color:C.muted,marginTop:"2px"}}>{m.label}</div>
@@ -843,17 +862,36 @@ function ProductModal({ product, onConfirm, onClose }) {
           ))}
         </div>
 
-        <div style={{fontSize:"10px",color:"#333",marginBottom:"16px",textAlign:"center"}}>
+        <div style={{fontSize:"10px",color:"#333",marginBottom:"14px",textAlign:"center"}}>
           Valeurs pour {quantity || 0}g · Base : {product.calories} kcal/100g
         </div>
 
-        <button style={{...css.btn(C.gold),marginBottom:"8px"}} onClick={()=>onConfirm({
-          name: product.name,
-          calories: cal,
-          protein: prot,
-          carbs: carb,
-          fat: fat,
-        })}>
+        {/* Option sauvegarder */}
+        {!alreadySaved && (
+          <div
+            onClick={()=>setSaveFood(!saveFood)}
+            style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 12px",background:"rgba(255,255,255,0.03)",borderRadius:"10px",marginBottom:"14px",cursor:"pointer",border:`1px solid ${saveFood?"rgba(125,249,170,0.3)":C.border}`}}>
+            <div style={{width:"20px",height:"20px",borderRadius:"6px",border:`1.5px solid ${saveFood?C.green:C.border}`,background:saveFood?"rgba(125,249,170,0.15)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              {saveFood && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+            </div>
+            <div>
+              <div style={{fontSize:"12px",fontWeight:"600",color:saveFood?C.green:"#aaa"}}>Enregistrer cet aliment</div>
+              <div style={{fontSize:"10px",color:"#444"}}>Accessible rapidement la prochaine fois</div>
+            </div>
+          </div>
+        )}
+
+        {alreadySaved && (
+          <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 12px",background:"rgba(125,249,170,0.05)",borderRadius:"10px",marginBottom:"14px",border:"1px solid rgba(125,249,170,0.15)"}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span style={{fontSize:"11px",color:C.green}}>Déjà dans tes aliments enregistrés</span>
+          </div>
+        )}
+
+        <button style={{...css.btn(C.gold),marginBottom:"8px"}} onClick={()=>{
+          if (saveFood && !alreadySaved) saveFoodToList({ name:product.name, brand:product.brand, calories:product.calories, protein:product.protein, carbs:product.carbs, fat:product.fat });
+          onConfirm({ name:product.name, calories:cal, protein:prot, carbs:carb, fat:fat2 });
+        }}>
           Ajouter au journal
         </button>
         <button style={css.btnSec} onClick={onClose}>Annuler</button>
@@ -1473,6 +1511,23 @@ function ViewJour() {
             <div style={{fontSize:"13px",color:C.gold,fontWeight:"700"}}>{meal.calories} kcal</div>
           </div>
         ))}
+
+        {/* Aliments enregistrés */}
+        {getSavedFoods().length > 0 && !showMealForm && !showScanner && (
+          <div style={{marginBottom:"10px"}}>
+            <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",marginBottom:"8px"}}>MES ALIMENTS</div>
+            <div style={{display:"flex",gap:"8px",overflowX:"auto",paddingBottom:"4px"}}>
+              {getSavedFoods().slice(0,10).map((food,i)=>(
+                <div key={i}
+                  onClick={()=>setScannedProduct(food)}
+                  style={{flexShrink:0,padding:"8px 12px",background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:"10px",cursor:"pointer",minWidth:"120px"}}>
+                  <div style={{fontSize:"12px",fontWeight:"600",color:C.text,marginBottom:"2px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"140px"}}>{food.name}</div>
+                  <div style={{fontSize:"10px",color:C.muted}}>{food.calories} kcal/100g</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {showMealForm ? (
           <div style={formStyle}>
