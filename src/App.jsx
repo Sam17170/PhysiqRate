@@ -976,18 +976,30 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
           </>
         )}
 
-        {/* Email toujours éditable — Apple Pay peut avoir un email différent */}
-        <span style={css.label}>Email</span>
-        <input style={css.input} type="email"
-          value={email}
-          onChange={e=>setEmail(e.target.value)}
-          autoCapitalize="none"
-          placeholder="ton@email.com"
-        />
-        {!needsEmail && (
-          <div style={{fontSize:"11px",color:"#444",marginTop:"4px",marginBottom:"8px"}}>
-            Email utilisé pour le paiement — modifie si nécessaire
-          </div>
+        {/* Email verrouillé sur celui du paiement Stripe */}
+        {needsEmail ? (
+          <>
+            <span style={css.label}>Email</span>
+            <input style={css.input} type="email"
+              value={email}
+              onChange={e=>setEmail(e.target.value)}
+              autoCapitalize="none"
+              placeholder="ton@email.com"
+            />
+          </>
+        ) : (
+          <>
+            <div style={{background:"rgba(255,215,0,0.06)",border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"12px",padding:"12px 14px",marginBottom:"8px"}}>
+              <div style={{fontSize:"10px",color:C.gold,letterSpacing:"1px",marginBottom:"4px"}}>EMAIL DE PAIEMENT</div>
+              <div style={{fontSize:"14px",fontWeight:"700"}}>{email}</div>
+              <div style={{fontSize:"11px",color:"#555",marginTop:"4px",lineHeight:"1.5"}}>
+                Ton compte sera créé avec l'email utilisé lors du paiement. C'est lui qui garantit ton accès Pro.
+              </div>
+            </div>
+            <div style={{fontSize:"11px",color:"#444",marginBottom:"8px",lineHeight:"1.5"}}>
+              Si tu as payé avec Apple Pay, l'email ci-dessus est celui de ton compte Apple.
+            </div>
+          </>
         )}
 
         <span style={css.label}>Choisis un mot de passe</span>
