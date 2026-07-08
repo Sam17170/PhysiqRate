@@ -903,29 +903,29 @@ function ProductModal({ product, onConfirm, onClose }) {
 
 
 // ─── POST PAYMENT ACCOUNT MODAL ───────────────────────────────────────────────
-function PostPaymentModal({ email, sessionId, onSuccess }) {
+function PostPaymentModal({ email: initialEmail, onSuccess }) {
+  const [email, setEmail] = useState(initialEmail === "unknown" ? "" : initialEmail);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const needsEmail = initialEmail === "unknown";
 
   async function handleCreate() {
+    if (needsEmail && !email) { setError("Entre ton email de paiement."); return; }
     if (!password || password.length < 6) { setError("Minimum 6 caractères."); return; }
     setLoading(true); setError(null);
 
     try {
-      // Crée le compte
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "signup", email, password })
       });
       const data = await res.json();
-
-      if (data.error && !data.error.includes("already")) {
+      if (data.error && !data.error.toLowerCase().includes("already")) {
         setError(data.error); setLoading(false); return;
       }
 
-      // Connecte-le
       const loginRes = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -949,37 +949,39 @@ function PostPaymentModal({ email, sessionId, onSuccess }) {
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",backdropFilter:"blur(10px)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
-        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>PAIEMENT CONFIRMÉ</div>
-        <div style={{fontSize:"22px",fontWeight:"800",marginBottom:"8px"}}>Crée ton compte Pro</div>
+        <div style={{fontSize:"28px",marginBottom:"12px"}}>🎉</div>
+        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"12px"}}>PAIEMENT CONFIRMÉ</div>
+        <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"8px"}}>Bienvenue dans le Pro !</div>
         <div style={{fontSize:"13px",color:"#555",marginBottom:"24px",lineHeight:"1.6"}}>
-          Pour accéder à ton Pro sur tous tes appareils, crée ton compte avec l'email utilisé pour le paiement.
+          Crée ton compte pour accéder à ton Pro sur tous tes appareils.
         </div>
 
-        <div style={{background:"rgba(255,255,255,0.03)",borderRadius:"10px",padding:"10px 14px",marginBottom:"16px",textAlign:"left"}}>
-          <div style={{fontSize:"10px",color:C.muted,marginBottom:"3px"}}>EMAIL</div>
-          <div style={{fontSize:"13px",fontWeight:"600"}}>{email}</div>
-        </div>
+        {needsEmail && (
+          <>
+            <span style={css.label}>Email utilisé pour le paiement</span>
+            <input style={css.input} type="email" placeholder="ton@email.com"
+              value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none"/>
+          </>
+        )}
+
+        {!needsEmail && (
+          <div style={{background:"rgba(255,215,0,0.06)",border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"10px",padding:"10px 14px",marginBottom:"16px",textAlign:"left"}}>
+            <div style={{fontSize:"10px",color:C.muted,marginBottom:"3px"}}>EMAIL</div>
+            <div style={{fontSize:"13px",fontWeight:"600"}}>{email}</div>
+          </div>
+        )}
 
         <span style={css.label}>Choisis un mot de passe</span>
-        <input
-          style={css.input}
-          type="password"
-          placeholder="6 caractères minimum"
-          value={password}
-          onChange={e=>setPassword(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&handleCreate()}
-          autoFocus
-        />
+        <input style={css.input} type="password" placeholder="6 caractères minimum"
+          value={password} onChange={e=>setPassword(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&handleCreate()} autoFocus={!needsEmail}/>
 
-        {error && <div style={{fontSize:"12px",color:C.red,marginTop:"8px"}}>{error}</div>}
+        {error && <div style={{fontSize:"12px",color:C.red,marginTop:"8px",lineHeight:"1.5"}}>{error}</div>}
 
         <button style={{...css.btn(C.gold),marginTop:"18px",opacity:loading?0.6:1}} onClick={handleCreate} disabled={loading}>
-          {loading ? "Création du compte…" : "Créer mon compte et accéder au Pro"}
+          {loading ? "Création…" : "Créer mon compte Pro"}
         </button>
-
-        <div style={{fontSize:"11px",color:"#333",marginTop:"10px"}}>
-          Ton accès Pro sera immédiatement activé
-        </div>
+        <div style={{fontSize:"11px",color:"#333",marginTop:"10px"}}>Accès Pro immédiat sur tous tes appareils</div>
       </div>
     </div>
   );
@@ -1007,7 +1009,24 @@ function AuthModal({ onSuccess, onClose }) {
       });
       const data = await res.json();
 
-      if (data.error) { setError(data.error); setLoading(false); return; }
+      if (data.error) {
+        // Message clair si compte inexistant
+        const msg = data.error.toLowerCase();
+        if (msg.includes("invalid") || msg.includes("not found") || msg.includes("credentials")) {
+          if (mode === "login") {
+            setError("Ce compte n'existe pas. Crée ton compte ci-dessous.");
+            setMode("signup");
+          } else {
+            setError(data.error);
+          }
+        } else if (msg.includes("already") || msg.includes("existe")) {
+          setError("Un compte existe déjà avec cet email. Connecte-toi.");
+          setMode("login");
+        } else {
+          setError(data.error);
+        }
+        setLoading(false); return;
+      }
 
       // Sauvegarde token et email
       localStorage.setItem("pq_token", data.token);
@@ -1059,11 +1078,31 @@ function AuthModal({ onSuccess, onClose }) {
               {loading ? "Chargement…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
             </button>
 
-            <div style={{textAlign:"center",marginTop:"12px"}}>
+            <div style={{textAlign:"center",marginTop:"12px",display:"flex",flexDirection:"column",gap:"8px"}}>
               <button style={{background:"transparent",border:"none",color:"#555",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
-                onClick={()=>{setMode(mode==="login"?"signup":"login");setError(null);}}>
+                onClick={()=>{setMode(mode==="login"?"signup":"login");setError(null);setSuccess(null);}}>
                 {mode === "login" ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
               </button>
+              {mode === "login" && (
+                <button style={{background:"transparent",border:"none",color:"#333",fontSize:"11px",cursor:"pointer",fontFamily:"inherit"}}
+                  onClick={async()=>{
+                    if (!email) { setError("Entre ton email pour recevoir le lien."); return; }
+                    setLoading(true); setError(null);
+                    try {
+                      const res = await fetch("/api/auth", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "reset", email })
+                      });
+                      const data = await res.json();
+                      if (data.error) { setError(data.error); }
+                      else { setSuccess("Lien de réinitialisation envoyé. Vérifie ta boîte mail."); }
+                    } catch { setError("Erreur réseau."); }
+                    setLoading(false);
+                  }}>
+                  Mot de passe oublié ?
+                </button>
+              )}
             </div>
           </>
         )}
@@ -1169,25 +1208,36 @@ function ViewAnalyze({ premium }) {
     if (params.get("success") === "true") {
       const sessionId = params.get("session_id");
       if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
-      setPremium(true); setPremiumState(true);
+      // Active le Pro immédiatement
+      set(keys.premium, true);
+      // Nettoie l'URL sans recharger
       window.history.replaceState({}, "", window.location.pathname);
+      // Force re-render propre
+      setPremiumState(true);
 
-      // Si pas encore de compte → affiche la modal de création de compte
+      // Affiche modal création de compte si pas connecté
       const token = localStorage.getItem("pq_token");
-      if (!token) {
-        // Récupère l'email depuis la session Stripe
-        if (sessionId) {
+      if (!token && sessionId) {
+        setTimeout(() => {
           fetch("/api/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ sessionId })
           }).then(r=>r.json()).then(data=>{
-            if (data.email) {
-              setPostPaymentEmail(data.email);
+            const email = data.email;
+            if (email) {
+              setPostPaymentEmail(email);
+              setShowPostPayment(true);
+            } else {
+              // Fallback — demande l'email manuellement
+              setPostPaymentEmail("unknown");
               setShowPostPayment(true);
             }
-          }).catch(()=>{});
-        }
+          }).catch(()=>{
+            setPostPaymentEmail("unknown");
+            setShowPostPayment(true);
+          });
+        }, 800);
       }
     }
     if (params.get("canceled") === "true") {
@@ -2521,25 +2571,36 @@ export default function App() {
     if (params.get("success") === "true") {
       const sessionId = params.get("session_id");
       if (sessionId) localStorage.setItem("pq_stripe_session", sessionId);
-      setPremium(true); setPremiumState(true);
+      // Active le Pro immédiatement
+      set(keys.premium, true);
+      // Nettoie l'URL sans recharger
       window.history.replaceState({}, "", window.location.pathname);
+      // Force re-render propre
+      setPremiumState(true);
 
-      // Si pas encore de compte → affiche la modal de création de compte
+      // Affiche modal création de compte si pas connecté
       const token = localStorage.getItem("pq_token");
-      if (!token) {
-        // Récupère l'email depuis la session Stripe
-        if (sessionId) {
+      if (!token && sessionId) {
+        setTimeout(() => {
           fetch("/api/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ sessionId })
           }).then(r=>r.json()).then(data=>{
-            if (data.email) {
-              setPostPaymentEmail(data.email);
+            const email = data.email;
+            if (email) {
+              setPostPaymentEmail(email);
+              setShowPostPayment(true);
+            } else {
+              // Fallback — demande l'email manuellement
+              setPostPaymentEmail("unknown");
               setShowPostPayment(true);
             }
-          }).catch(()=>{});
-        }
+          }).catch(()=>{
+            setPostPaymentEmail("unknown");
+            setShowPostPayment(true);
+          });
+        }, 800);
       }
     }
     if (params.get("canceled") === "true") {
@@ -2646,6 +2707,28 @@ export default function App() {
             setPostPaymentEmail(null);
           }}
         />
+      )}
+
+      {/* Bloque toute l'app si Pro payé sans compte */}
+      {premium && !user && !showPostPayment && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.97)",backdropFilter:"blur(10px)",zIndex:150,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+          <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
+            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>COMPTE REQUIS</div>
+            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"8px"}}>Crée ton compte Pro</div>
+            <div style={{fontSize:"13px",color:"#555",marginBottom:"24px",lineHeight:"1.6"}}>
+              Tu as souscrit à Physiqrate Pro. Crée ton compte pour accéder à tes analyses sur tous tes appareils.
+            </div>
+            <button style={css.btn(C.gold)} onClick={()=>setShowPostPayment(true)}>
+              Créer mon compte
+            </button>
+            <div style={{marginTop:"12px"}}>
+              <button style={{background:"transparent",border:"none",color:"#333",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
+                onClick={()=>setShowAuth(true)}>
+                J'ai déjà un compte — me connecter
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* NAV */}
