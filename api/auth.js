@@ -6,11 +6,22 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 export default async function handler(req) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const origin = req.headers.get("origin") || "https://physiqrate.com";
+  const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": origin };
 
   let body;
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
   const { action, email, password } = body;
+
+  // Réinitialisation mot de passe
+  if (action === "reset") {
+    await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON },
+      body: JSON.stringify({ email })
+    });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+  }
 
   const endpoint = action === "signup"
     ? `${SUPABASE_URL}/auth/v1/signup`
@@ -26,7 +37,7 @@ export default async function handler(req) {
 
   if (data.error || data.error_description) {
     const msg = data.error_description || data.error?.message || "Erreur d'authentification";
-    return new Response(JSON.stringify({ error: msg }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": origin } });
+    return new Response(JSON.stringify({ error: msg }), { status: 400, headers });
   }
 
   // Si signup réussi, crée l'entrée dans la table users
@@ -40,6 +51,6 @@ export default async function handler(req) {
 
   return new Response(JSON.stringify({
     token: data.access_token,
-    user: { email: data.user?.email || data.user?.email }
-  }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": origin } });
+    user: { email: data.user?.email }
+  }), { status: 200, headers });
 }
