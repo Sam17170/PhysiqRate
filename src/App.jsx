@@ -947,7 +947,7 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
   }
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",backdropFilter:"blur(10px)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",backdropFilter:"blur(10px)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
         <div style={{fontSize:"28px",marginBottom:"12px"}}>🎉</div>
         <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"12px"}}>PAIEMENT CONFIRMÉ</div>
@@ -1051,7 +1051,7 @@ function AuthModal({ onSuccess, onClose, blocking = false }) {
   }
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(10px)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",backdropFilter:"blur(10px)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
           <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px"}}>{mode === "login" ? "CONNEXION" : "CRÉER UN COMPTE"}</div>
