@@ -937,6 +937,17 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
       if (loginData.token) {
         localStorage.setItem("pq_token", loginData.token);
         localStorage.setItem("pq_email", email);
+
+        // Si email différent de l'email Stripe, transfère le Pro au bon email
+        const sessionId = localStorage.getItem("pq_stripe_session");
+        if (sessionId) {
+          await fetch("/api/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "transfer_pro", email, sessionId })
+          });
+        }
+
         onSuccess({ email, token: loginData.token });
       } else {
         setError("Erreur de connexion. Réessaie.");
