@@ -435,28 +435,113 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
   return <canvas ref={ref} style={{display:"none"}}/>;
 }
 
-function Paywall({ daysLeft, onClose, onActivate }) {
+const STRIPE_KEY = "pk_live_51Tqhv1RvX2XjC4owD0T32u2MRFIPduzrTsnnmM4J5Cy1GUlWzZXWh7YhHPAD2764ptAtR9bvohi0HMvI7tpEMkFE00DF7oM0Ol";
+
+async function redirectToCheckout(type) {
+  try {
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type })
+    });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else alert("Erreur de paiement. Réessaie.");
+  } catch {
+    alert("Erreur de connexion. Réessaie.");
+  }
+}
+
+function Paywall({ daysLeft, onClose }) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleCheckout() {
+    setLoading(true);
+    await redirectToCheckout("subscription");
+    setLoading(false);
+  }
+
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
-      <div style={{background:"linear-gradient(135deg,#0f0f1a,#0a0a0f)",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"28px 20px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
-        <div style={{fontSize:"18px",fontWeight:"800",marginBottom:"6px"}}>Prochaine analyse gratuite</div>
-        <div style={{fontSize:"30px",fontWeight:"800",color:C.gold,marginBottom:"4px"}}>dans {daysLeft} jour{daysLeft>1?"s":""}</div>
-        <div style={{fontSize:"12px",color:C.muted,marginBottom:"24px"}}>ou débloque les analyses illimitées maintenant</div>
-        <div style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:"14px",padding:"16px",marginBottom:"10px",cursor:"pointer"}}
-          onClick={() => alert("Intègre Stripe ici — 1,99€")}>
-          <div style={{fontSize:"10px",color:C.sub,letterSpacing:"1px",marginBottom:"4px"}}>UNE ANALYSE IA</div>
-          <div style={{fontSize:"24px",fontWeight:"800"}}>1,99€</div>
-          <div style={{fontSize:"11px",color:C.muted,marginTop:"3px"}}>Sans engagement</div>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(10px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"28px",padding:"32px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
+
+        {/* Header */}
+        <div style={{fontSize:"11px",letterSpacing:"3px",color:C.gold,marginBottom:"14px",opacity:0.7}}>PHYSIQRATE PRO</div>
+        <div style={{fontSize:"22px",fontWeight:"800",marginBottom:"6px",lineHeight:"1.2"}}>Analyse ton physique sans limite</div>
+        <div style={{fontSize:"13px",color:"#666",marginBottom:"28px"}}>
+          {daysLeft > 0 ? `Prochaine analyse gratuite dans ${daysLeft} jour${daysLeft>1?"s":""}` : "Continue ta progression"}
         </div>
-        <div style={{background:`linear-gradient(135deg,${C.gold}15,${C.gold}08)`,border:`1px solid ${C.gold}44`,borderRadius:"14px",padding:"16px",marginBottom:"8px",cursor:"pointer",position:"relative"}}
-          onClick={onActivate}>
-          <div style={{position:"absolute",top:"-9px",left:"50%",transform:"translateX(-50%)",background:C.gold,color:"#000",fontSize:"9px",fontWeight:"800",padding:"2px 10px",borderRadius:"20px",whiteSpace:"nowrap"}}>MEILLEUR CHOIX</div>
-          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"1px",marginBottom:"4px"}}>PRO</div>
-          <div style={{fontSize:"24px",fontWeight:"800",color:C.gold}}>4,99€<span style={{fontSize:"13px",fontWeight:"400",color:C.sub}}>/mois</span></div>
-          <div style={{fontSize:"11px",color:C.muted,marginTop:"3px"}}>Analyses corporelles illimitées · Scans nutrition illimités</div>
+
+        {/* Features list */}
+        <div style={{background:"rgba(255,255,255,0.03)",borderRadius:"16px",padding:"16px",marginBottom:"24px",textAlign:"left"}}>
+          {[
+            ["Analyses corporelles illimitées", "Scan photo IA chaque semaine"],
+            ["Scans nutrition illimités", "Photo d'assiette · code-barres"],
+            ["Comparatif photos IA", "Vois ton évolution en détail"],
+            ["Historique complet", "Toutes tes données conservées"],
+          ].map(([title, sub], i) => (
+            <div key={i} style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:i<3?"12px":"0"}}>
+              <div style={{width:"20px",height:"20px",borderRadius:"50%",background:"rgba(125,249,170,0.15)",border:"1px solid rgba(125,249,170,0.3)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div style={{fontSize:"13px",fontWeight:"600",color:"white"}}>{title}</div>
+                <div style={{fontSize:"11px",color:"#555"}}>{sub}</div>
+              </div>
+            </div>
+          ))}
         </div>
-        <button style={{background:"transparent",border:"none",color:"#444",fontSize:"12px",cursor:"pointer",marginTop:"6px",fontFamily:"inherit"}} onClick={onClose}>
-          Attendre {daysLeft} jour{daysLeft>1?"s":""}
+
+        {/* Price */}
+        <div style={{marginBottom:"16px"}}>
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:"4px",marginBottom:"4px"}}>
+            <span style={{fontSize:"42px",fontWeight:"800",color:C.gold}}>4,99€</span>
+            <span style={{fontSize:"14px",color:"#555"}}>/mois</span>
+          </div>
+          <div style={{fontSize:"11px",color:"#444"}}>Résiliation à tout moment · Aucun engagement</div>
+        </div>
+
+        {/* CTA Button */}
+        <button
+          onClick={handleCheckout}
+          disabled={loading}
+          style={{width:"100%",padding:"16px",borderRadius:"14px",border:"none",background:loading?"#333":`linear-gradient(135deg,#FFD700,#FFA500)`,color:loading?"#666":"#000",fontSize:"15px",fontWeight:"800",cursor:loading?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:"12px",transition:"all 0.2s"}}>
+          {loading ? "Redirection…" : "Commencer maintenant"}
+        </button>
+
+        {/* Payment methods */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",marginBottom:"16px"}}>
+          {/* Apple Pay */}
+          <div style={{display:"flex",alignItems:"center",gap:"4px",background:"rgba(255,255,255,0.06)",borderRadius:"6px",padding:"4px 8px"}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#aaa"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            <span style={{fontSize:"10px",color:"#aaa"}}>Pay</span>
+          </div>
+          {/* Google Pay */}
+          <div style={{display:"flex",alignItems:"center",gap:"4px",background:"rgba(255,255,255,0.06)",borderRadius:"6px",padding:"4px 8px"}}>
+            <span style={{fontSize:"10px",color:"#aaa",fontWeight:"600"}}>G</span>
+            <span style={{fontSize:"10px",color:"#aaa"}}>Pay</span>
+          </div>
+          {/* Cards */}
+          <div style={{display:"flex",gap:"4px"}}>
+            <div style={{width:"24px",height:"16px",borderRadius:"3px",background:"#1a1f71",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{fontSize:"6px",color:"white",fontWeight:"800"}}>VISA</span>
+            </div>
+            <div style={{width:"24px",height:"16px",borderRadius:"3px",background:"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <div style={{display:"flex"}}>
+                <div style={{width:"9px",height:"9px",borderRadius:"50%",background:"#EB001B",opacity:0.9}}/>
+                <div style={{width:"9px",height:"9px",borderRadius:"50%",background:"#F79E1B",opacity:0.9,marginLeft:"-4px"}}/>
+              </div>
+            </div>
+          </div>
+          {/* Lock */}
+          <div style={{display:"flex",alignItems:"center",gap:"3px"}}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span style={{fontSize:"10px",color:"#444"}}>SSL</span>
+          </div>
+        </div>
+
+        <button style={{background:"transparent",border:"none",color:"#333",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}} onClick={onClose}>
+          Continuer sans Pro
         </button>
       </div>
     </div>
@@ -615,12 +700,23 @@ function ViewAnalyze({ premium }) {
       window._pwaInstallPrompt = e;
       setShowPWA(true);
     });
-    // Show banner after 30s on iOS (no beforeinstallprompt)
+    // Show banner after 30s on iOS
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
     const dismissed = localStorage.getItem("pq_pwa_dismissed");
     if (isIOS && !isStandalone && !dismissed) {
       setTimeout(() => setShowPWA(true), 30000);
+    }
+
+    // Handle Stripe success redirect
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") {
+      setPremium(true); setPremiumState(true);
+      window.history.replaceState({}, "", window.location.pathname);
+      setTimeout(() => alert("Bienvenue dans Physiqrate Pro ! Analyses illimitées activées."), 500);
+    }
+    if (params.get("canceled") === "true") {
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
   const [daysLeft, setDaysLeft] = useState(0);
@@ -677,14 +773,22 @@ function ViewAnalyze({ premium }) {
         return parts.length ? `\n\nUser profile:\n${parts.join("\n")}` : "";
       })();
 
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64, gender, age: resolvedAge, weight, profilePrompt })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      if (typeof data.bodyfat !== "number") throw new Error("Réponse invalide");
+      // SIMULATION PREVIEW — remplace par l'appel API réel sur Vercel
+      await new Promise(r => setTimeout(r, 2200));
+      const bf = gender === "male"
+        ? 10 + Math.floor(Math.random() * 10)
+        : 18 + Math.floor(Math.random() * 10);
+      const data = {
+        bodyfat: bf,
+        confidence: "medium",
+        confidence_reason: "Simulation locale — l'analyse IA réelle fonctionne sur Vercel",
+        key_indicators: [
+          "Abdominaux partiellement visibles",
+          "Légère couche de graisse sous-cutanée",
+          "Bonne masse musculaire de base"
+        ],
+        note: "Configure ton profil pour des recommandations personnalisées."
+      };
 
       const archetype = getArchetype(data.bodyfat, gender);
       const entry = { bodyfat: data.bodyfat, gender, age: resolvedAge, weight: parseFloat(weight)||null, archetype };
@@ -1305,6 +1409,58 @@ function ViewProgression({ premium, onShowPaywall }) {
   const [selected, setSelected] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
 
+  // Toute la progression est Pro
+  if (!premium) {
+    return (
+      <div style={{width:"100%",maxWidth:"420px"}}>
+        <div style={{position:"relative"}}>
+          {/* Teaser flouté */}
+          <div style={{filter:"blur(5px)",pointerEvents:"none",userSelect:"none"}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"12px"}}>
+              {[{val:"14%",label:"ACTUEL",color:"#7DF9AA"},{val:"−3%",label:"ÉVOLUTION",color:"#7DF9AA"},{val:"8",label:"ANALYSES"}].map((s,i)=>(
+                <div key={i} style={{background:"rgba(255,255,255,0.03)",borderRadius:"12px",padding:"12px",textAlign:"center"}}>
+                  <div style={{fontSize:"22px",fontWeight:"800",color:s.color||C.text}}>{s.val}</div>
+                  <div style={{fontSize:"9px",color:C.muted,marginTop:"3px"}}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{...css.card,marginBottom:"12px"}}>
+              <div style={css.cardTitle}>HISTORIQUE PHOTOS</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
+                {["#7DF9AA","#7DF9FF","#FFB347","#FFB347","#FF8C69","#FF6B6B"].map((color,i)=>(
+                  <div key={i} style={{aspectRatio:"3/4",background:"rgba(255,255,255,0.05)",borderRadius:"10px",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"6px 8px"}}>
+                    <div style={{fontSize:"14px",fontWeight:"800",color}}>{["14%","15%","17%","18%","19%","21%"][i]}</div>
+                    <div style={{fontSize:"9px",color:"#aaa"}}>{["30 juin","15 juin","1 juin","15 mai","1 mai","1 avr."][i]}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{...css.card}}>
+              <div style={css.cardTitle}>COURBE BODY FAT</div>
+              <svg width="100%" viewBox="0 0 340 80">
+                <path d="M20 65 L70 58 L120 50 L170 44 L220 38 L270 34 L320 28 L320 75 L20 75 Z" fill="rgba(125,249,170,0.1)"/>
+                <path d="M20 65 L70 58 L120 50 L170 44 L220 38 L270 34 L320 28" fill="none" stroke="#7DF9AA" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Overlay Pro */}
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(10,10,15,0.75)",backdropFilter:"blur(3px)",borderRadius:"20px",padding:"28px 20px",textAlign:"center"}}>
+            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"14px"}}>PHYSIQRATE PRO</div>
+            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"10px",lineHeight:"1.3"}}>Suis ta transformation</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px",lineHeight:"1.6"}}>Historique de tes photos</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px",lineHeight:"1.6"}}>Courbe de progression body fat</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"24px",lineHeight:"1.6"}}>Comparatif IA entre deux dates</div>
+            <button style={{...css.btn(C.gold),width:"auto",padding:"14px 28px",marginBottom:"8px",fontSize:"14px"}} onClick={onShowPaywall}>
+              Débloquer Pro — 4,99€/mois
+            </button>
+            <div style={{fontSize:"11px",color:"#333"}}>Résiliation à tout moment</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function togglePhoto(i) {
     if (selected.includes(i)) { setSelected(selected.filter(s=>s!==i)); return; }
     if (selected.length >= 2) { setSelected([selected[1], i]); return; }
@@ -1702,12 +1858,23 @@ export default function App() {
       window._pwaInstallPrompt = e;
       setShowPWA(true);
     });
-    // Show banner after 30s on iOS (no beforeinstallprompt)
+    // Show banner after 30s on iOS
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
     const dismissed = localStorage.getItem("pq_pwa_dismissed");
     if (isIOS && !isStandalone && !dismissed) {
       setTimeout(() => setShowPWA(true), 30000);
+    }
+
+    // Handle Stripe success redirect
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") {
+      setPremium(true); setPremiumState(true);
+      window.history.replaceState({}, "", window.location.pathname);
+      setTimeout(() => alert("Bienvenue dans Physiqrate Pro ! Analyses illimitées activées."), 500);
+    }
+    if (params.get("canceled") === "true") {
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
   const [daysLeft] = useState(3);
@@ -1744,7 +1911,7 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 
       {showPaywall && (
-        <Paywall daysLeft={daysLeft} onClose={()=>setShowPaywall(false)} onActivate={()=>{setPremium(true);setPremiumState(true);setShowPaywall(false);}}/>
+        <Paywall daysLeft={daysLeft} onClose={()=>setShowPaywall(false)}/>
       )}
 
       {showPWA && (
