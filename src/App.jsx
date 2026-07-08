@@ -1349,6 +1349,55 @@ function ViewAnalyze({ premium }) {
       window.history.replaceState({}, "", window.location.pathname);
     }
 
+    // Pull automatique des données si déjà connecté
+    const token = localStorage.getItem("pq_token");
+    if (token) {
+      const today = new Date().toISOString().slice(0,10);
+      syncPull(token, today).then(remote => {
+        if (!remote) return;
+        if (remote.profile) {
+          const p = remote.profile;
+          if (p.gender) localStorage.setItem("pq_gender", p.gender);
+          if (p.age) localStorage.setItem("pq_age", String(p.age));
+          if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
+          if (p.height) localStorage.setItem("pq_height", String(p.height));
+          if (p.goal) localStorage.setItem("pq_goal", p.goal);
+          if (p.activity) localStorage.setItem("pq_activity", p.activity);
+        }
+        if (remote.journal) {
+          const key = "pq_journal_" + today;
+          const local = JSON.parse(localStorage.getItem(key) || '{"meals":[],"steps":0,"sessions":[],"water":0}');
+          if ((remote.journal.meals?.length || 0) >= (local.meals?.length || 0)) {
+            localStorage.setItem(key, JSON.stringify({
+              meals: remote.journal.meals || [],
+              steps: remote.journal.steps || local.steps || 0,
+              sessions: remote.journal.sessions || local.sessions || [],
+              water: remote.journal.water || local.water || 0
+            }));
+          }
+        }
+        if (remote.analyses?.length > 0) {
+          const localHistory = JSON.parse(localStorage.getItem("pq_history") || "[]");
+          const merged = [...localHistory];
+          for (const a of remote.analyses) {
+            if (!merged.find(h => h.date === a.date && h.bodyfat === a.bodyfat)) {
+              merged.push({ date: a.date, bodyfat: a.bodyfat, weight: a.weight, note: a.note, confidence: a.confidence });
+            }
+          }
+          merged.sort((a,b) => b.date.localeCompare(a.date));
+          localStorage.setItem("pq_history", JSON.stringify(merged.slice(0,100)));
+        }
+        if (remote.savedFoods?.length > 0) {
+          const localFoods = JSON.parse(localStorage.getItem("pq_saved_foods") || "[]");
+          const merged = [...localFoods];
+          for (const f of remote.savedFoods) {
+            if (!merged.find(lf => lf.name === f.name)) merged.push(f);
+          }
+          localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
+        }
+      }).catch(() => {});
+    }
+
     // Vérifie le statut Pro via Supabase si connecté
     const verifyPro = async () => {
       const token = localStorage.getItem("pq_token");
@@ -2727,6 +2776,55 @@ export default function App() {
     }
     if (params.get("canceled") === "true") {
       window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    // Pull automatique des données si déjà connecté
+    const token = localStorage.getItem("pq_token");
+    if (token) {
+      const today = new Date().toISOString().slice(0,10);
+      syncPull(token, today).then(remote => {
+        if (!remote) return;
+        if (remote.profile) {
+          const p = remote.profile;
+          if (p.gender) localStorage.setItem("pq_gender", p.gender);
+          if (p.age) localStorage.setItem("pq_age", String(p.age));
+          if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
+          if (p.height) localStorage.setItem("pq_height", String(p.height));
+          if (p.goal) localStorage.setItem("pq_goal", p.goal);
+          if (p.activity) localStorage.setItem("pq_activity", p.activity);
+        }
+        if (remote.journal) {
+          const key = "pq_journal_" + today;
+          const local = JSON.parse(localStorage.getItem(key) || '{"meals":[],"steps":0,"sessions":[],"water":0}');
+          if ((remote.journal.meals?.length || 0) >= (local.meals?.length || 0)) {
+            localStorage.setItem(key, JSON.stringify({
+              meals: remote.journal.meals || [],
+              steps: remote.journal.steps || local.steps || 0,
+              sessions: remote.journal.sessions || local.sessions || [],
+              water: remote.journal.water || local.water || 0
+            }));
+          }
+        }
+        if (remote.analyses?.length > 0) {
+          const localHistory = JSON.parse(localStorage.getItem("pq_history") || "[]");
+          const merged = [...localHistory];
+          for (const a of remote.analyses) {
+            if (!merged.find(h => h.date === a.date && h.bodyfat === a.bodyfat)) {
+              merged.push({ date: a.date, bodyfat: a.bodyfat, weight: a.weight, note: a.note, confidence: a.confidence });
+            }
+          }
+          merged.sort((a,b) => b.date.localeCompare(a.date));
+          localStorage.setItem("pq_history", JSON.stringify(merged.slice(0,100)));
+        }
+        if (remote.savedFoods?.length > 0) {
+          const localFoods = JSON.parse(localStorage.getItem("pq_saved_foods") || "[]");
+          const merged = [...localFoods];
+          for (const f of remote.savedFoods) {
+            if (!merged.find(lf => lf.name === f.name)) merged.push(f);
+          }
+          localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
+        }
+      }).catch(() => {});
     }
 
     // Vérifie le statut Pro via Supabase si connecté
