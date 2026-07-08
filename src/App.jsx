@@ -1296,6 +1296,7 @@ function ViewAnalyze({ premium }) {
   const [shareUrl, setShareUrl] = useState(null);
   const [error, setError] = useState(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [syncVersion, setSyncVersion] = useState(0);
   const [showPWA, setShowPWA] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showPostPayment, setShowPostPayment] = useState(false);
@@ -1395,6 +1396,8 @@ function ViewAnalyze({ premium }) {
           }
           localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
         }
+        // Force re-render pour que les composants lisent le nouveau localStorage
+        setSyncVersion(v => v + 1);
       }).catch(() => {});
     }
 
@@ -2713,6 +2716,7 @@ export default function App() {
     return isPremium();
   });
   const [showPaywall, setShowPaywall] = useState(false);
+  const [syncVersion, setSyncVersion] = useState(0);
   const [showPWA, setShowPWA] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showPostPayment, setShowPostPayment] = useState(false);
@@ -2824,6 +2828,8 @@ export default function App() {
           }
           localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
         }
+        // Force re-render pour que les composants lisent le nouveau localStorage
+        setSyncVersion(v => v + 1);
       }).catch(() => {});
     }
 
@@ -3072,11 +3078,11 @@ export default function App() {
       </div>
 
       {/* VIEWS */}
-      {view === "analyser"    && <ViewAnalyze premium={premium}/>}
-      {view === "jour"        && <ViewJour/>}
-      {view === "historique"  && <ViewHistorique/>}
-      {view === "progression" && <ViewProgression premium={premium} onShowPaywall={()=>setShowPaywall(true)}/>}
-      {view === "profil"      && <ViewProfil user={user} premium={premium} onShowAuth={()=>setShowAuth(true)} setPremiumState={setPremiumState}/>}
+      {view === "analyser"    && <ViewAnalyze key={syncVersion} premium={premium}/>}
+      {view === "jour"        && <ViewJour key={syncVersion}/>}
+      {view === "historique"  && <ViewHistorique key={syncVersion}/>}
+      {view === "progression" && <ViewProgression key={syncVersion} premium={premium} onShowPaywall={()=>setShowPaywall(true)}/>}
+      {view === "profil"      && <ViewProfil key={syncVersion} user={user} premium={premium} onShowAuth={()=>setShowAuth(true)} setPremiumState={setPremiumState}/>}
     </div>
   );
 }
