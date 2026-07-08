@@ -1044,7 +1044,26 @@ function AuthModal({ onSuccess, onClose, blocking = false }) {
       localStorage.setItem("pq_email", email);
 
       if (mode === "signup") {
-        setSuccess("Compte créé ! Vérifie ton email pour confirmer.");
+        // Confirmation email désactivée — connecte directement
+        const loginRes = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "login", email, password })
+        });
+        const loginData = await loginRes.json();
+        if (loginData.token) {
+          localStorage.setItem("pq_token", loginData.token);
+          localStorage.setItem("pq_email", email);
+          const meRes = await fetch("/api/me", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: loginData.token })
+          });
+          const me = await meRes.json();
+          onSuccess({ email, is_pro: me.is_pro, token: loginData.token });
+        } else {
+          setError("Compte créé mais erreur de connexion. Réessaie.");
+        }
       } else {
         // Récupère statut Pro
         const meRes = await fetch("/api/me", {
@@ -2711,17 +2730,17 @@ export default function App() {
         <AuthModal
           onSuccess={({ email, is_pro, token }) => {
             setUser({ email });
-            if (is_pro) { setPremium(true); setPremiumState(true); }
-            // Si utilisateur Pro sans compte, marque comme Pro après connexion
-            if (premium && !is_pro) {
-              // Mise à jour Supabase
-              fetch("/api/me", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({token}) })
-                .then(r=>r.json()).then(d=>{ if(d.is_pro){ setPremium(true); setPremiumState(true); }});
+            if (is_pro) {
+              setPremium(true); setPremiumState(true);
+            } else {
+              // Pas Pro dans Supabase → retire le Pro local
+              setPremium(false); setPremiumState(false);
+              localStorage.removeItem("pq_stripe_session");
             }
             setShowAuth(false);
           }}
-          onClose={()=>{ if(premium && !user) return; setShowAuth(false); }}
-          blocking={premium && !user}
+          onClose={()=>{ if(premium && !localStorage.getItem("pq_token")) return; setShowAuth(false); }}
+          blocking={premium && !localStorage.getItem("pq_token")}
         />
       )}
 
@@ -2737,25 +2756,18 @@ export default function App() {
         />
       )}
 
-      {/* Bloque toute l'app si Pro payé sans compte — INCONTOURNABLE */}
-      {premium && !user && (
-        <div style={{position:"fixed",inset:0,background:"#09090f",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}
-          onClick={e=>e.stopPropagation()}>
+      {/* Force connexion si Pro local sans token Supabase */}
+      {premium && !localStorage.getItem("pq_token") && !showAuth && (
+        <div style={{position:"fixed",inset:0,background:"#09090f",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
           <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
             <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>COMPTE REQUIS</div>
-            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"8px"}}>Crée ton compte Pro</div>
+            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"8px"}}>Crée ou connecte-toi</div>
             <div style={{fontSize:"13px",color:"#555",marginBottom:"24px",lineHeight:"1.6"}}>
-              Tu as souscrit à Physiqrate Pro. Crée ton compte pour accéder à tes analyses sur tous tes appareils.
+              Tu as souscrit à Physiqrate Pro. Connecte-toi pour accéder à tes analyses sur tous tes appareils.
             </div>
             <button style={css.btn(C.gold)} onClick={()=>setShowAuth(true)}>
-              Créer mon compte
+              Créer un compte / Se connecter
             </button>
-            <div style={{marginTop:"12px"}}>
-              <button style={{background:"transparent",border:"none",color:"#333",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
-                onClick={()=>setShowAuth(true)}>
-                J'ai déjà un compte — me connecter
-              </button>
-            </div>
           </div>
         </div>
       )}
