@@ -15,6 +15,8 @@
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       html, body, #root { min-height: 100%; background: #0a0a0f; color: white; }
       body { -webkit-font-smoothing: antialiased; overflow-x: hidden; touch-action: pan-y; }
+      /* Safe area pour PWA iPhone */
+      :root { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); --sal: env(safe-area-inset-left); --sar: env(safe-area-inset-right); }
     </style>
   </head>
   <body>
