@@ -2498,11 +2498,20 @@ function ViewProgression({ premium, onShowPaywall }) {
               const date = new Date(h.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
               const isSel = selected.includes(i);
               return (
-                <div key={i} onClick={()=>togglePhoto(i)} style={{position:"relative",borderRadius:"10px",overflow:"hidden",cursor:"pointer",aspectRatio:"3/4",background:"rgba(255,255,255,0.03)",border:`${isSel?"2px":"1px"} solid ${isSel?C.gold:C.border}`,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
+                <div key={i} onClick={()=>togglePhoto(i)} style={{position:"relative",borderRadius:"12px",overflow:"hidden",cursor:"pointer",aspectRatio:"3/4",background:`linear-gradient(135deg,${arch.color}18,rgba(0,0,0,0.6))`,border:`${isSel?"2px":"1px"} solid ${isSel?C.gold:arch.color+"44"}`,display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"10px 8px"}}>
+                  {/* Badge sélection */}
                   {isSel && <div style={{position:"absolute",top:"6px",right:"6px",width:"18px",height:"18px",borderRadius:"50%",background:C.gold,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",color:"#000",fontWeight:"800"}}>✓</div>}
-                  <div style={{padding:"6px 8px",background:"linear-gradient(transparent,rgba(0,0,0,0.7))"}}>
-                    <div style={{fontSize:"14px",fontWeight:"800",color:arch.color}}>{h.bodyfat}%</div>
-                    <div style={{fontSize:"9px",color:"#aaa"}}>{date}</div>
+                  {/* Icône centrale */}
+                  <div style={{display:"flex",justifyContent:"center",alignItems:"center",flex:1}}>
+                    <div style={{width:"44px",height:"44px",borderRadius:"50%",background:`${arch.color}22`,border:`1.5px solid ${arch.color}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px"}}>
+                      {arch.color === "#7DF9AA" ? "🏆" : arch.color === "#7DF9FF" ? "💪" : arch.color === "#FFD700" ? "⚡" : arch.color === "#FFB347" ? "🎯" : arch.color === "#FF8C69" ? "🔥" : "📈"}
+                    </div>
+                  </div>
+                  {/* Score et date */}
+                  <div>
+                    <div style={{fontSize:"18px",fontWeight:"800",color:arch.color}}>{h.bodyfat}%</div>
+                    <div style={{fontSize:"9px",color:"#aaa",marginTop:"2px"}}>{date}</div>
+                    <div style={{fontSize:"8px",color:arch.color+"99",marginTop:"1px"}}>{arch.label}</div>
                   </div>
                 </div>
               );
