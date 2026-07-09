@@ -2265,8 +2265,9 @@ function ViewHistorique({ premium, onShowPaywall }) {
   const today = now.toDateString();
 
   function getDayData(day) {
-    const date = new Date(year, month, day).toDateString();
-    return journal[date] || null;
+    const dateISO = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    const dateStr = new Date(year, month, day).toDateString();
+    return journal[dateISO] || journal[dateStr] || null;
   }
 
   function getDayColor(data) {
@@ -2292,8 +2293,9 @@ function ViewHistorique({ premium, onShowPaywall }) {
     <div style={{width:"100%",maxWidth:"420px"}}>
       {selectedDay && (() => {
         const date = new Date(year, month, selectedDay);
+        const dateISO = `${year}-${String(month+1).padStart(2,"0")}-${String(selectedDay).padStart(2,"0")}`;
         const dateStr = date.toDateString();
-        const data = journal[dateStr] || {};
+        const data = journal[dateISO] || journal[dateStr] || {};
         const totalCals = data.meals?.reduce((s,m)=>s+(m.calories||0),0) || 0;
         const macros = data.meals?.reduce((acc,m)=>({protein:acc.protein+(m.protein||0),carbs:acc.carbs+(m.carbs||0),fat:acc.fat+(m.fat||0)}),{protein:0,carbs:0,fat:0}) || {};
         return (
@@ -2358,6 +2360,12 @@ function ViewHistorique({ premium, onShowPaywall }) {
             return (
               <div key={day} style={dayStyle(colorType,isToday)} onClick={()=>setSelectedDay(day)}>
                 <div style={{fontSize:"11px",fontWeight:"600",color:isToday?C.gold:C.text}}>{day}</div>
+                {data && (
+                  <div style={{display:"flex",gap:"2px",marginTop:"2px",justifyContent:"center"}}>
+                    {data.steps > 0 && <span style={{fontSize:"7px"}}>👟</span>}
+                    {data.session?.done && <span style={{fontSize:"7px"}}>💪</span>}
+                  </div>
+                )}
                 {totalCals > 0 && <div style={{fontSize:"8px",color:colorType==="good"?C.green:colorType==="over"?C.red:C.muted}}>{totalCals}</div>}
               </div>
             );
