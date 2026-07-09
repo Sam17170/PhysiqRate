@@ -21,6 +21,47 @@ function db(path, method = "GET", body = null) {
   });
 }
 
+// Validation des données entrantes
+function validateJournal(journal) {
+  if (!journal || typeof journal !== "object") return null;
+  return {
+    date: String(journal.date || "").slice(0, 10),
+    meals: Array.isArray(journal.meals) ? journal.meals.slice(0, 50).map(m => ({
+      name: String(m.name || "").slice(0, 100),
+      calories: Math.min(Math.max(parseInt(m.calories) || 0, 0), 5000),
+      protein: Math.min(Math.max(parseInt(m.protein) || 0, 0), 500),
+      carbs: Math.min(Math.max(parseInt(m.carbs) || 0, 0), 500),
+      fat: Math.min(Math.max(parseInt(m.fat) || 0, 0), 500),
+      time: String(m.time || "").slice(0, 10),
+    })) : [],
+    steps: Math.min(Math.max(parseInt(journal.steps) || 0, 0), 100000),
+    sessions: Array.isArray(journal.sessions) ? journal.sessions.slice(0, 10) : [],
+    water: Math.min(Math.max(parseInt(journal.water) || 0, 0), 20),
+  };
+}
+
+function validateProfile(profile) {
+  if (!profile || typeof profile !== "object") return null;
+  return {
+    gender: ["male", "female"].includes(profile.gender) ? profile.gender : null,
+    age: Math.min(Math.max(parseInt(profile.age) || 0, 0), 120),
+    weight: Math.min(Math.max(parseFloat(profile.weight) || 0, 0), 500),
+    height: Math.min(Math.max(parseFloat(profile.height) || 0, 0), 300),
+    goal: String(profile.goal || "").slice(0, 50),
+    activity: String(profile.activity || "").slice(0, 50),
+  };
+}
+
+function validateAnalysis(a) {
+  return {
+    date: String(a.date || "").slice(0, 10),
+    bodyfat: Math.min(Math.max(parseInt(a.bodyfat) || 0, 1), 70),
+    weight: a.weight ? Math.min(Math.max(parseFloat(a.weight), 0), 500) : null,
+    note: a.note ? String(a.note).slice(0, 200) : null,
+    confidence: ["low", "medium", "high"].includes(a.confidence) ? a.confidence : null,
+  };
+}
+
 export default async function handler(req) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const origin = req.headers.get("origin") || "https://physiqrate.com";
@@ -30,43 +71,51 @@ export default async function handler(req) {
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
   const { action, token, data } = body;
-  if (!token) return new Response(JSON.stringify({ error: "No token" }), { status: 401, headers });
+  if (!token || typeof token !== "string" || token.length > 2000) {
+    return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers });
+  }
 
   const email = await getEmail(token);
   if (!email) return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers });
 
   if (action === "push") {
-    const { journal, analyses, profile, savedFoods } = data;
+    const { journal, analyses, profile, savedFoods } = data || {};
 
     if (journal) {
-      await db(`journals?on_conflict=user_email,date`, "POST", {
-        user_email: email, date: journal.date,
-        meals: journal.meals || [], steps: journal.steps || 0,
-        sessions: journal.sessions || [], water: journal.water || 0
-      });
-    }
-
-    if (analyses?.length > 0) {
-      for (const a of analyses) {
-        await db("analyses", "POST", {
-          user_email: email, date: a.date, bodyfat: a.bodyfat,
-          weight: a.weight || null, note: a.note || null, confidence: a.confidence || null
+      const j = validateJournal(journal);
+      if (j && j.date) {
+        await db(`journals?on_conflict=user_email,date`, "POST", {
+          user_email: email, date: j.date, meals: j.meals,
+          steps: j.steps, sessions: j.sessions, water: j.water
         });
       }
     }
 
-    if (profile) {
-      await db(`profiles?on_conflict=user_email`, "POST", {
-        user_email: email, gender: profile.gender, age: profile.age,
-        weight: profile.weight, height: profile.height, goal: profile.goal, activity: profile.activity
-      });
+    if (Array.isArray(analyses)) {
+      for (const a of analyses.slice(0, 10)) {
+        const v = validateAnalysis(a);
+        if (v.date && v.bodyfat) {
+          await db("analyses", "POST", { user_email: email, ...v });
+        }
+      }
     }
 
-    if (savedFoods?.length > 0) {
-      for (const f of savedFoods) {
+    if (profile) {
+      const p = validateProfile(profile);
+      if (p) await db(`profiles?on_conflict=user_email`, "POST", { user_email: email, ...p });
+    }
+
+    if (Array.isArray(savedFoods)) {
+      for (const f of savedFoods.slice(0, 10)) {
+        if (!f.name) continue;
         await db(`saved_foods?on_conflict=user_email,name`, "POST", {
-          user_email: email, name: f.name, brand: f.brand || null,
-          calories: f.calories || 0, protein: f.protein || 0, carbs: f.carbs || 0, fat: f.fat || 0
+          user_email: email,
+          name: String(f.name).slice(0, 100),
+          brand: f.brand ? String(f.brand).slice(0, 100) : null,
+          calories: Math.min(Math.max(parseInt(f.calories) || 0, 0), 5000),
+          protein: Math.min(Math.max(parseInt(f.protein) || 0, 0), 500),
+          carbs: Math.min(Math.max(parseInt(f.carbs) || 0, 0), 500),
+          fat: Math.min(Math.max(parseInt(f.fat) || 0, 0), 500),
         });
       }
     }
@@ -75,7 +124,8 @@ export default async function handler(req) {
   }
 
   if (action === "pull") {
-    const { date } = data || {};
+    const date = String((data || {}).date || "").slice(0, 10) || new Date().toISOString().slice(0, 10);
+
     const [journalRes, analysesRes, profileRes, foodsRes] = await Promise.all([
       db(`journals?user_email=eq.${encodeURIComponent(email)}&date=eq.${date}&limit=1`),
       db(`analyses?user_email=eq.${encodeURIComponent(email)}&order=date.desc&limit=100`),
