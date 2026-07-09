@@ -152,6 +152,19 @@ function recordNutritionScan() {
 
 function getHistory() { return get(keys.history) || []; }
 function getSavedFoods() { return get("pq_saved_foods") || []; }
+function getSavedSessions() { return get("pq_saved_sessions") || []; }
+function saveSessionToList(session) {
+  const list = getSavedSessions();
+  const exists = list.find(s => s.type.toLowerCase() === session.type.toLowerCase());
+  if (!exists) {
+    list.unshift({ type: session.type, duration: session.duration });
+    set("pq_saved_sessions", list.slice(0, 20));
+  }
+}
+function removeSavedSession(type) {
+  const list = getSavedSessions().filter(s => s.type !== type);
+  set("pq_saved_sessions", list);
+}
 function saveFoodToList(food) {
   const list = getSavedFoods();
   const exists = list.find(f => f.name.toLowerCase() === food.name.toLowerCase());
@@ -1914,6 +1927,7 @@ function ViewJour() {
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showSavedFoods, setShowSavedFoods] = useState(false);
+  const [showSavedSessions, setShowSavedSessions] = useState(false);
   const [scannedProduct, setScannedProduct] = useState(null);
   const [mealForm, setMealForm] = useState({ name:"", calories:"", protein:"", carbs:"", fat:"" });
   const [sessionForm, setSessionForm] = useState({ type:"", duration:"60" });
@@ -1947,22 +1961,30 @@ function ViewJour() {
     fat: acc.fat + (m.fat||0),
   }), { protein:0, carbs:0, fat:0 });
 
+  const [saveMeal, setSaveMeal] = useState(false);
+
   function addMeal() {
     if (!mealForm.name || !mealForm.calories) return;
     const now = new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
     const meal = { name:mealForm.name, calories:parseInt(mealForm.calories)||0, protein:parseInt(mealForm.protein)||0, carbs:parseInt(mealForm.carbs)||0, fat:parseInt(mealForm.fat)||0, time:now, detail:"Ajout manuel" };
     save({ ...journal, meals: [...journal.meals, meal] });
+    if (saveMeal) saveFoodToList({ name:mealForm.name, brand:"", calories:parseInt(mealForm.calories)||0, protein:parseInt(mealForm.protein)||0, carbs:parseInt(mealForm.carbs)||0, fat:parseInt(mealForm.fat)||0 });
     setMealForm({ name:"", calories:"", protein:"", carbs:"", fat:"" });
+    setSaveMeal(false);
     setShowMealForm(false);
     showToast(`${mealForm.name} ajouté — ${mealForm.calories} kcal`);
   }
 
+  const [saveSession, setSaveSession] = useState(false);
+
   function addSession() {
     if (!sessionForm.type) return;
-    save({ ...journal, session:{ type:sessionForm.type, duration:parseInt(sessionForm.duration)||60, done:false } });
+    save({ ...journal, session:{ type:sessionForm.type, duration:parseInt(sessionForm.duration)||60, done:true } });
+    if (saveSession) saveSessionToList({ type:sessionForm.type, duration:parseInt(sessionForm.duration)||60 });
     setSessionForm({ type:"", duration:"60" });
+    setSaveSession(false);
     setShowSessionForm(false);
-    showToast(`Séance "${sessionForm.type}" ajoutée`);
+    showToast(`Séance "${sessionForm.type}" ajoutée ✓`);
   }
 
   const formStyle = { background:"rgba(255,215,0,0.04)", border:`1px solid rgba(255,215,0,0.15)`, borderRadius:"14px", padding:"16px", marginBottom:"10px" };
@@ -2149,6 +2171,19 @@ function ViewJour() {
               <input style={{...formInput,flex:1,marginBottom:0}} type="number" placeholder="Glucides (g)" value={mealForm.carbs} onChange={e=>setMealForm({...mealForm,carbs:e.target.value})}/>
               <input style={{...formInput,flex:1,marginBottom:0}} type="number" placeholder="Lipides (g)" value={mealForm.fat} onChange={e=>setMealForm({...mealForm,fat:e.target.value})}/>
             </div>
+            {/* Option enregistrer */}
+            {mealForm.name && !getSavedFoods().find(f=>f.name.toLowerCase()===mealForm.name.toLowerCase()) && (
+              <div onClick={()=>setSaveMeal(!saveMeal)}
+                style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 12px",background:"rgba(255,255,255,0.03)",borderRadius:"10px",marginTop:"10px",cursor:"pointer",border:`1px solid ${saveMeal?"rgba(125,249,170,0.3)":C.border}`}}>
+                <div style={{width:"20px",height:"20px",borderRadius:"6px",border:`1.5px solid ${saveMeal?C.green:C.border}`,background:saveMeal?"rgba(125,249,170,0.15)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {saveMeal && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <div>
+                  <div style={{fontSize:"12px",fontWeight:"600",color:saveMeal?C.green:"#aaa"}}>Enregistrer cet aliment</div>
+                  <div style={{fontSize:"10px",color:"#444"}}>Accessible rapidement la prochaine fois</div>
+                </div>
+              </div>
+            )}
             <div style={{display:"flex",gap:"8px",marginTop:"10px"}}>
               <button style={{...css.btn(C.gold),flex:1,marginBottom:0,padding:"11px"}} onClick={addMeal}>Ajouter</button>
               <button style={{...css.btnSec,flex:1,marginBottom:0,padding:"11px"}} onClick={()=>setShowMealForm(false)}>Annuler</button>
@@ -2181,32 +2216,82 @@ function ViewJour() {
         </div>
 
         {journal.session ? (
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:"12px",marginBottom:"8px"}}>
-            <div>
-              <div style={{fontSize:"13px",fontWeight:"600"}}>{journal.session.type}</div>
-              <div style={{fontSize:"10px",color:C.muted}}>{journal.session.duration} min · Dépense incluse dans ton TDEE</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"rgba(125,249,170,0.06)",border:`1px solid rgba(125,249,170,0.2)`,borderRadius:"12px",marginBottom:"8px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+              <span style={{fontSize:"20px"}}>💪</span>
+              <div>
+                <div style={{fontSize:"13px",fontWeight:"700",color:C.green}}>{journal.session.type}</div>
+                <div style={{fontSize:"10px",color:C.muted}}>{journal.session.duration} min</div>
+              </div>
             </div>
-            <div style={{width:"24px",height:"24px",borderRadius:"50%",border:`1.5px solid ${journal.session.done?C.green:C.border}`,background:journal.session.done?C.green:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#000",fontSize:"11px",fontWeight:"800"}}
-              onClick={()=>{const done=!journal.session.done;const u={...journal,session:{...journal.session,done}};save(u);if(done)showToast("Séance marquée comme faite !");}} >
-              {journal.session.done?"✓":""}
-            </div>
+            <button onClick={()=>{ const u={...journal,session:null}; save(u); showToast("Séance supprimée"); }}
+              style={{background:"transparent",border:"none",color:"#444",fontSize:"18px",cursor:"pointer",padding:"4px"}}>×</button>
           </div>
         ) : null}
+
+        {/* Modal séances favorites */}
+        {showSavedSessions && (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"20px"}}>
+            <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"24px",width:"100%",maxWidth:"420px",marginBottom:"10px",maxHeight:"60vh",overflowY:"auto"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
+                <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px"}}>MES SÉANCES</div>
+                <button onClick={()=>setShowSavedSessions(false)} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>
+              </div>
+              {getSavedSessions().length === 0 ? (
+                <div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:"12px"}}>
+                  Aucune séance enregistrée.
+                </div>
+              ) : getSavedSessions().map((s,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:"12px",marginBottom:"8px"}}>
+                  <div style={{flex:1,cursor:"pointer"}} onClick={()=>{
+                    save({ ...journal, session:{ type:s.type, duration:s.duration, done:true } });
+                    showToast(`Séance "${s.type}" ajoutée ✓`);
+                    setShowSavedSessions(false);
+                  }}>
+                    <div style={{fontSize:"13px",fontWeight:"600"}}>{s.type}</div>
+                    <div style={{fontSize:"10px",color:C.muted}}>{s.duration} min</div>
+                  </div>
+                  <button onClick={()=>{ removeSavedSession(s.type); setShowSavedSessions(false); setTimeout(()=>setShowSavedSessions(true),50); }}
+                    style={{background:"transparent",border:"none",color:"#333",fontSize:"16px",cursor:"pointer",padding:"4px 8px"}}>×</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {showSessionForm ? (
           <div style={formStyle}>
             <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"10px"}}>NOUVELLE SÉANCE</div>
-            <input style={formInput} placeholder="Type de séance (ex: Musculation)" value={sessionForm.type} onChange={e=>setSessionForm({...sessionForm,type:e.target.value})}/>
-            <input style={formInput} type="number" placeholder="Durée (minutes)" value={sessionForm.duration} onChange={e=>setSessionForm({...sessionForm,duration:e.target.value})}/>
+            <input style={formInput} placeholder="Type de séance (ex: Dos biceps)" value={sessionForm.type} onChange={e=>setSessionForm({...sessionForm,type:e.target.value})}/>
+            <input style={formInput} type="text" inputMode="numeric" placeholder="Durée (minutes)" maxLength={3} value={sessionForm.duration} onChange={e=>{ const v=e.target.value.replace(/[^0-9]/g,""); setSessionForm({...sessionForm,duration:v}); }}/>
+            {/* Option enregistrer */}
+            {!getSavedSessions().find(s=>s.type.toLowerCase()===sessionForm.type.toLowerCase()) && sessionForm.type && (
+              <div onClick={()=>setSaveSession(!saveSession)}
+                style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 12px",background:"rgba(255,255,255,0.03)",borderRadius:"10px",marginBottom:"10px",cursor:"pointer",border:`1px solid ${saveSession?"rgba(125,249,170,0.3)":C.border}`}}>
+                <div style={{width:"20px",height:"20px",borderRadius:"6px",border:`1.5px solid ${saveSession?C.green:C.border}`,background:saveSession?"rgba(125,249,170,0.15)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {saveSession && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <div>
+                  <div style={{fontSize:"12px",fontWeight:"600",color:saveSession?C.green:"#aaa"}}>Enregistrer cette séance</div>
+                  <div style={{fontSize:"10px",color:"#444"}}>Accessible rapidement la prochaine fois</div>
+                </div>
+              </div>
+            )}
             <div style={{display:"flex",gap:"8px",marginTop:"4px"}}>
               <button style={{...css.btn(C.gold),flex:1,marginBottom:0,padding:"11px"}} onClick={addSession}>Ajouter</button>
               <button style={{...css.btnSec,flex:1,marginBottom:0,padding:"11px"}} onClick={()=>setShowSessionForm(false)}>Annuler</button>
             </div>
           </div>
         ) : (
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",border:`1.5px dashed ${C.border}`,borderRadius:"10px",cursor:"pointer"}} onClick={()=>setShowSessionForm(true)}>
-            <div style={{fontSize:"13px",color:C.muted}}>{journal.session?"Modifier la séance":"Ajouter une séance"}</div>
-            <div style={{color:C.muted,fontSize:"20px",fontWeight:"300"}}>+</div>
+          <div style={{display:"flex",gap:"8px"}}>
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",border:`1.5px dashed ${C.border}`,borderRadius:"10px",cursor:"pointer"}} onClick={()=>setShowSessionForm(true)}>
+              <div style={{fontSize:"13px",color:C.muted}}>{journal.session?"Modifier la séance":"Ajouter une séance"}</div>
+              <div style={{color:C.muted,fontSize:"20px",fontWeight:"300"}}>+</div>
+            </div>
+            <button style={{padding:"10px 14px",border:`1px solid ${C.border}`,borderRadius:"10px",background:"rgba(255,255,255,0.03)",color:"#aaa",fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",flexShrink:0}} onClick={()=>setShowSavedSessions(true)}>
+              Mes séances
+              {getSavedSessions().length > 0 && <span style={{position:"absolute",top:"-6px",right:"-6px",background:C.gold,color:"#000",borderRadius:"10px",fontSize:"9px",fontWeight:"800",padding:"1px 5px",minWidth:"16px",textAlign:"center"}}>{getSavedSessions().length}</span>}
+            </button>
           </div>
         )}
       </div>
