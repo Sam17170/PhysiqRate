@@ -203,7 +203,7 @@ const C = {
 };
 
 const css = {
-  app: { minHeight:"100vh", background:C.bg, color:C.text, fontFamily:"'Space Grotesk',Arial,sans-serif", display:"flex", flexDirection:"column", alignItems:"center", padding:"0 16px 60px" },
+  app: { minHeight:"100dvh", background:C.bg, color:C.text, fontFamily:"'Space Grotesk',Arial,sans-serif", display:"flex", flexDirection:"column", alignItems:"center", padding:"0 16px 60px", paddingTop:"env(safe-area-inset-top, 0px)", paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 60px)", WebkitOverflowScrolling:"touch" },
   card: { background:C.surface, border:`1px solid ${C.border}`, borderRadius:"20px", padding:"20px", marginBottom:"12px", width:"100%", boxSizing:"border-box" },
   cardTitle: { fontSize:"10px", letterSpacing:"2px", color:C.muted, textTransform:"uppercase", marginBottom:"14px" },
   input: { width:"100%", padding:"12px 14px", borderRadius:"10px", border:`1.5px solid ${C.border}`, background:"rgba(255,255,255,0.04)", color:C.text, fontSize:"14px", fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginTop:"6px" },
