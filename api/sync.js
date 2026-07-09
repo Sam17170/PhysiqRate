@@ -36,6 +36,7 @@ function validateJournal(journal) {
     })) : [],
     steps: Math.min(Math.max(parseInt(journal.steps) || 0, 0), 100000),
     sessions: Array.isArray(journal.sessions) ? journal.sessions.slice(0, 10) : [],
+    session: journal.session ? { type: String(journal.session.type || "").slice(0, 100), duration: parseInt(journal.session.duration) || 0, done: !!journal.session.done } : null,
     water: Math.min(Math.max(parseInt(journal.water) || 0, 0), 20),
   };
 }
