@@ -1351,19 +1351,22 @@ function ViewAnalyze({ premium }) {
     }
 
     // Pull automatique des données si déjà connecté
-    const token = localStorage.getItem("pq_token");
-    if (token) {
+    const autoSync = async () => {
+      const token = localStorage.getItem("pq_token");
+      if (!token) return;
       const today = new Date().toISOString().slice(0,10);
-      syncPull(token, today).then(remote => {
+      try {
+        const remote = await syncPull(token, today);
         if (!remote) return;
+        let changed = false;
         if (remote.profile) {
           const p = remote.profile;
-          if (p.gender) localStorage.setItem("pq_gender", p.gender);
-          if (p.age) localStorage.setItem("pq_age", String(p.age));
-          if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
-          if (p.height) localStorage.setItem("pq_height", String(p.height));
-          if (p.goal) localStorage.setItem("pq_goal", p.goal);
-          if (p.activity) localStorage.setItem("pq_activity", p.activity);
+          if (p.gender) { localStorage.setItem("pq_gender", p.gender); changed = true; }
+          if (p.age) { localStorage.setItem("pq_age", String(p.age)); changed = true; }
+          if (p.weight) { localStorage.setItem("pq_weight", String(p.weight)); changed = true; }
+          if (p.height) { localStorage.setItem("pq_height", String(p.height)); changed = true; }
+          if (p.goal) { localStorage.setItem("pq_goal", p.goal); changed = true; }
+          if (p.activity) { localStorage.setItem("pq_activity", p.activity); changed = true; }
         }
         if (remote.journal) {
           const key = "pq_journal_" + today;
@@ -1375,6 +1378,7 @@ function ViewAnalyze({ premium }) {
               sessions: remote.journal.sessions || local.sessions || [],
               water: remote.journal.water || local.water || 0
             }));
+            changed = true;
           }
         }
         if (remote.analyses?.length > 0) {
@@ -1383,23 +1387,27 @@ function ViewAnalyze({ premium }) {
           for (const a of remote.analyses) {
             if (!merged.find(h => h.date === a.date && h.bodyfat === a.bodyfat)) {
               merged.push({ date: a.date, bodyfat: a.bodyfat, weight: a.weight, note: a.note, confidence: a.confidence });
+              changed = true;
             }
           }
-          merged.sort((a,b) => b.date.localeCompare(a.date));
-          localStorage.setItem("pq_history", JSON.stringify(merged.slice(0,100)));
+          if (changed) {
+            merged.sort((a,b) => b.date.localeCompare(a.date));
+            localStorage.setItem("pq_history", JSON.stringify(merged.slice(0,100)));
+          }
         }
         if (remote.savedFoods?.length > 0) {
           const localFoods = JSON.parse(localStorage.getItem("pq_saved_foods") || "[]");
           const merged = [...localFoods];
           for (const f of remote.savedFoods) {
-            if (!merged.find(lf => lf.name === f.name)) merged.push(f);
+            if (!merged.find(lf => lf.name === f.name)) { merged.push(f); changed = true; }
           }
-          localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
+          if (changed) localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
         }
-        // Force re-render pour que les composants lisent le nouveau localStorage
-        setSyncVersion(v => v + 1);
-      }).catch(() => {});
-    }
+        // Force re-render APRÈS que toutes les données sont écrites
+        if (changed) setSyncVersion(v => v + 1);
+      } catch {}
+    };
+    autoSync();
 
     // Vérifie le statut Pro via Supabase si connecté
     const verifyPro = async () => {
@@ -2846,19 +2854,22 @@ export default function App() {
     }
 
     // Pull automatique des données si déjà connecté
-    const token = localStorage.getItem("pq_token");
-    if (token) {
+    const autoSync = async () => {
+      const token = localStorage.getItem("pq_token");
+      if (!token) return;
       const today = new Date().toISOString().slice(0,10);
-      syncPull(token, today).then(remote => {
+      try {
+        const remote = await syncPull(token, today);
         if (!remote) return;
+        let changed = false;
         if (remote.profile) {
           const p = remote.profile;
-          if (p.gender) localStorage.setItem("pq_gender", p.gender);
-          if (p.age) localStorage.setItem("pq_age", String(p.age));
-          if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
-          if (p.height) localStorage.setItem("pq_height", String(p.height));
-          if (p.goal) localStorage.setItem("pq_goal", p.goal);
-          if (p.activity) localStorage.setItem("pq_activity", p.activity);
+          if (p.gender) { localStorage.setItem("pq_gender", p.gender); changed = true; }
+          if (p.age) { localStorage.setItem("pq_age", String(p.age)); changed = true; }
+          if (p.weight) { localStorage.setItem("pq_weight", String(p.weight)); changed = true; }
+          if (p.height) { localStorage.setItem("pq_height", String(p.height)); changed = true; }
+          if (p.goal) { localStorage.setItem("pq_goal", p.goal); changed = true; }
+          if (p.activity) { localStorage.setItem("pq_activity", p.activity); changed = true; }
         }
         if (remote.journal) {
           const key = "pq_journal_" + today;
@@ -2870,6 +2881,7 @@ export default function App() {
               sessions: remote.journal.sessions || local.sessions || [],
               water: remote.journal.water || local.water || 0
             }));
+            changed = true;
           }
         }
         if (remote.analyses?.length > 0) {
@@ -2878,23 +2890,27 @@ export default function App() {
           for (const a of remote.analyses) {
             if (!merged.find(h => h.date === a.date && h.bodyfat === a.bodyfat)) {
               merged.push({ date: a.date, bodyfat: a.bodyfat, weight: a.weight, note: a.note, confidence: a.confidence });
+              changed = true;
             }
           }
-          merged.sort((a,b) => b.date.localeCompare(a.date));
-          localStorage.setItem("pq_history", JSON.stringify(merged.slice(0,100)));
+          if (changed) {
+            merged.sort((a,b) => b.date.localeCompare(a.date));
+            localStorage.setItem("pq_history", JSON.stringify(merged.slice(0,100)));
+          }
         }
         if (remote.savedFoods?.length > 0) {
           const localFoods = JSON.parse(localStorage.getItem("pq_saved_foods") || "[]");
           const merged = [...localFoods];
           for (const f of remote.savedFoods) {
-            if (!merged.find(lf => lf.name === f.name)) merged.push(f);
+            if (!merged.find(lf => lf.name === f.name)) { merged.push(f); changed = true; }
           }
-          localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
+          if (changed) localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
         }
-        // Force re-render pour que les composants lisent le nouveau localStorage
-        setSyncVersion(v => v + 1);
-      }).catch(() => {});
-    }
+        // Force re-render APRÈS que toutes les données sont écrites
+        if (changed) setSyncVersion(v => v + 1);
+      } catch {}
+    };
+    autoSync();
 
     // Vérifie le statut Pro via Supabase si connecté
     const verifyPro = async () => {
