@@ -1533,22 +1533,32 @@ function ViewAnalyze({ premium }) {
         return parts.length ? `\n\nUser profile:\n${parts.join("\n")}` : "";
       })();
 
-      // SIMULATION PREVIEW — remplace par l'appel API réel sur Vercel
-      await new Promise(r => setTimeout(r, 2200));
-      const bf = gender === "male"
-        ? 10 + Math.floor(Math.random() * 10)
-        : 18 + Math.floor(Math.random() * 10);
-      const data = {
-        bodyfat: bf,
-        confidence: "medium",
-        confidence_reason: "Simulation locale — l'analyse IA réelle fonctionne sur Vercel",
-        key_indicators: [
-          "Abdominaux partiellement visibles",
-          "Légère couche de graisse sous-cutanée",
-          "Bonne masse musculaire de base"
-        ],
-        note: "Configure ton profil pour des recommandations personnalisées."
-      };
+      // Appel API réel
+      const apiRes = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64,
+          gender,
+          age: resolvedAge,
+          weight: weight || profile.weight || null,
+          profilePrompt,
+          isPro: !!premium
+        })
+      });
+
+      if (!apiRes.ok) {
+        const errData = await apiRes.json().catch(()=>({}));
+        if (apiRes.status === 429 && errData.daysLeft) {
+          setDaysLeft(errData.daysLeft);
+          setShowPaywall(true);
+          setStep("form");
+          return;
+        }
+        throw new Error(errData.error || `Erreur ${apiRes.status}`);
+      }
+
+      const data = await apiRes.json();
 
       const archetype = getArchetype(data.bodyfat, gender);
       const entry = { bodyfat: data.bodyfat, gender, age: resolvedAge, weight: parseFloat(weight)||null, archetype };
