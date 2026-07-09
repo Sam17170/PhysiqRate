@@ -641,16 +641,25 @@ function PWABanner({ onDismiss }) {
 
 // ─── SUPABASE SYNC ────────────────────────────────────────────────────────────
 async function syncPush(data) {
-  const token = localStorage.getItem("pq_token");
+  let token = localStorage.getItem("pq_token");
   if (!token) return;
   try {
-    const res = await fetch("/api/sync", {
+    let res = await fetch("/api/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "push", token, data })
     });
+    // Si token expiré, tente un refresh
+    if (res.status === 401) {
+      token = await refreshToken();
+      if (!token) return;
+      res = await fetch("/api/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "push", token, data })
+      });
+    }
     if (!res.ok) throw new Error("sync failed");
-    // Succès — vide la queue
     localStorage.removeItem("pq_sync_queue");
   } catch {
     // Echec — met en queue pour retry
@@ -658,6 +667,32 @@ async function syncPush(data) {
     queue.push({ data, ts: Date.now() });
     localStorage.setItem("pq_sync_queue", JSON.stringify(queue.slice(-20)));
   }
+}
+
+async function refreshToken() {
+  const token = localStorage.getItem("pq_token");
+  const email = localStorage.getItem("pq_email");
+  const password = localStorage.getItem("pq_password_hash"); // on ne stocke pas le mdp
+  if (!token) return null;
+
+  // Tente un refresh via Supabase
+  try {
+    const refreshToken = localStorage.getItem("pq_refresh_token");
+    if (!refreshToken) return token;
+
+    const res = await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "refresh", refreshToken })
+    });
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem("pq_token", data.token);
+      if (data.refresh_token) localStorage.setItem("pq_refresh_token", data.refresh_token);
+      return data.token;
+    }
+  } catch {}
+  return token;
 }
 
 async function syncFlushQueue() {
@@ -678,11 +713,20 @@ async function syncFlushQueue() {
 
 async function syncPull(token, date) {
   try {
-    const res = await fetch("/api/sync", {
+    let res = await fetch("/api/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "pull", token, data: { date } })
     });
+    if (res.status === 401) {
+      const newToken = await refreshToken();
+      if (!newToken) return null;
+      res = await fetch("/api/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "pull", newToken, data: { date } })
+      });
+    }
     return await res.json();
   } catch { return null; }
 }
@@ -988,6 +1032,7 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
 
       if (loginData.token) {
         localStorage.setItem("pq_token", loginData.token);
+        if (loginData.refresh_token) localStorage.setItem("pq_refresh_token", loginData.refresh_token);
         localStorage.setItem("pq_email", email);
 
         // Si email différent de l'email Stripe, transfère le Pro au bon email
@@ -1154,6 +1199,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
         const loginData = await loginRes.json();
         if (loginData.token) {
           localStorage.setItem("pq_token", loginData.token);
+          if (loginData.refresh_token) localStorage.setItem("pq_refresh_token", loginData.refresh_token);
           localStorage.setItem("pq_email", email);
           const meRes = await fetch("/api/me", {
             method: "POST",
@@ -2724,6 +2770,7 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
           </div>
           <button onClick={()=>{
             localStorage.removeItem("pq_token");
+            localStorage.removeItem("pq_refresh_token");
             localStorage.removeItem("pq_email");
             localStorage.removeItem("pq_premium");
             localStorage.removeItem("pq_stripe_session");
