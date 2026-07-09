@@ -171,13 +171,16 @@ function addToHistory(entry) {
   set(keys.history, h.slice(0, 50));
 }
 
+function getTodayISO() { return new Date().toISOString().slice(0,10); }
 function getTodayJournal() {
-  const today = new Date().toDateString();
+  const today = getTodayISO();
   const all = get(keys.journal) || {};
-  return all[today] || { meals: [], steps: null, session: null };
+  // Compatibilité avec l'ancien format toDateString
+  const oldKey = new Date().toDateString();
+  return all[today] || all[oldKey] || { meals: [], steps: null, session: null };
 }
 function saveTodayJournal(data) {
-  const today = new Date().toDateString();
+  const today = getTodayISO();
   const all = get(keys.journal) || {};
   all[today] = data;
   set(keys.journal, all);
@@ -1441,15 +1444,17 @@ function ViewAnalyze({ premium }) {
           if (p.activity) { localStorage.setItem("pq_activity", p.activity); changed = true; }
         }
         if (remote.journal) {
-          const key = "pq_journal_" + today;
-          const local = JSON.parse(localStorage.getItem(key) || '{"meals":[],"steps":0,"sessions":[],"water":0}');
+          // Stocke dans la même clé que getTodayJournal (format pq_journal avec ISO date)
+          const all = JSON.parse(localStorage.getItem("pq_journal") || "{}");
+          const local = all[today] || { meals: [], steps: 0, sessions: [], water: 0 };
           if ((remote.journal.meals?.length || 0) >= (local.meals?.length || 0)) {
-            localStorage.setItem(key, JSON.stringify({
+            all[today] = {
               meals: remote.journal.meals || [],
               steps: remote.journal.steps || local.steps || 0,
               sessions: remote.journal.sessions || local.sessions || [],
               water: remote.journal.water || local.water || 0
-            }));
+            };
+            localStorage.setItem("pq_journal", JSON.stringify(all));
             changed = true;
           }
         }
@@ -1924,8 +1929,7 @@ function ViewJour() {
     setJournal(data);
     saveTodayJournal(data);
     // Sync vers Supabase
-    const today = new Date().toISOString().slice(0,10);
-    syncPush({ journal: { ...data, date: today } });
+    syncPush({ journal: { ...data, date: getTodayISO() } });
   }
 
   const macros = journal.meals.reduce((acc, m) => ({
@@ -2972,15 +2976,17 @@ export default function App() {
           if (p.activity) { localStorage.setItem("pq_activity", p.activity); changed = true; }
         }
         if (remote.journal) {
-          const key = "pq_journal_" + today;
-          const local = JSON.parse(localStorage.getItem(key) || '{"meals":[],"steps":0,"sessions":[],"water":0}');
+          // Stocke dans la même clé que getTodayJournal (format pq_journal avec ISO date)
+          const all = JSON.parse(localStorage.getItem("pq_journal") || "{}");
+          const local = all[today] || { meals: [], steps: 0, sessions: [], water: 0 };
           if ((remote.journal.meals?.length || 0) >= (local.meals?.length || 0)) {
-            localStorage.setItem(key, JSON.stringify({
+            all[today] = {
               meals: remote.journal.meals || [],
               steps: remote.journal.steps || local.steps || 0,
               sessions: remote.journal.sessions || local.sessions || [],
               water: remote.journal.water || local.water || 0
-            }));
+            };
+            localStorage.setItem("pq_journal", JSON.stringify(all));
             changed = true;
           }
         }
