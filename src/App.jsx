@@ -1563,10 +1563,11 @@ function ViewAnalyze({ premium }) {
 
       {step === "upload" && (
         <>
-          <div style={{textAlign:"center",marginBottom:"20px",paddingTop:"8px"}}>
-            <div style={{fontSize:"10px",letterSpacing:"4px",color:C.gold,marginBottom:"10px",opacity:0.8}}>ANALYSE IA · BODY FAT</div>
-            <h1 style={{fontSize:"24px",fontWeight:"800",background:"linear-gradient(135deg,#fff,#aaa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:"6px"}}>Connaît ton vrai physique</h1>
-            <p style={{fontSize:"12px",color:C.muted}}>Résultats en secondes</p>
+          {/* Header compact */}
+          <div style={{textAlign:"center",marginBottom:"16px",paddingTop:"4px"}}>
+            <div style={{fontSize:"9px",letterSpacing:"4px",color:C.gold,marginBottom:"8px",opacity:0.8}}>ANALYSE IA · BODY FAT</div>
+            <h1 style={{fontSize:"22px",fontWeight:"800",background:"linear-gradient(135deg,#fff,#aaa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:"4px"}}>Connaît ton vrai physique</h1>
+            <p style={{fontSize:"11px",color:C.muted}}>Résultats en secondes</p>
           </div>
 
           {/* Rappel analyse disponible */}
@@ -1575,43 +1576,66 @@ function ViewAnalyze({ premium }) {
             if (usage.count >= 2 && usage.weeklyUsed) {
               const days = (Date.now() - new Date(usage.weeklyUsed).getTime()) / 86400000;
               if (days >= 7) return (
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"rgba(125,249,170,0.08)",border:`1px solid rgba(125,249,170,0.2)`,borderRadius:"12px",marginBottom:"10px"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <div style={{width:"7px",height:"7px",borderRadius:"50%",background:C.green,flexShrink:0}}/>
-                    <span style={{fontSize:"12px",color:"#aaa"}}>Ton analyse hebdomadaire gratuite est disponible</span>
-                  </div>
-                  <span style={{fontSize:"11px",color:C.green,fontWeight:"600"}}>Analyser →</span>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"rgba(125,249,170,0.08)",border:`1px solid rgba(125,249,170,0.2)`,borderRadius:"12px",marginBottom:"8px"}}>
+                  <span style={{fontSize:"12px",color:"#aaa"}}>Analyse hebdomadaire disponible</span>
+                  <span style={{fontSize:"11px",color:C.green,fontWeight:"600"}}>Go →</span>
                 </div>
               );
             }
             return null;
           })()}
 
+          {/* Rappel profil incomplet */}
           {getProfileCompletion(profile) < 100 && (
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:`rgba(255,215,0,0.06)`,border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"12px",marginBottom:"10px",cursor:"pointer"}} onClick={()=>document.dispatchEvent(new CustomEvent("navigate",{detail:"profil"}))}>
-              <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                <div style={{width:"7px",height:"7px",borderRadius:"50%",background:C.red,flexShrink:0}}/>
-                <span style={{fontSize:"12px",color:"#aaa"}}>Complète ton profil pour une analyse plus précise</span>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:`rgba(255,215,0,0.06)`,border:`1px solid rgba(255,215,0,0.1)`,borderRadius:"12px",marginBottom:"8px",cursor:"pointer"}} onClick={()=>document.dispatchEvent(new CustomEvent("navigate",{detail:"profil"}))}>
+              <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                <div style={{width:"6px",height:"6px",borderRadius:"50%",background:C.red,flexShrink:0}}/>
+                <span style={{fontSize:"12px",color:"#aaa"}}>Complète ton profil pour plus de précision</span>
               </div>
               <span style={{fontSize:"11px",color:C.gold,fontWeight:"600"}}>Profil →</span>
             </div>
           )}
 
-          <div style={css.card}>
-            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFile}/>
-            <div style={css.uploadZone} onClick={()=>fileRef.current.click()}>
-              <div style={{fontSize:"14px",fontWeight:"700",marginBottom:"4px"}}>Dépose ta photo ici</div>
-              <div style={{fontSize:"12px",color:C.muted}}>ou clique pour sélectionner · obligatoire</div>
+          {/* Zone upload grande et cliquable */}
+          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFile}/>
+          <div
+            onClick={()=>fileRef.current.click()}
+            style={{
+              border:`2px dashed rgba(255,215,0,0.3)`,
+              borderRadius:"20px",
+              padding:"32px 20px",
+              textAlign:"center",
+              cursor:"pointer",
+              background:"rgba(255,215,0,0.03)",
+              marginBottom:"12px",
+              display:"flex",
+              flexDirection:"column",
+              alignItems:"center",
+              gap:"10px",
+              minHeight:"180px",
+              justifyContent:"center",
+            }}>
+            <div style={{width:"56px",height:"56px",borderRadius:"50%",background:"rgba(255,215,0,0.1)",border:`1.5px solid rgba(255,215,0,0.3)`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
-            <div style={{padding:"14px",background:"rgba(255,215,0,0.04)",borderRadius:"12px",border:`1px solid rgba(255,215,0,0.1)`}}>
-              <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"8px"}}>CONSEILS PHOTO</div>
-              {["Tenue ajustée — sport ou maillot","Bonne lumière, de face","Photo récente de toi"].map((t,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"5px"}}>
-                  <div style={{width:"4px",height:"4px",borderRadius:"50%",background:C.gold,opacity:0.6,flexShrink:0}}/>
-                  <span style={{fontSize:"12px",color:"#888"}}>{t}</span>
-                </div>
-              ))}
+            <div>
+              <div style={{fontSize:"15px",fontWeight:"700",marginBottom:"3px"}}>Prendre ou choisir une photo</div>
+              <div style={{fontSize:"12px",color:C.muted}}>Corps entier de préférence</div>
             </div>
+          </div>
+
+          {/* Conseils compacts en ligne */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
+            {[
+              {icon:"👕",text:"Tenue ajustée"},
+              {icon:"💡",text:"Bonne lumière"},
+              {icon:"📸",text:"De face"},
+            ].map((c,i)=>(
+              <div key={i} style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${C.border}`,borderRadius:"12px",padding:"10px 6px",textAlign:"center"}}>
+                <div style={{fontSize:"20px",marginBottom:"4px"}}>{c.icon}</div>
+                <div style={{fontSize:"10px",color:"#777"}}>{c.text}</div>
+              </div>
+            ))}
           </div>
         </>
       )}
@@ -2078,7 +2102,46 @@ function ViewJour() {
   );
 }
 
-function ViewHistorique() {
+function ViewHistorique({ premium, onShowPaywall }) {
+  if (!premium) {
+    return (
+      <div style={{width:"100%",maxWidth:"420px"}}>
+        <div style={{position:"relative"}}>
+          <div style={{filter:"blur(5px)",pointerEvents:"none",userSelect:"none"}}>
+            <div style={{...css.card,marginBottom:"12px"}}>
+              <div style={css.cardTitle}>HISTORIQUE</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"4px"}}>
+                {[...Array(21)].map((_,i)=>(
+                  <div key={i} style={{aspectRatio:"1",borderRadius:"6px",background:i%3===0?"rgba(125,249,170,0.3)":i%5===0?"rgba(255,179,71,0.3)":"rgba(255,255,255,0.05)"}}/>
+                ))}
+              </div>
+            </div>
+            <div style={{...css.card}}>
+              <div style={css.cardTitle}>ANALYSES</div>
+              {[{bf:"14%",date:"30 juin"},{bf:"16%",date:"15 juin"},{bf:"18%",date:"1 juin"}].map((a,i)=>(
+                <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:i<2?`1px solid ${C.border}`:"none"}}>
+                  <span style={{fontSize:"13px",color:"#aaa"}}>{a.date}</span>
+                  <span style={{fontSize:"13px",fontWeight:"700",color:"#7DF9AA"}}>{a.bf}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(10,10,15,0.75)",backdropFilter:"blur(3px)",borderRadius:"20px",padding:"28px 20px",textAlign:"center"}}>
+            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"14px"}}>PHYSIQRATE PRO</div>
+            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"10px"}}>Ton historique complet</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px"}}>Calendrier de tes analyses</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px"}}>Historique body fat sur tous tes appareils</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"24px"}}>Synchronisation cloud sécurisée</div>
+            <button style={{...css.btn(C.gold),width:"auto",padding:"14px 28px",marginBottom:"8px",fontSize:"14px"}} onClick={onShowPaywall}>
+              Débloquer Pro — 4,99€/mois
+            </button>
+            <div style={{fontSize:"11px",color:"#333"}}>Résiliation à tout moment</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const [selectedDay, setSelectedDay] = useState(null);
   const journal = getAllJournal();
   const now = new Date();
@@ -3067,9 +3130,9 @@ export default function App() {
             }
           </div>
         </div>
-        <div style={{display:"flex",gap:"3px",background:"rgba(255,255,255,0.03)",borderRadius:"14px",padding:"4px",overflowX:"auto"}}>
+        <div style={{display:"flex",gap:"2px",background:"rgba(255,255,255,0.03)",borderRadius:"14px",padding:"4px",overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
           {tabs.map(tab=>(
-            <button key={tab.key} onClick={()=>setView(tab.key)} style={{flex:1,padding:"8px 4px",borderRadius:"10px",border:"none",background:view===tab.key?"rgba(255,215,0,0.15)":"transparent",color:view===tab.key?C.gold:C.muted,fontSize:"10px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",whiteSpace:"nowrap"}}>
+            <button key={tab.key} onClick={()=>setView(tab.key)} style={{flexShrink:0,padding:"7px 10px",borderRadius:"10px",border:"none",background:view===tab.key?"rgba(255,215,0,0.15)":"transparent",color:view===tab.key?C.gold:C.muted,fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",whiteSpace:"nowrap"}}>
               {tab.label}
               {tab.dot && <span style={{position:"absolute",top:"3px",right:"3px",width:"6px",height:"6px",borderRadius:"50%",background:C.red}}/>}
             </button>
@@ -3080,7 +3143,7 @@ export default function App() {
       {/* VIEWS */}
       {view === "analyser"    && <ViewAnalyze key={syncVersion} premium={premium}/>}
       {view === "jour"        && <ViewJour key={syncVersion}/>}
-      {view === "historique"  && <ViewHistorique key={syncVersion}/>}
+      {view === "historique"  && <ViewHistorique key={syncVersion} premium={premium} onShowPaywall={()=>setShowPaywall(true)}/>}
       {view === "progression" && <ViewProgression key={syncVersion} premium={premium} onShowPaywall={()=>setShowPaywall(true)}/>}
       {view === "profil"      && <ViewProfil key={syncVersion} user={user} premium={premium} onShowAuth={()=>setShowAuth(true)} setPremiumState={setPremiumState}/>}
     </div>
