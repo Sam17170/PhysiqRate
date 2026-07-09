@@ -644,11 +644,35 @@ async function syncPush(data) {
   const token = localStorage.getItem("pq_token");
   if (!token) return;
   try {
-    await fetch("/api/sync", {
+    const res = await fetch("/api/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "push", token, data })
     });
+    if (!res.ok) throw new Error("sync failed");
+    // Succès — vide la queue
+    localStorage.removeItem("pq_sync_queue");
+  } catch {
+    // Echec — met en queue pour retry
+    const queue = JSON.parse(localStorage.getItem("pq_sync_queue") || "[]");
+    queue.push({ data, ts: Date.now() });
+    localStorage.setItem("pq_sync_queue", JSON.stringify(queue.slice(-20)));
+  }
+}
+
+async function syncFlushQueue() {
+  const token = localStorage.getItem("pq_token");
+  const queue = JSON.parse(localStorage.getItem("pq_sync_queue") || "[]");
+  if (!token || queue.length === 0) return;
+  try {
+    for (const item of queue) {
+      await fetch("/api/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "push", token, data: item.data })
+      });
+    }
+    localStorage.removeItem("pq_sync_queue");
   } catch {}
 }
 
@@ -1354,6 +1378,8 @@ function ViewAnalyze({ premium }) {
     const autoSync = async () => {
       const token = localStorage.getItem("pq_token");
       if (!token) return;
+      // Vide la queue des données non synchronisées
+      await syncFlushQueue();
       const today = new Date().toISOString().slice(0,10);
       try {
         const remote = await syncPull(token, today);
@@ -2862,6 +2888,8 @@ export default function App() {
     const autoSync = async () => {
       const token = localStorage.getItem("pq_token");
       if (!token) return;
+      // Vide la queue des données non synchronisées
+      await syncFlushQueue();
       const today = new Date().toISOString().slice(0,10);
       try {
         const remote = await syncPull(token, today);
