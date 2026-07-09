@@ -1439,12 +1439,17 @@ function ViewAnalyze({ premium }) {
           localStorage.setItem("pq_email", data.email);
           if (data.is_pro) { setPremium(true); setPremiumState(true); }
           else { setPremium(false); setPremiumState(false); }
-        } else {
-          // Token expiré
+        } else if (data.error === "account_not_found") {
+          // Compte supprimé — déconnecte
           localStorage.removeItem("pq_token");
           localStorage.removeItem("pq_email");
         }
-      } catch {}
+        // Sinon erreur réseau/panne Supabase — on garde la session locale
+      } catch {
+        // Panne réseau ou Supabase — on garde l'utilisateur connecté en local
+        const cachedEmail = localStorage.getItem("pq_email");
+        if (cachedEmail) setUser({ email: cachedEmail });
+      }
     };
     verifyPro();
   }, []);
@@ -2942,12 +2947,17 @@ export default function App() {
           localStorage.setItem("pq_email", data.email);
           if (data.is_pro) { setPremium(true); setPremiumState(true); }
           else { setPremium(false); setPremiumState(false); }
-        } else {
-          // Token expiré
+        } else if (data.error === "account_not_found") {
+          // Compte supprimé — déconnecte
           localStorage.removeItem("pq_token");
           localStorage.removeItem("pq_email");
         }
-      } catch {}
+        // Sinon erreur réseau/panne Supabase — on garde la session locale
+      } catch {
+        // Panne réseau ou Supabase — on garde l'utilisateur connecté en local
+        const cachedEmail = localStorage.getItem("pq_email");
+        if (cachedEmail) setUser({ email: cachedEmail });
+      }
     };
     verifyPro();
   }, []);
