@@ -1692,9 +1692,9 @@ function ViewAnalyze({ premium }) {
             <button style={{...css.optBtn(gender==="female"),flex:1,textAlign:"center"}} onClick={()=>setGender("female")}>Femme</button>
           </div>
           <span style={css.label}>Âge (optionnel)</span>
-          <input style={css.input} type="number" placeholder="Ex : 24" value={age} onChange={e=>setAge(e.target.value)}/>
+          <input style={css.input} type="number" placeholder="Ex : 24" min="10" max="100" value={age} onChange={e=>{ const v=parseInt(e.target.value); if(!e.target.value||(v>=10&&v<=100)) setAge(e.target.value); }}/>
           <span style={css.label}>Poids (kg) · optionnel</span>
-          <input style={css.input} type="number" placeholder="Ex : 75" value={weight} onChange={e=>setWeight(e.target.value)}/>
+          <input style={css.input} type="number" placeholder="Ex : 75" min="30" max="300" value={weight} onChange={e=>{ const v=parseFloat(e.target.value); if(!e.target.value||(v>=30&&v<=300)) setWeight(e.target.value); }}/>
           {error && <div style={{marginTop:"10px",color:C.red,fontSize:"12px",textAlign:"center"}}>{error}</div>}
           <div style={{marginTop:"16px"}}>
             <button style={{...css.btn(C.gold),opacity:!gender?0.4:1,cursor:!gender?"not-allowed":"pointer"}} onClick={analyze} disabled={!gender}>Analyser mon physique</button>
