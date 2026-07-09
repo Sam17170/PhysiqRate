@@ -1692,13 +1692,13 @@ function ViewAnalyze({ premium }) {
             <button style={{...css.optBtn(gender==="female"),flex:1,textAlign:"center"}} onClick={()=>setGender("female")}>Femme</button>
           </div>
           <span style={css.label}>Âge (optionnel)</span>
-          <input style={css.input} type="number" placeholder="Ex : 24" value={age} inputMode="numeric"
-            onChange={e=>{ const v=e.target.value; if(v===""||(/^\d{1,3}$/.test(v)&&parseInt(v)<=100)) setAge(v); }}
-            onBlur={e=>{ const v=parseInt(e.target.value); if(e.target.value&&(isNaN(v)||v<10)) setAge("10"); }}/>
+          <input style={css.input} type="text" inputMode="numeric" placeholder="Ex : 24" maxLength={3}
+            value={age}
+            onChange={e=>{ const raw=e.target.value.replace(/[^0-9]/g,"").slice(0,3); const v=parseInt(raw)||""; setAge(v>100?"100":raw); }}/>
           <span style={css.label}>Poids (kg) · optionnel</span>
-          <input style={css.input} type="number" placeholder="Ex : 75" value={weight} inputMode="decimal"
-            onChange={e=>{ const v=e.target.value; if(v===""||(/^\d{1,3}(\.\d{0,1})?$/.test(v)&&parseFloat(v)<=300)) setWeight(v); }}
-            onBlur={e=>{ const v=parseFloat(e.target.value); if(e.target.value&&(isNaN(v)||v<30)) setWeight("30"); }}/>
+          <input style={css.input} type="text" inputMode="decimal" placeholder="Ex : 75" maxLength={5}
+            value={weight}
+            onChange={e=>{ const raw=e.target.value.replace(/[^0-9.]/g,"").slice(0,5); const v=parseFloat(raw)||""; setWeight(v>300?"300":raw); }}/>
           {error && <div style={{marginTop:"10px",color:C.red,fontSize:"12px",textAlign:"center"}}>{error}</div>}
           <div style={{marginTop:"16px"}}>
             <button style={{...css.btn(C.gold),opacity:!gender?0.4:1,cursor:!gender?"not-allowed":"pointer"}} onClick={analyze} disabled={!gender}>Analyser mon physique</button>
