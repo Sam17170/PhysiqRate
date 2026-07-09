@@ -167,8 +167,17 @@ function removeSavedFood(name) {
 }
 function addToHistory(entry) {
   const h = getHistory();
-  h.unshift({ ...entry, date: new Date().toISOString() });
+  const fullEntry = { ...entry, date: new Date().toISOString() };
+  h.unshift(fullEntry);
   set(keys.history, h.slice(0, 50));
+  // Sync vers Supabase
+  syncPush({ analyses: [{ 
+    date: new Date().toISOString().slice(0,10),
+    bodyfat: entry.bodyfat,
+    weight: entry.weight || null,
+    note: entry.note || null,
+    confidence: entry.confidence || null
+  }] });
 }
 
 function getTodayISO() { return new Date().toISOString().slice(0,10); }
