@@ -2568,13 +2568,19 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
         </div>
 
         <span style={css.label}>Âge</span>
-        <input style={css.input} type="number" placeholder="Ex : 24" value={profile.age||""} onChange={e=>update("age",e.target.value)}/>
+        <input style={css.input} type="text" inputMode="numeric" placeholder="Ex : 24" maxLength={3}
+          value={profile.age||""}
+          onChange={e=>{ const raw=e.target.value.replace(/[^0-9]/g,"").slice(0,3); const v=parseInt(raw)||""; update("age",v>100?100:v||""); }}/>
 
         <span style={css.label}>Taille (cm)</span>
-        <input style={css.input} type="number" placeholder="Ex : 178" value={profile.height||""} onChange={e=>update("height",e.target.value)}/>
+        <input style={css.input} type="text" inputMode="numeric" placeholder="Ex : 178" maxLength={3}
+          value={profile.height||""}
+          onChange={e=>{ const raw=e.target.value.replace(/[^0-9]/g,"").slice(0,3); const v=parseInt(raw)||""; update("height",v>250?250:v||""); }}/>
 
         <span style={css.label}>Poids de référence (kg)</span>
-        <input style={css.input} type="number" placeholder="Ex : 75" value={profile.weight||""} onChange={e=>update("weight",e.target.value)}/>
+        <input style={css.input} type="text" inputMode="decimal" placeholder="Ex : 75" maxLength={5}
+          value={profile.weight||""}
+          onChange={e=>{ const raw=e.target.value.replace(/[^0-9.]/g,"").slice(0,5); const v=parseFloat(raw)||""; update("weight",v>300?300:raw||""); }}/>
         <div style={{fontSize:"11px",color:"#444",marginTop:"4px"}}>Mis à jour automatiquement à chaque analyse</div>
 
         <span style={css.label}>Niveau d'activité</span>
