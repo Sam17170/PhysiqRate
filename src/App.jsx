@@ -1477,6 +1477,7 @@ function ViewAnalyze({ premium }) {
               meals: remote.journal.meals || [],
               steps: remote.journal.steps || local.steps || 0,
               sessions: remote.journal.sessions || local.sessions || [],
+              session: remote.journal.session || local.session || null,
               water: remote.journal.water || local.water || 0
             };
             localStorage.setItem("pq_journal", JSON.stringify(all));
@@ -3112,6 +3113,7 @@ export default function App() {
               meals: remote.journal.meals || [],
               steps: remote.journal.steps || local.steps || 0,
               sessions: remote.journal.sessions || local.sessions || [],
+              session: remote.journal.session || local.session || null,
               water: remote.journal.water || local.water || 0
             };
             localStorage.setItem("pq_journal", JSON.stringify(all));
