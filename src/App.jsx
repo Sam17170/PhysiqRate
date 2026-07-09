@@ -2305,13 +2305,27 @@ function ViewHistorique({ premium, onShowPaywall }) {
               <button style={{background:"transparent",border:"none",color:C.muted,fontSize:"20px",cursor:"pointer"}} onClick={()=>setSelectedDay(null)}>×</button>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"14px"}}>
-              {[{val:totalCals||"—",label:"KCAL"},{val:data.steps||"—",label:"PAS"},{val:data.session?.done?"Faite":"Non",label:"SÉANCE",color:data.session?.done?C.green:C.muted}].map((s,i)=>(
+              {[
+                {val:totalCals||"—",label:"KCAL"},
+                {val:data.steps ? data.steps.toLocaleString("fr-FR") : "—",label:"PAS"},
+                {val:data.session?.done ? "✓" : "—", label:"SÉANCE", color:data.session?.done?C.green:C.muted}
+              ].map((s,i)=>(
                 <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
                   <div style={{fontSize:"16px",fontWeight:"800",color:s.color||C.text}}>{s.val}</div>
                   <div style={{fontSize:"9px",color:C.muted,marginTop:"2px"}}>{s.label}</div>
                 </div>
               ))}
             </div>
+            {/* Détail séance */}
+            {data.session?.done && (data.session?.type || data.session?.duration) && (
+              <div style={{background:"rgba(125,249,170,0.06)",border:`1px solid rgba(125,249,170,0.15)`,borderRadius:"10px",padding:"10px 12px",marginBottom:"12px",display:"flex",alignItems:"center",gap:"10px"}}>
+                <span style={{fontSize:"16px"}}>💪</span>
+                <div>
+                  {data.session.type && <div style={{fontSize:"13px",fontWeight:"600",color:C.green}}>{data.session.type}</div>}
+                  {data.session.duration && <div style={{fontSize:"11px",color:C.muted}}>{data.session.duration} min</div>}
+                </div>
+              </div>
+            )}
             {data.meals?.length > 0 && (
               <>
                 <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",marginBottom:"8px"}}>REPAS</div>
