@@ -1955,8 +1955,15 @@ function ViewJour() {
   function save(data) {
     setJournal(data);
     saveTodayJournal(data);
-    // Sync vers Supabase
-    syncPush({ journal: { ...data, date: getTodayISO() } });
+    // Sync vers Supabase — inclut explicitement session
+    syncPush({ journal: {
+      date: getTodayISO(),
+      meals: data.meals || [],
+      steps: data.steps || 0,
+      sessions: data.sessions || [],
+      session: data.session || null,
+      water: data.water || 0
+    }});
   }
 
   const macros = journal.meals.reduce((acc, m) => ({
