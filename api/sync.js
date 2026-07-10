@@ -137,7 +137,10 @@ export default async function handler(req) {
 
     if (profile) {
       const p = validateProfile(profile);
-      if (p) await db(`profiles?on_conflict=user_email`, "POST", { user_email: email, ...p });
+      if (p) await db(`profiles?on_conflict=user_email`, "POST", { 
+        user_email: email, ...p, 
+        updated_at: profile.updated_at || new Date().toISOString()
+      });
     }
 
     if (Array.isArray(savedFoods)) {
@@ -162,9 +165,9 @@ export default async function handler(req) {
     const date = String((data || {}).date || "").slice(0, 10) || new Date().toISOString().slice(0, 10);
 
     const [journalRes, analysesRes, profileRes, foodsRes] = await Promise.all([
-      db(`journals?user_email=eq.${encodeURIComponent(email)}&date=eq.${date}&select=date,meals,steps,sessions,session,water&limit=1`),
+      db(`journals?user_email=eq.${encodeURIComponent(email)}&date=eq.${date}&select=*&limit=1`),
       db(`analyses?user_email=eq.${encodeURIComponent(email)}&order=date.desc&limit=100`),
-      db(`profiles?user_email=eq.${encodeURIComponent(email)}&limit=1`),
+      db(`profiles?user_email=eq.${encodeURIComponent(email)}&select=*&limit=1`),
       db(`saved_foods?user_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=50`)
     ]);
 
