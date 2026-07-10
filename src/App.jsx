@@ -669,26 +669,24 @@ function PWABanner({ onDismiss }) {
 
 // ─── SUPABASE SYNC ────────────────────────────────────────────────────────────
 async function syncPush(data) {
-  let token = localStorage.getItem("pq_token");
+  const token = localStorage.getItem("pq_token");
+  const refreshTokenVal = localStorage.getItem("pq_refresh_token");
   if (!token) return;
   try {
-    let res = await fetch("/api/sync", {
+    const res = await fetch("/api/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "push", token, data })
+      body: JSON.stringify({ action: "push", token, refreshToken: refreshTokenVal, data })
     });
-    // Si token expiré, tente un refresh
-    if (res.status === 401) {
-      token = await refreshToken();
-      if (!token) return;
-      res = await fetch("/api/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "push", token, data })
-      });
+    if (res.ok) {
+      const resData = await res.json().catch(()=>({}));
+      // Sauvegarde nouveau token si refresh effectué
+      if (resData.newToken) { localStorage.setItem("pq_token", resData.newToken); }
+      if (resData.newRefresh) { localStorage.setItem("pq_refresh_token", resData.newRefresh); }
+      localStorage.removeItem("pq_sync_queue");
+      return;
     }
-    if (!res.ok) throw new Error("sync failed");
-    localStorage.removeItem("pq_sync_queue");
+    throw new Error("sync failed");
   } catch {
     // Echec — met en queue pour retry
     const queue = JSON.parse(localStorage.getItem("pq_sync_queue") || "[]");
@@ -740,22 +738,18 @@ async function syncFlushQueue() {
 }
 
 async function syncPull(token, date) {
+  const refreshTokenVal = localStorage.getItem("pq_refresh_token");
   try {
-    let res = await fetch("/api/sync", {
+    const res = await fetch("/api/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "pull", token, data: { date } })
+      body: JSON.stringify({ action: "pull", token, refreshToken: refreshTokenVal, data: { date } })
     });
-    if (res.status === 401) {
-      const newToken = await refreshToken();
-      if (!newToken) return null;
-      res = await fetch("/api/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "pull", newToken, data: { date } })
-      });
-    }
-    return await res.json();
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.newToken) { localStorage.setItem("pq_token", data.newToken); }
+    if (data.newRefresh) { localStorage.setItem("pq_refresh_token", data.newRefresh); }
+    return data;
   } catch { return null; }
 }
 
