@@ -116,7 +116,12 @@ const get = (k) => { try { const r = localStorage.getItem(k); return r ? JSON.pa
 const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 function getProfile()  { return get(keys.profile)  || {}; }
-function saveProfile(p){ set(keys.profile, p); syncPush({ profile: p }); }
+function saveProfile(p){ 
+  const ts = new Date().toISOString();
+  set(keys.profile, p); 
+  localStorage.setItem("pq_profile_updated_at", ts);
+  syncPush({ profile: { ...p, updated_at: ts } }); 
+}
 function getCustomMacros() { return get("pq_custom_macros") || null; }
 function saveCustomMacros(m) { set("pq_custom_macros", m); }
 function isPremium()   { const v = localStorage.getItem(keys.premium); return v === true || v === "true"; }
@@ -1455,27 +1460,37 @@ function ViewAnalyze({ premium }) {
         let changed = false;
         if (remote.profile) {
           const p = remote.profile;
-          // Ne remplace que si le localStorage est vide pour ce champ
-          if (p.gender && !localStorage.getItem("pq_gender")) { localStorage.setItem("pq_gender", p.gender); changed = true; }
-          if (p.age && !localStorage.getItem("pq_age")) { localStorage.setItem("pq_age", String(p.age)); changed = true; }
-          if (p.weight && !localStorage.getItem("pq_weight")) { localStorage.setItem("pq_weight", String(p.weight)); changed = true; }
-          if (p.height && !localStorage.getItem("pq_height")) { localStorage.setItem("pq_height", String(p.height)); changed = true; }
-          if (p.goal && !localStorage.getItem("pq_goal")) { localStorage.setItem("pq_goal", p.goal); changed = true; }
-          if (p.activity && !localStorage.getItem("pq_activity")) { localStorage.setItem("pq_activity", p.activity); changed = true; }
+          const localTs = localStorage.getItem("pq_profile_updated_at");
+          const remoteTs = p.updated_at;
+          // Supabase est plus récent → écrase le local
+          const useRemote = !localTs || (remoteTs && new Date(remoteTs) > new Date(localTs));
+          if (useRemote) {
+            if (p.gender) localStorage.setItem("pq_gender", p.gender);
+            if (p.age) localStorage.setItem("pq_age", String(p.age));
+            if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
+            if (p.height) localStorage.setItem("pq_height", String(p.height));
+            if (p.goal) localStorage.setItem("pq_goal", p.goal);
+            if (p.activity) localStorage.setItem("pq_activity", p.activity);
+            if (remoteTs) localStorage.setItem("pq_profile_updated_at", remoteTs);
+            changed = true;
+          }
         }
         if (remote.journal) {
-          // Stocke dans la même clé que getTodayJournal (format pq_journal avec ISO date)
           const all = JSON.parse(localStorage.getItem("pq_journal") || "{}");
-          const local = all[today] || { meals: [], steps: 0, sessions: [], water: 0 };
-          if ((remote.journal.meals?.length || 0) >= (local.meals?.length || 0)) {
+          const local = all[today] || { meals: [], steps: 0, sessions: [], session: null, water: 0 };
+          const localTs = localStorage.getItem(`pq_journal_ts_${today}`);
+          const remoteTs = remote.journal.updated_at;
+          const useRemote = !localTs || !remote.journal.updated_at || new Date(remoteTs) > new Date(localTs);
+          if (useRemote) {
             all[today] = {
-              meals: remote.journal.meals || [],
-              steps: remote.journal.steps || local.steps || 0,
+              meals: remote.journal.meals?.length >= local.meals?.length ? remote.journal.meals : local.meals || [],
+              steps: remote.journal.steps ?? local.steps ?? 0,
               sessions: remote.journal.sessions || local.sessions || [],
               session: remote.journal.session || local.session || null,
-              water: remote.journal.water || local.water || 0
+              water: remote.journal.water ?? local.water ?? 0
             };
             localStorage.setItem("pq_journal", JSON.stringify(all));
+            if (remoteTs) localStorage.setItem(`pq_journal_ts_${today}`, remoteTs);
             changed = true;
           }
         }
@@ -1483,13 +1498,18 @@ function ViewAnalyze({ premium }) {
           const localHistory = JSON.parse(localStorage.getItem("pq_history") || "[]");
           const merged = [...localHistory];
           for (const a of remote.analyses) {
-            if (!merged.find(h => h.date === a.date && h.bodyfat === a.bodyfat)) {
+            const exists = merged.find(h => {
+              const hDate = h.date ? h.date.slice(0,10) : "";
+              const aDate = a.date ? a.date.slice(0,10) : "";
+              return hDate === aDate && h.bodyfat === a.bodyfat;
+            });
+            if (!exists) {
               merged.push({ date: a.date, bodyfat: a.bodyfat, weight: a.weight, note: a.note, confidence: a.confidence });
               changed = true;
             }
           }
           if (changed) {
-            merged.sort((a,b) => b.date.localeCompare(a.date));
+            merged.sort((a,b) => (b.date||"").localeCompare(a.date||""));
             localStorage.setItem("pq_history", JSON.stringify(merged.slice(0,100)));
           }
         }
@@ -1497,7 +1517,9 @@ function ViewAnalyze({ premium }) {
           const localFoods = JSON.parse(localStorage.getItem("pq_saved_foods") || "[]");
           const merged = [...localFoods];
           for (const f of remote.savedFoods) {
-            if (!merged.find(lf => lf.name === f.name)) { merged.push(f); changed = true; }
+            if (!merged.find(lf => lf.name?.toLowerCase() === f.name?.toLowerCase())) { 
+              merged.push(f); changed = true; 
+            }
           }
           if (changed) localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
         }
@@ -1950,14 +1972,17 @@ function ViewJour() {
   function save(data) {
     setJournal(data);
     saveTodayJournal(data);
-    // Sync vers Supabase — inclut explicitement session
+    const today = getTodayISO();
+    const ts = new Date().toISOString();
+    localStorage.setItem(`pq_journal_ts_${today}`, ts);
     syncPush({ journal: {
-      date: getTodayISO(),
+      date: today,
       meals: data.meals || [],
       steps: data.steps || 0,
       sessions: data.sessions || [],
       session: data.session || null,
-      water: data.water || 0
+      water: data.water || 0,
+      updated_at: ts
     }});
   }
 
@@ -3099,27 +3124,37 @@ export default function App() {
         let changed = false;
         if (remote.profile) {
           const p = remote.profile;
-          // Ne remplace que si le localStorage est vide pour ce champ
-          if (p.gender && !localStorage.getItem("pq_gender")) { localStorage.setItem("pq_gender", p.gender); changed = true; }
-          if (p.age && !localStorage.getItem("pq_age")) { localStorage.setItem("pq_age", String(p.age)); changed = true; }
-          if (p.weight && !localStorage.getItem("pq_weight")) { localStorage.setItem("pq_weight", String(p.weight)); changed = true; }
-          if (p.height && !localStorage.getItem("pq_height")) { localStorage.setItem("pq_height", String(p.height)); changed = true; }
-          if (p.goal && !localStorage.getItem("pq_goal")) { localStorage.setItem("pq_goal", p.goal); changed = true; }
-          if (p.activity && !localStorage.getItem("pq_activity")) { localStorage.setItem("pq_activity", p.activity); changed = true; }
+          const localTs = localStorage.getItem("pq_profile_updated_at");
+          const remoteTs = p.updated_at;
+          // Supabase est plus récent → écrase le local
+          const useRemote = !localTs || (remoteTs && new Date(remoteTs) > new Date(localTs));
+          if (useRemote) {
+            if (p.gender) localStorage.setItem("pq_gender", p.gender);
+            if (p.age) localStorage.setItem("pq_age", String(p.age));
+            if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
+            if (p.height) localStorage.setItem("pq_height", String(p.height));
+            if (p.goal) localStorage.setItem("pq_goal", p.goal);
+            if (p.activity) localStorage.setItem("pq_activity", p.activity);
+            if (remoteTs) localStorage.setItem("pq_profile_updated_at", remoteTs);
+            changed = true;
+          }
         }
         if (remote.journal) {
-          // Stocke dans la même clé que getTodayJournal (format pq_journal avec ISO date)
           const all = JSON.parse(localStorage.getItem("pq_journal") || "{}");
-          const local = all[today] || { meals: [], steps: 0, sessions: [], water: 0 };
-          if ((remote.journal.meals?.length || 0) >= (local.meals?.length || 0)) {
+          const local = all[today] || { meals: [], steps: 0, sessions: [], session: null, water: 0 };
+          const localTs = localStorage.getItem(`pq_journal_ts_${today}`);
+          const remoteTs = remote.journal.updated_at;
+          const useRemote = !localTs || !remote.journal.updated_at || new Date(remoteTs) > new Date(localTs);
+          if (useRemote) {
             all[today] = {
-              meals: remote.journal.meals || [],
-              steps: remote.journal.steps || local.steps || 0,
+              meals: remote.journal.meals?.length >= local.meals?.length ? remote.journal.meals : local.meals || [],
+              steps: remote.journal.steps ?? local.steps ?? 0,
               sessions: remote.journal.sessions || local.sessions || [],
               session: remote.journal.session || local.session || null,
-              water: remote.journal.water || local.water || 0
+              water: remote.journal.water ?? local.water ?? 0
             };
             localStorage.setItem("pq_journal", JSON.stringify(all));
+            if (remoteTs) localStorage.setItem(`pq_journal_ts_${today}`, remoteTs);
             changed = true;
           }
         }
@@ -3127,13 +3162,18 @@ export default function App() {
           const localHistory = JSON.parse(localStorage.getItem("pq_history") || "[]");
           const merged = [...localHistory];
           for (const a of remote.analyses) {
-            if (!merged.find(h => h.date === a.date && h.bodyfat === a.bodyfat)) {
+            const exists = merged.find(h => {
+              const hDate = h.date ? h.date.slice(0,10) : "";
+              const aDate = a.date ? a.date.slice(0,10) : "";
+              return hDate === aDate && h.bodyfat === a.bodyfat;
+            });
+            if (!exists) {
               merged.push({ date: a.date, bodyfat: a.bodyfat, weight: a.weight, note: a.note, confidence: a.confidence });
               changed = true;
             }
           }
           if (changed) {
-            merged.sort((a,b) => b.date.localeCompare(a.date));
+            merged.sort((a,b) => (b.date||"").localeCompare(a.date||""));
             localStorage.setItem("pq_history", JSON.stringify(merged.slice(0,100)));
           }
         }
@@ -3141,7 +3181,9 @@ export default function App() {
           const localFoods = JSON.parse(localStorage.getItem("pq_saved_foods") || "[]");
           const merged = [...localFoods];
           for (const f of remote.savedFoods) {
-            if (!merged.find(lf => lf.name === f.name)) { merged.push(f); changed = true; }
+            if (!merged.find(lf => lf.name?.toLowerCase() === f.name?.toLowerCase())) { 
+              merged.push(f); changed = true; 
+            }
           }
           if (changed) localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
         }
