@@ -1,11 +1,24 @@
 export const config = { runtime: "edge" };
 
-async function getEmail(token) {
+async function getEmailFromToken(token) {
   const res = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
     headers: { "apikey": process.env.SUPABASE_ANON_KEY, "Authorization": `Bearer ${token}` }
   });
+  if (!res.ok) return null;
   const user = await res.json();
   return user.email || null;
+}
+
+async function refreshAndGetEmail(refreshToken) {
+  if (!refreshToken) return null;
+  const res = await fetch(`${process.env.SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "apikey": process.env.SUPABASE_ANON_KEY },
+    body: JSON.stringify({ refresh_token: refreshToken })
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.access_token ? { email: data.user?.email, newToken: data.access_token, newRefresh: data.refresh_token } : null;
 }
 
 function db(path, method = "GET", body = null) {
@@ -21,7 +34,6 @@ function db(path, method = "GET", body = null) {
   });
 }
 
-// Validation des données entrantes
 function validateJournal(journal) {
   if (!journal || typeof journal !== "object") return null;
   return {
@@ -36,7 +48,11 @@ function validateJournal(journal) {
     })) : [],
     steps: Math.min(Math.max(parseInt(journal.steps) || 0, 0), 100000),
     sessions: Array.isArray(journal.sessions) ? journal.sessions.slice(0, 10) : [],
-    session: journal.session ? { type: String(journal.session.type || "").slice(0, 100), duration: parseInt(journal.session.duration) || 0, done: !!journal.session.done } : null,
+    session: journal.session ? {
+      type: String(journal.session.type || "").slice(0, 100),
+      duration: Math.min(Math.max(parseInt(journal.session.duration) || 0, 0), 600),
+      done: !!journal.session.done
+    } : null,
     water: Math.min(Math.max(parseInt(journal.water) || 0, 0), 20),
   };
 }
@@ -71,13 +87,31 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
-  const { action, token, data } = body;
+  const { action, token, refreshToken, data } = body;
   if (!token || typeof token !== "string" || token.length > 2000) {
     return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers });
   }
 
-  const email = await getEmail(token);
-  if (!email) return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers });
+  // Tente d'abord avec le token actuel
+  let email = await getEmailFromToken(token);
+  let newToken = null;
+  let newRefresh = null;
+
+  // Si token expiré, tente un refresh
+  if (!email && refreshToken) {
+    const refreshed = await refreshAndGetEmail(refreshToken);
+    if (refreshed) {
+      email = refreshed.email;
+      newToken = refreshed.newToken;
+      newRefresh = refreshed.newRefresh;
+    }
+  }
+
+  if (!email) return new Response(JSON.stringify({ error: "Invalid token", code: "TOKEN_EXPIRED" }), { status: 401, headers });
+
+  const responseHeaders = { ...headers };
+  // Retourne le nouveau token si refresh effectué
+  const meta = newToken ? { newToken, newRefresh } : {};
 
   if (action === "push") {
     const { journal, analyses, profile, savedFoods } = data || {};
@@ -87,7 +121,7 @@ export default async function handler(req) {
       if (j && j.date) {
         await db(`journals?on_conflict=user_email,date`, "POST", {
           user_email: email, date: j.date, meals: j.meals,
-          steps: j.steps, sessions: j.sessions, water: j.water
+          steps: j.steps, sessions: j.sessions, session: j.session, water: j.water
         });
       }
     }
@@ -121,14 +155,14 @@ export default async function handler(req) {
       }
     }
 
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+    return new Response(JSON.stringify({ success: true, ...meta }), { status: 200, headers });
   }
 
   if (action === "pull") {
     const date = String((data || {}).date || "").slice(0, 10) || new Date().toISOString().slice(0, 10);
 
     const [journalRes, analysesRes, profileRes, foodsRes] = await Promise.all([
-      db(`journals?user_email=eq.${encodeURIComponent(email)}&date=eq.${date}&limit=1`),
+      db(`journals?user_email=eq.${encodeURIComponent(email)}&date=eq.${date}&select=date,meals,steps,sessions,session,water&limit=1`),
       db(`analyses?user_email=eq.${encodeURIComponent(email)}&order=date.desc&limit=100`),
       db(`profiles?user_email=eq.${encodeURIComponent(email)}&limit=1`),
       db(`saved_foods?user_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=50`)
@@ -142,7 +176,8 @@ export default async function handler(req) {
       journal: journals?.[0] || null,
       analyses: analyses || [],
       profile: profiles?.[0] || null,
-      savedFoods: savedFoods || []
+      savedFoods: savedFoods || [],
+      ...meta
     }), { status: 200, headers });
   }
 
