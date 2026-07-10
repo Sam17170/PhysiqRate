@@ -1061,6 +1061,8 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
         localStorage.setItem("pq_token", loginData.token);
         if (loginData.refresh_token) localStorage.setItem("pq_refresh_token", loginData.refresh_token);
         localStorage.setItem("pq_email", email);
+        // Sur nouvel appareil — efface le timestamp profil pour forcer le pull depuis Supabase
+        localStorage.removeItem("pq_profile_updated_at");
 
         // Si email différent de l'email Stripe, transfère le Pro au bon email
         const sessionId = localStorage.getItem("pq_stripe_session");
