@@ -556,6 +556,14 @@ function Paywall({ daysLeft, onClose }) {
           {loading ? "Redirection…" : "Commencer maintenant"}
         </button>
 
+        {/* Avertissement Apple Pay */}
+        <div style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"10px 12px",background:"rgba(255,255,255,0.03)",border:`1px solid rgba(255,255,255,0.08)`,borderRadius:"10px",marginBottom:"12px",textAlign:"left"}}>
+          <span style={{fontSize:"14px",flexShrink:0}}>ℹ️</span>
+          <div style={{fontSize:"11px",color:"#666",lineHeight:"1.5"}}>
+            Si tu paies avec <strong style={{color:"#aaa"}}>Apple Pay ou Google Pay</strong>, l'email associé à ton compte sera utilisé pour créer ton compte Physiqrate. Pour utiliser un email différent, paie par carte.
+          </div>
+        </div>
+
         {/* Payment methods */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",marginBottom:"16px"}}>
           {/* Apple Pay */}
