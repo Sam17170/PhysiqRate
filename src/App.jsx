@@ -1465,15 +1465,16 @@ function ViewAnalyze({ premium }) {
           const localTs = localStorage.getItem("pq_profile_updated_at");
           const remoteTs = p.updated_at;
           // Supabase est plus récent → écrase le local
+          // Si pas de timestamp local → toujours utiliser Supabase
           const useRemote = !localTs || (remoteTs && new Date(remoteTs) > new Date(localTs));
-          if (useRemote) {
+          if (useRemote && (p.gender || p.age || p.weight || p.height)) {
             if (p.gender) localStorage.setItem("pq_gender", p.gender);
             if (p.age) localStorage.setItem("pq_age", String(p.age));
             if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
             if (p.height) localStorage.setItem("pq_height", String(p.height));
             if (p.goal) localStorage.setItem("pq_goal", p.goal);
             if (p.activity) localStorage.setItem("pq_activity", p.activity);
-            if (remoteTs) localStorage.setItem("pq_profile_updated_at", remoteTs);
+            localStorage.setItem("pq_profile_updated_at", remoteTs || new Date().toISOString());
             changed = true;
           }
         }
@@ -3129,15 +3130,16 @@ export default function App() {
           const localTs = localStorage.getItem("pq_profile_updated_at");
           const remoteTs = p.updated_at;
           // Supabase est plus récent → écrase le local
+          // Si pas de timestamp local → toujours utiliser Supabase
           const useRemote = !localTs || (remoteTs && new Date(remoteTs) > new Date(localTs));
-          if (useRemote) {
+          if (useRemote && (p.gender || p.age || p.weight || p.height)) {
             if (p.gender) localStorage.setItem("pq_gender", p.gender);
             if (p.age) localStorage.setItem("pq_age", String(p.age));
             if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
             if (p.height) localStorage.setItem("pq_height", String(p.height));
             if (p.goal) localStorage.setItem("pq_goal", p.goal);
             if (p.activity) localStorage.setItem("pq_activity", p.activity);
-            if (remoteTs) localStorage.setItem("pq_profile_updated_at", remoteTs);
+            localStorage.setItem("pq_profile_updated_at", remoteTs || new Date().toISOString());
             changed = true;
           }
         }
