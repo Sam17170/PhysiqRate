@@ -1455,12 +1455,13 @@ function ViewAnalyze({ premium }) {
         let changed = false;
         if (remote.profile) {
           const p = remote.profile;
-          if (p.gender) { localStorage.setItem("pq_gender", p.gender); changed = true; }
-          if (p.age) { localStorage.setItem("pq_age", String(p.age)); changed = true; }
-          if (p.weight) { localStorage.setItem("pq_weight", String(p.weight)); changed = true; }
-          if (p.height) { localStorage.setItem("pq_height", String(p.height)); changed = true; }
-          if (p.goal) { localStorage.setItem("pq_goal", p.goal); changed = true; }
-          if (p.activity) { localStorage.setItem("pq_activity", p.activity); changed = true; }
+          // Ne remplace que si le localStorage est vide pour ce champ
+          if (p.gender && !localStorage.getItem("pq_gender")) { localStorage.setItem("pq_gender", p.gender); changed = true; }
+          if (p.age && !localStorage.getItem("pq_age")) { localStorage.setItem("pq_age", String(p.age)); changed = true; }
+          if (p.weight && !localStorage.getItem("pq_weight")) { localStorage.setItem("pq_weight", String(p.weight)); changed = true; }
+          if (p.height && !localStorage.getItem("pq_height")) { localStorage.setItem("pq_height", String(p.height)); changed = true; }
+          if (p.goal && !localStorage.getItem("pq_goal")) { localStorage.setItem("pq_goal", p.goal); changed = true; }
+          if (p.activity && !localStorage.getItem("pq_activity")) { localStorage.setItem("pq_activity", p.activity); changed = true; }
         }
         if (remote.journal) {
           // Stocke dans la même clé que getTodayJournal (format pq_journal avec ISO date)
@@ -3098,12 +3099,13 @@ export default function App() {
         let changed = false;
         if (remote.profile) {
           const p = remote.profile;
-          if (p.gender) { localStorage.setItem("pq_gender", p.gender); changed = true; }
-          if (p.age) { localStorage.setItem("pq_age", String(p.age)); changed = true; }
-          if (p.weight) { localStorage.setItem("pq_weight", String(p.weight)); changed = true; }
-          if (p.height) { localStorage.setItem("pq_height", String(p.height)); changed = true; }
-          if (p.goal) { localStorage.setItem("pq_goal", p.goal); changed = true; }
-          if (p.activity) { localStorage.setItem("pq_activity", p.activity); changed = true; }
+          // Ne remplace que si le localStorage est vide pour ce champ
+          if (p.gender && !localStorage.getItem("pq_gender")) { localStorage.setItem("pq_gender", p.gender); changed = true; }
+          if (p.age && !localStorage.getItem("pq_age")) { localStorage.setItem("pq_age", String(p.age)); changed = true; }
+          if (p.weight && !localStorage.getItem("pq_weight")) { localStorage.setItem("pq_weight", String(p.weight)); changed = true; }
+          if (p.height && !localStorage.getItem("pq_height")) { localStorage.setItem("pq_height", String(p.height)); changed = true; }
+          if (p.goal && !localStorage.getItem("pq_goal")) { localStorage.setItem("pq_goal", p.goal); changed = true; }
+          if (p.activity && !localStorage.getItem("pq_activity")) { localStorage.setItem("pq_activity", p.activity); changed = true; }
         }
         if (remote.journal) {
           // Stocke dans la même clé que getTodayJournal (format pq_journal avec ISO date)
