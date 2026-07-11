@@ -44,6 +44,9 @@ const STRINGS = {
     potentialToUnlock:    { fr: "Du potentiel à débloquer",   en: "Potential to unlock" },
     comfortZone:          { fr: "Zone de confort",             en: "Comfort zone" },
   },
+  shareCard: {
+    bodyFatLabel: { fr: "BODY FAT", en: "BODY FAT" },
+  },
   analyze: {
     eyebrow:        { fr: "ANALYSE IA · BODY FAT", en: "AI ANALYSIS · BODY FAT" },
     title:          { fr: "Connaît ton vrai physique", en: "Know your real physique" },
@@ -808,7 +811,7 @@ function GaugeRing({ percent, color }) {
 
 function ShareCard({ imagePreview, result, archetype, onReady }) {
   const ref = useRef();
-  const { tr } = useI18n();
+  const { tr, lang } = useI18n();
   useEffect(() => {
     if (!result || !archetype) return;
     const canvas = ref.current;
@@ -880,7 +883,7 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
       ctx.fillStyle = `rgba(${r},${g},${b},0.8)`;
       ctx.font = `600 ${W*0.04}px Arial`;
       ctx.letterSpacing = "12px";
-      ctx.fillText("BODY FAT", W/2, panelY + panelH*0.3);
+      ctx.fillText(tr("shareCard.bodyFatLabel"), W/2, panelY + panelH*0.3);
 
       // ── ARCHETYPE BADGE ───────────────────────────────────────────
       const badgeY = panelY + panelH * 0.4;
@@ -990,7 +993,7 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
     } else {
       draw(null);
     }
-  }, [result]);
+  }, [result, lang]);
   return <canvas ref={ref} style={{display:"none"}}/>;
 }
 
@@ -1907,8 +1910,7 @@ function MacroEditor({ targets, custom, onSave }) {
 // ─── VIEWS ───────────────────────────────────────────────────────────────────
 
 function ViewAnalyze({ premium }) {
-  const { tr } = useI18n();
-  const [step, setStep] = useState("upload");
+  const { tr, lang } = useI18n();
   const [imagePreview, setImagePreview] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [gender, setGender] = useState(null);
@@ -2177,7 +2179,8 @@ function ViewAnalyze({ premium }) {
           height: profile.height || null,
           profilePrompt,
           isPro: !!premium,
-          adWatched: !!adWatched
+          adWatched: !!adWatched,
+          lang
         })
       });
 
