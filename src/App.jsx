@@ -1,26 +1,138 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useContext, createContext } from "react";
+
+// ─── I18N ─────────────────────────────────────────────────────────────────────
+// Dictionnaire de traductions. Structure: STRINGS.section.cle = { fr: "...", en: "..." }
+// Le nom de marque "Physiqrate" n'est jamais traduit.
+const STRINGS = {
+  nav: {
+    analyser:    { fr: "Analyser",    en: "Analyze" },
+    jour:        { fr: "Journée",     en: "Today" },
+    historique:  { fr: "Historique",  en: "History" },
+    progression: { fr: "Progression", en: "Progress" },
+    profil:      { fr: "Profil",      en: "Profile" },
+  },
+  header: {
+    installTitle: { fr: "Installer l'app", en: "Install app" },
+    connexion:    { fr: "Connexion",       en: "Log in" },
+    premium:      { fr: "PREMIUM",         en: "PREMIUM" },
+    pro:          { fr: "✓ PRO",           en: "✓ PRO" },
+  },
+  archetype: {
+    competition:  { fr: "Compétition",   en: "Competition" },
+    eliteAthlete: { fr: "Athlète Elite", en: "Elite athlete" },
+    athlete:      { fr: "Athlète",       en: "Athlete" },
+    fit:          { fr: "Fit",           en: "Fit" },
+    lifestyle:    { fr: "Lifestyle",     en: "Lifestyle" },
+    casual:       { fr: "Casual",        en: "Casual" },
+    bulk:         { fr: "Bulk",          en: "Bulk" },
+    rebuild:      { fr: "Rebuild",       en: "Rebuild" },
+  },
+  analyze: {
+    eyebrow:        { fr: "ANALYSE IA · BODY FAT", en: "AI ANALYSIS · BODY FAT" },
+    title:          { fr: "Connaît ton vrai physique", en: "Know your real physique" },
+    subtitle:       { fr: "Résultats en secondes", en: "Results in seconds" },
+    weeklyReady:    { fr: "Analyse hebdomadaire disponible", en: "Weekly analysis available" },
+    go:             { fr: "Go →", en: "Go →" },
+    completeProfile:{ fr: "Complète ton profil pour plus de précision", en: "Complete your profile for more accuracy" },
+    profileArrow:   { fr: "Profil →", en: "Profile →" },
+    uploadTitle:    { fr: "Prendre ou choisir une photo", en: "Take or choose a photo" },
+    uploadSubtitle: { fr: "Corps entier de préférence", en: "Full body preferred" },
+    tipsTitle:      { fr: "Conseils d'utilisation", en: "Usage tips" },
+    tip1:           { fr: "Porte une tenue ajustée", en: "Wear fitted clothing" },
+    tip2:           { fr: "Place-toi dans une pièce bien éclairée", en: "Stand in a well-lit room" },
+    tip3:           { fr: "Prends la photo de face", en: "Take the photo facing forward" },
+    genre:          { fr: "Genre", en: "Gender" },
+    homme:          { fr: "Homme", en: "Male" },
+    femme:          { fr: "Femme", en: "Female" },
+    ageLabel:       { fr: "Âge (optionnel)", en: "Age (optional)" },
+    agePlaceholder: { fr: "Ex : 24", en: "E.g. 24" },
+    weightLabel:    { fr: "Poids (kg) · optionnel", en: "Weight (kg) · optional" },
+    weightPlaceholder: { fr: "Ex : 75", en: "E.g. 75" },
+    analyzeBtn:     { fr: "Analyser mon physique", en: "Analyze my physique" },
+    changePhoto:    { fr: "Changer de photo", en: "Change photo" },
+    analyzing:      { fr: "Analyse en cours", en: "Analysis in progress" },
+    analyzingSub:   { fr: "L'IA examine ta composition corporelle", en: "The AI is examining your body composition" },
+    step1:          { fr: "Détection musculaire", en: "Muscle detection" },
+    step2:          { fr: "Analyse sous-cutanée", en: "Subcutaneous analysis" },
+    step3:          { fr: "Calibration archétype", en: "Archetype calibration" },
+    defaultDesc:    { fr: "Continue sur ta lancée.", en: "Keep up the momentum." },
+    indicatorsTitle:{ fr: "INDICATEURS ANALYSÉS", en: "ANALYZED INDICATORS" },
+    personalizedTitle: { fr: "ANALYSE PERSONNALISÉE", en: "PERSONALIZED ANALYSIS" },
+    msgTop2:        { fr: "Tu es dans le top 2% mondial. Maintenir ce niveau demande de la rigueur — continue.", en: "You're in the global top 2%. Maintaining this level takes discipline — keep going." },
+    msgElite:       { fr: "Encore 2-3% à perdre et tu atteins l'élite. En 6-8 semaines de déficit léger c'est atteignable.", en: "Just 2-3% more and you reach elite level. Achievable in 6-8 weeks of a light deficit." },
+    msgAthletic:    { fr: "Physique athlétique solide. Un déficit de 300-400 kcal/jour te mène à la catégorie Athlète en 8-10 semaines.", en: "Solid athletic physique. A 300-400 kcal/day deficit gets you to Athlete category in 8-10 weeks." },
+    msgGoodBase:    { fr: "Bonne base. Combine déficit calorique et musculation pour une transformation visible en 12 semaines.", en: "Good base. Combine a calorie deficit with strength training for a visible transformation in 12 weeks." },
+    msgPotential:   { fr: "Le potentiel est là. Configure ton profil pour obtenir ton plan calorique personnalisé.", en: "The potential is there. Set up your profile to get your personalized calorie plan." },
+    msgStart:       { fr: "Chaque transformation commence ici. Configure ton profil — c'est la première étape.", en: "Every transformation starts here. Set up your profile — it's the first step." },
+    installNudgeTitle: { fr: "Installe Physiqrate", en: "Install Physiqrate" },
+    installNudgeSub:   { fr: "Reviens chaque semaine suivre ta progression", en: "Come back every week to track your progress" },
+    openSafari:        { fr: "Ouvrir dans Safari pour installer", en: "Open in Safari to install" },
+    addHomeScreen:     { fr: "Ajouter à l'écran d'accueil", en: "Add to home screen" },
+    shareCardTitle: { fr: "CARTE DE PARTAGE", en: "SHARE CARD" },
+    generating:     { fr: "Génération en cours…", en: "Generating…" },
+    shareBtn:       { fr: "Partager mon résultat", en: "Share my result" },
+    newAnalysis:    { fr: "Nouvelle analyse", en: "New analysis" },
+    seeProgress:    { fr: "Voir ma progression", en: "See my progress" },
+    selectGender:   { fr: "Sélectionne ton genre.", en: "Select your gender." },
+    errorPrefix:    { fr: "Erreur : ", en: "Error: " },
+    shareText:      { fr: "Mon body fat : {bf}% — {ref} | PHYSIQRATE", en: "My body fat: {bf}% — {ref} | PHYSIQRATE" },
+  },
+};
+
+function detectInitialLang() {
+  try {
+    const saved = localStorage.getItem("pq_lang");
+    if (saved === "fr" || saved === "en") return saved;
+  } catch {}
+  const nav = ((typeof navigator !== "undefined" && navigator.language) || "fr").toLowerCase();
+  return nav.startsWith("fr") ? "fr" : "en";
+}
+
+const LangContext = createContext({ lang: "fr", setLang: () => {}, tr: (path) => path });
+
+function LangProvider({ children }) {
+  const [lang, setLangState] = useState(detectInitialLang());
+  function setLang(l) {
+    setLangState(l);
+    try { localStorage.setItem("pq_lang", l); } catch {}
+  }
+  function tr(path) {
+    const parts = path.split(".");
+    let node = STRINGS;
+    for (const p of parts) {
+      node = node?.[p];
+      if (node === undefined) return path;
+    }
+    return node[lang] || node.fr || path;
+  }
+  return <LangContext.Provider value={{ lang, setLang, tr }}>{children}</LangContext.Provider>;
+}
+
+function useI18n() {
+  return useContext(LangContext);
+}
 
 // ─── ARCHETYPES ───────────────────────────────────────────────────────────────
 const ARCHETYPES = {
   male: [
-    { max: 6,   label: "Compétition",   ref: "Zyzz / Arnold peak",      color: "#FFD700" },
-    { max: 10,  label: "Athlète Elite", ref: "Brad Pitt Fight Club",     color: "#C0C0FF" },
-    { max: 14,  label: "Athlète",       ref: "Chris Hemsworth Thor",     color: "#7DF9AA" },
-    { max: 18,  label: "Fit",           ref: "Ryan Reynolds Deadpool",   color: "#7DF9FF" },
-    { max: 22,  label: "Lifestyle",     ref: "Chris Pratt post-Marvel",  color: "#A0C4FF" },
-    { max: 27,  label: "Casual",        ref: "Vibe bear mode",           color: "#FFB347" },
-    { max: 35,  label: "Bulk",          ref: "Off-season powerlifter",   color: "#FF8C69" },
-    { max: 100, label: "Rebuild",       ref: "Mission transformation",   color: "#FF6B6B" },
+    { max: 6,   label: "competition",   ref: "Zyzz / Arnold peak",      color: "#FFD700" },
+    { max: 10,  label: "eliteAthlete", ref: "Brad Pitt Fight Club",     color: "#C0C0FF" },
+    { max: 14,  label: "athlete",       ref: "Chris Hemsworth Thor",     color: "#7DF9AA" },
+    { max: 18,  label: "fit",           ref: "Ryan Reynolds Deadpool",   color: "#7DF9FF" },
+    { max: 22,  label: "lifestyle",     ref: "Chris Pratt post-Marvel",  color: "#A0C4FF" },
+    { max: 27,  label: "casual",        ref: "Vibe bear mode",           color: "#FFB347" },
+    { max: 35,  label: "bulk",          ref: "Off-season powerlifter",   color: "#FF8C69" },
+    { max: 100, label: "rebuild",       ref: "Mission transformation",   color: "#FF6B6B" },
   ],
   female: [
-    { max: 14,  label: "Compétition",   ref: "Bikini athlete",           color: "#FFD700" },
-    { max: 18,  label: "Athlète Elite", ref: "Serena Williams",          color: "#C0C0FF" },
-    { max: 22,  label: "Athlète",       ref: "Margot Robbie Barbie",     color: "#7DF9AA" },
-    { max: 26,  label: "Fit",           ref: "Jennifer Aniston",         color: "#7DF9FF" },
-    { max: 30,  label: "Lifestyle",     ref: "Healthy vibes",            color: "#A0C4FF" },
-    { max: 35,  label: "Casual",        ref: "Du potentiel à débloquer", color: "#FFB347" },
-    { max: 42,  label: "Bulk",          ref: "Zone de confort",          color: "#FF8C69" },
-    { max: 100, label: "Rebuild",       ref: "Mission transformation",   color: "#FF6B6B" },
+    { max: 14,  label: "competition",   ref: "Bikini athlete",           color: "#FFD700" },
+    { max: 18,  label: "eliteAthlete", ref: "Serena Williams",          color: "#C0C0FF" },
+    { max: 22,  label: "athlete",       ref: "Margot Robbie Barbie",     color: "#7DF9AA" },
+    { max: 26,  label: "fit",           ref: "Jennifer Aniston",         color: "#7DF9FF" },
+    { max: 30,  label: "lifestyle",     ref: "Healthy vibes",            color: "#A0C4FF" },
+    { max: 35,  label: "casual",        ref: "Du potentiel à débloquer", color: "#FFB347" },
+    { max: 42,  label: "bulk",          ref: "Zone de confort",          color: "#FF8C69" },
+    { max: 100, label: "rebuild",       ref: "Mission transformation",   color: "#FF6B6B" },
   ],
 };
 function getArchetype(bf, gender) {
@@ -305,6 +417,7 @@ function GaugeRing({ percent, color }) {
 
 function ShareCard({ imagePreview, result, archetype, onReady }) {
   const ref = useRef();
+  const { tr } = useI18n();
   useEffect(() => {
     if (!result || !archetype) return;
     const canvas = ref.current;
@@ -395,7 +508,7 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
       ctx.fillStyle = color;
       ctx.font = `bold ${W*0.048}px Arial`;
       ctx.letterSpacing = "4px";
-      ctx.fillText(archetype.label.toUpperCase(), W/2, badgeY + badgeH*0.65);
+      ctx.fillText(tr("archetype." + archetype.label).toUpperCase(), W/2, badgeY + badgeH*0.65);
 
       // Ref celeb
       ctx.fillStyle = "rgba(255,255,255,0.55)";
@@ -1391,6 +1504,7 @@ function MacroEditor({ targets, custom, onSave }) {
 // ─── VIEWS ───────────────────────────────────────────────────────────────────
 
 function ViewAnalyze({ premium }) {
+  const { tr } = useI18n();
   const [step, setStep] = useState("upload");
   const [imagePreview, setImagePreview] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
@@ -1619,7 +1733,7 @@ function ViewAnalyze({ premium }) {
 
   async function analyze() {
     setError(null);
-    if (!gender) { setError("Sélectionne ton genre."); return; }
+    if (!gender) { setError(tr("analyze.selectGender")); return; }
 
     if (!premium) {
       const usage = getUsage();
@@ -1691,7 +1805,7 @@ function ViewAnalyze({ premium }) {
       setResult({ ...data, archetype });
       setStep("result");
     } catch (err) {
-      setError(`Erreur : ${err.message}`);
+      setError(`${tr("analyze.errorPrefix")}${err.message}`);
       setStep("form");
     }
   }
@@ -1719,9 +1833,9 @@ function ViewAnalyze({ premium }) {
         <>
           {/* Header compact */}
           <div style={{textAlign:"center",marginBottom:"16px",paddingTop:"4px"}}>
-            <div style={{fontSize:"9px",letterSpacing:"4px",color:C.gold,marginBottom:"8px",opacity:0.8}}>ANALYSE IA · BODY FAT</div>
-            <h1 style={{fontSize:"22px",fontWeight:"800",background:"linear-gradient(135deg,#fff,#aaa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:"4px"}}>Connaît ton vrai physique</h1>
-            <p style={{fontSize:"11px",color:C.muted}}>Résultats en secondes</p>
+            <div style={{fontSize:"9px",letterSpacing:"4px",color:C.gold,marginBottom:"8px",opacity:0.8}}>{tr("analyze.eyebrow")}</div>
+            <h1 style={{fontSize:"22px",fontWeight:"800",background:"linear-gradient(135deg,#fff,#aaa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:"4px"}}>{tr("analyze.title")}</h1>
+            <p style={{fontSize:"11px",color:C.muted}}>{tr("analyze.subtitle")}</p>
           </div>
 
           {/* Rappel analyse disponible */}
@@ -1731,8 +1845,8 @@ function ViewAnalyze({ premium }) {
               const days = (Date.now() - new Date(usage.weeklyUsed).getTime()) / 86400000;
               if (days >= 7) return (
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"rgba(125,249,170,0.08)",border:`1px solid rgba(125,249,170,0.2)`,borderRadius:"12px",marginBottom:"8px"}}>
-                  <span style={{fontSize:"12px",color:"#aaa"}}>Analyse hebdomadaire disponible</span>
-                  <span style={{fontSize:"11px",color:C.green,fontWeight:"600"}}>Go →</span>
+                  <span style={{fontSize:"12px",color:"#aaa"}}>{tr("analyze.weeklyReady")}</span>
+                  <span style={{fontSize:"11px",color:C.green,fontWeight:"600"}}>{tr("analyze.go")}</span>
                 </div>
               );
             }
@@ -1744,9 +1858,9 @@ function ViewAnalyze({ premium }) {
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:`rgba(255,215,0,0.06)`,border:`1px solid rgba(255,215,0,0.1)`,borderRadius:"12px",marginBottom:"8px",cursor:"pointer"}} onClick={()=>document.dispatchEvent(new CustomEvent("navigate",{detail:"profil"}))}>
               <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
                 <div style={{width:"6px",height:"6px",borderRadius:"50%",background:C.red,flexShrink:0}}/>
-                <span style={{fontSize:"12px",color:"#aaa"}}>Complète ton profil pour plus de précision</span>
+                <span style={{fontSize:"12px",color:"#aaa"}}>{tr("analyze.completeProfile")}</span>
               </div>
-              <span style={{fontSize:"11px",color:C.gold,fontWeight:"600"}}>Profil →</span>
+              <span style={{fontSize:"11px",color:C.gold,fontWeight:"600"}}>{tr("analyze.profileArrow")}</span>
             </div>
           )}
 
@@ -1773,19 +1887,19 @@ function ViewAnalyze({ premium }) {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
             <div>
-              <div style={{fontSize:"15px",fontWeight:"700",marginBottom:"3px"}}>Prendre ou choisir une photo</div>
-              <div style={{fontSize:"12px",color:C.muted}}>Corps entier de préférence</div>
+              <div style={{fontSize:"15px",fontWeight:"700",marginBottom:"3px"}}>{tr("analyze.uploadTitle")}</div>
+              <div style={{fontSize:"12px",color:C.muted}}>{tr("analyze.uploadSubtitle")}</div>
             </div>
           </div>
 
           {/* Conseils d'utilisation — texte clair, sans emoji */}
           <div style={{...css.card, marginTop:"0"}}>
-            <div style={css.cardTitle}>Conseils d'utilisation</div>
+            <div style={css.cardTitle}>{tr("analyze.tipsTitle")}</div>
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
               {[
-                "Porte une tenue ajustée",
-                "Place-toi dans une pièce bien éclairée",
-                "Prends la photo de face",
+                tr("analyze.tip1"),
+                tr("analyze.tip2"),
+                tr("analyze.tip3"),
               ].map((t,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <div style={{width:"20px",height:"20px",borderRadius:"6px",background:"rgba(255,215,0,0.1)",border:`1px solid rgba(255,215,0,0.25)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:"10px",fontWeight:"700",color:C.gold}}>
@@ -1806,32 +1920,32 @@ function ViewAnalyze({ premium }) {
               <img src={imagePreview} alt="" style={{width:"100%",objectFit:"cover",maxHeight:"200px"}}/>
             </div>
           )}
-          <span style={css.label}>Genre</span>
+          <span style={css.label}>{tr("analyze.genre")}</span>
           <div style={{display:"flex",gap:"8px",marginTop:"8px"}}>
-            <button style={{...css.optBtn(gender==="male"),flex:1,textAlign:"center"}} onClick={()=>setGender("male")}>Homme</button>
-            <button style={{...css.optBtn(gender==="female"),flex:1,textAlign:"center"}} onClick={()=>setGender("female")}>Femme</button>
+            <button style={{...css.optBtn(gender==="male"),flex:1,textAlign:"center"}} onClick={()=>setGender("male")}>{tr("analyze.homme")}</button>
+            <button style={{...css.optBtn(gender==="female"),flex:1,textAlign:"center"}} onClick={()=>setGender("female")}>{tr("analyze.femme")}</button>
           </div>
-          <span style={css.label}>Âge (optionnel)</span>
-          <input style={css.input} type="text" inputMode="numeric" placeholder="Ex : 24" maxLength={3}
+          <span style={css.label}>{tr("analyze.ageLabel")}</span>
+          <input style={css.input} type="text" inputMode="numeric" placeholder={tr("analyze.agePlaceholder")} maxLength={3}
             value={age}
             onChange={e=>{ const raw=e.target.value.replace(/[^0-9]/g,"").slice(0,3); const v=parseInt(raw)||""; setAge(v>100?"100":raw); }}/>
-          <span style={css.label}>Poids (kg) · optionnel</span>
-          <input style={css.input} type="text" inputMode="decimal" placeholder="Ex : 75" maxLength={5}
+          <span style={css.label}>{tr("analyze.weightLabel")}</span>
+          <input style={css.input} type="text" inputMode="decimal" placeholder={tr("analyze.weightPlaceholder")} maxLength={5}
             value={weight}
             onChange={e=>{ const raw=e.target.value.replace(/[^0-9.]/g,"").slice(0,5); const v=parseFloat(raw)||""; setWeight(v>300?"300":raw); }}/>
           {error && <div style={{marginTop:"10px",color:C.red,fontSize:"12px",textAlign:"center"}}>{error}</div>}
           <div style={{marginTop:"16px"}}>
-            <button style={{...css.btn(C.gold),opacity:!gender?0.4:1,cursor:!gender?"not-allowed":"pointer"}} onClick={analyze} disabled={!gender}>Analyser mon physique</button>
-            <button style={css.btnSec} onClick={()=>setStep("upload")}>Changer de photo</button>
+            <button style={{...css.btn(C.gold),opacity:!gender?0.4:1,cursor:!gender?"not-allowed":"pointer"}} onClick={analyze} disabled={!gender}>{tr("analyze.analyzeBtn")}</button>
+            <button style={css.btnSec} onClick={()=>setStep("upload")}>{tr("analyze.changePhoto")}</button>
           </div>
         </div>
       )}
 
       {step === "analyzing" && (
         <div style={{...css.card,textAlign:"center"}}>
-          <div style={{fontSize:"17px",fontWeight:"700",marginBottom:"8px"}}>Analyse en cours</div>
-          <div style={{fontSize:"12px",color:C.muted,marginBottom:"20px"}}>L'IA examine ta composition corporelle</div>
-          {["Détection musculaire","Analyse sous-cutanée","Calibration archétype"].map((t,i)=>(
+          <div style={{fontSize:"17px",fontWeight:"700",marginBottom:"8px"}}>{tr("analyze.analyzing")}</div>
+          <div style={{fontSize:"12px",color:C.muted,marginBottom:"20px"}}>{tr("analyze.analyzingSub")}</div>
+          {[tr("analyze.step1"),tr("analyze.step2"),tr("analyze.step3")].map((t,i)=>(
             <div key={i} style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",background:"rgba(255,255,255,0.03)",borderRadius:"10px",marginBottom:"6px"}}>
               <div style={{width:"6px",height:"6px",borderRadius:"50%",background:C.gold,boxShadow:`0 0 8px ${C.gold}`}}/>
               <span style={{fontSize:"12px",color:"#777"}}>{t}</span>
@@ -1845,12 +1959,12 @@ function ViewAnalyze({ premium }) {
           <ShareCard imagePreview={imagePreview} result={result} archetype={archetype} onReady={setShareUrl}/>
 
           <div style={{...css.card,textAlign:"center"}}>
-            <div style={{display:"inline-block",padding:"5px 14px",borderRadius:"20px",border:`1px solid ${archetype.color}33`,background:`${archetype.color}11`,color:archetype.color,fontSize:"11px",fontWeight:"700",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"8px"}}>{archetype.label}</div>
+            <div style={{display:"inline-block",padding:"5px 14px",borderRadius:"20px",border:`1px solid ${archetype.color}33`,background:`${archetype.color}11`,color:archetype.color,fontSize:"11px",fontWeight:"700",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"8px"}}>{tr("archetype."+archetype.label)}</div>
             <div style={{fontSize:"17px",fontWeight:"800",color:archetype.color,marginBottom:"16px"}}>{archetype.ref}</div>
             <div style={{display:"flex",justifyContent:"center",marginBottom:"8px"}}>
               <GaugeRing percent={result.bodyfat} color={archetype.color}/>
             </div>
-            <div style={{fontSize:"12px",color:C.sub,marginBottom:"12px",fontStyle:"italic"}}>"{archetype.desc || "Continue sur ta lancée."}"</div>
+            <div style={{fontSize:"12px",color:C.sub,marginBottom:"12px",fontStyle:"italic"}}>"{archetype.desc || tr("analyze.defaultDesc")}"</div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"6px",fontSize:"11px",color:"#444"}}>
               <div style={{width:"6px",height:"6px",borderRadius:"50%",background:result.confidence==="high"?C.green:result.confidence==="medium"?C.gold:C.red}}/>
               {result.confidence_reason}
@@ -1859,7 +1973,7 @@ function ViewAnalyze({ premium }) {
 
           {result.key_indicators?.length > 0 && (
             <div style={css.card}>
-              <div style={css.cardTitle}>INDICATEURS ANALYSÉS</div>
+              <div style={css.cardTitle}>{tr("analyze.indicatorsTitle")}</div>
               {result.key_indicators.map((ind,i)=>(
                 <div key={i} style={{display:"flex",gap:"10px",marginBottom:"8px"}}>
                   <span style={{color:archetype.color,fontSize:"12px",marginTop:"1px"}}>◆</span>
@@ -1879,15 +1993,15 @@ function ViewAnalyze({ premium }) {
           {(() => {
             const bf = result.bodyfat;
             let msg = null;
-            if (bf <= 10)      msg = { text:"Tu es dans le top 2% mondial. Maintenir ce niveau demande de la rigueur — continue.", color:C.gold };
-            else if (bf <= 14) msg = { text:"Encore 2-3% à perdre et tu atteins l'élite. En 6-8 semaines de déficit léger c'est atteignable.", color:C.green };
-            else if (bf <= 18) msg = { text:"Physique athlétique solide. Un déficit de 300-400 kcal/jour te mène à la catégorie Athlète en 8-10 semaines.", color:C.green };
-            else if (bf <= 22) msg = { text:"Bonne base. Combine déficit calorique et musculation pour une transformation visible en 12 semaines.", color:"#7DF9FF" };
-            else if (bf <= 27) msg = { text:"Le potentiel est là. Configure ton profil pour obtenir ton plan calorique personnalisé.", color:"#FFB347" };
-            else               msg = { text:"Chaque transformation commence ici. Configure ton profil — c'est la première étape.", color:"#FF8C69" };
+            if (bf <= 10)      msg = { text:tr("analyze.msgTop2"), color:C.gold };
+            else if (bf <= 14) msg = { text:tr("analyze.msgElite"), color:C.green };
+            else if (bf <= 18) msg = { text:tr("analyze.msgAthletic"), color:C.green };
+            else if (bf <= 22) msg = { text:tr("analyze.msgGoodBase"), color:"#7DF9FF" };
+            else if (bf <= 27) msg = { text:tr("analyze.msgPotential"), color:"#FFB347" };
+            else               msg = { text:tr("analyze.msgStart"), color:"#FF8C69" };
             return (
               <div style={{...css.card,background:`linear-gradient(135deg,${msg.color}08,transparent)`,borderColor:`${msg.color}18`}}>
-                <div style={{fontSize:"10px",color:msg.color,letterSpacing:"2px",marginBottom:"8px"}}>ANALYSE PERSONNALISÉE</div>
+                <div style={{fontSize:"10px",color:msg.color,letterSpacing:"2px",marginBottom:"8px"}}>{tr("analyze.personalizedTitle")}</div>
                 <div style={{fontSize:"13px",color:"#ccc",lineHeight:"1.6"}}>{msg.text}</div>
               </div>
             );
@@ -1902,20 +2016,20 @@ function ViewAnalyze({ premium }) {
               <div style={{...css.card,background:"linear-gradient(135deg,rgba(255,215,0,0.06),transparent)",borderColor:"rgba(255,215,0,0.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:"13px",fontWeight:"700",marginBottom:"3px"}}>Installe Physiqrate</div>
-                    <div style={{fontSize:"11px",color:"#666"}}>Reviens chaque semaine suivre ta progression</div>
+                    <div style={{fontSize:"13px",fontWeight:"700",marginBottom:"3px"}}>{tr("analyze.installNudgeTitle")}</div>
+                    <div style={{fontSize:"11px",color:"#666"}}>{tr("analyze.installNudgeSub")}</div>
                   </div>
                 </div>
                 <div style={{marginTop:"12px"}}>
                   {isIOS ? (
                     <a href="x-safari-https://physiqrate.com"
                       style={{display:"block",textAlign:"center",padding:"12px",borderRadius:"10px",background:"linear-gradient(135deg,#FFD700,#FFA500)",color:"#000",fontSize:"13px",fontWeight:"700",textDecoration:"none"}}>
-                      Ouvrir dans Safari pour installer
+                      {tr("analyze.openSafari")}
                     </a>
                   ) : (
                     <button onClick={()=>window._pwaInstallPrompt?.prompt()}
                       style={{...css.btn(C.gold),marginBottom:0}}>
-                      Ajouter à l'écran d'accueil
+                      {tr("analyze.addHomeScreen")}
                     </button>
                   )}
                 </div>
@@ -1924,22 +2038,22 @@ function ViewAnalyze({ premium }) {
           })()}
 
           <div style={css.card}>
-            <div style={css.cardTitle}>CARTE DE PARTAGE</div>
+            <div style={css.cardTitle}>{tr("analyze.shareCardTitle")}</div>
             {shareUrl ? (
               <>
                 <div style={{borderRadius:"12px",overflow:"hidden",marginBottom:"12px",border:`1px solid ${archetype.color}18`}}>
                   <img src={shareUrl} alt="carte" style={{width:"100%",display:"block"}}/>
                 </div>
                 <button style={css.btn(archetype.color)} onClick={async()=>{
-                  const text=`Mon body fat : ${result.bodyfat}% — ${archetype.ref} | PHYSIQRATE`;
+                  const text=tr("analyze.shareText").replace("{bf}",result.bodyfat).replace("{ref}",archetype.ref);
                   if(navigator.share){try{const blob=await(await fetch(shareUrl)).blob();const file=new File([blob],"physiqrate.png",{type:"image/png"});if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],text});return;}}catch{}}
                   const a=document.createElement("a");a.href=shareUrl;a.download="physiqrate.png";a.click();
-                }}>Partager mon résultat</button>
+                }}>{tr("analyze.shareBtn")}</button>
               </>
-            ) : <div style={{textAlign:"center",padding:"16px",color:C.muted,fontSize:"12px"}}>Génération en cours…</div>}
-            <button style={css.btnSec} onClick={reset}>Nouvelle analyse</button>
+            ) : <div style={{textAlign:"center",padding:"16px",color:C.muted,fontSize:"12px"}}>{tr("analyze.generating")}</div>}
+            <button style={css.btnSec} onClick={reset}>{tr("analyze.newAnalysis")}</button>
           <button style={{...css.btnSec,color:C.gold,borderColor:"rgba(255,215,0,0.2)"}} onClick={()=>document.dispatchEvent(new CustomEvent("navigate",{detail:"progression"}))}>
-            Voir ma progression
+            {tr("analyze.seeProgress")}
           </button>
           </div>
         </>
@@ -3073,7 +3187,7 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
 }
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
-export default function App() {
+function AppInner() {
   const [view, setView] = useState("analyser");
   const [premium, setPremiumState] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -3303,12 +3417,13 @@ export default function App() {
     }
   }, []);
 
+  const { lang, setLang, tr } = useI18n();
   const tabs = [
-    { key: "analyser",    label: "Analyser" },
-    { key: "jour",        label: "Journée"  },
-    { key: "historique",  label: "Historique" },
-    { key: "progression", label: "Progression" },
-    { key: "profil",      label: "Profil", dot: !profileComplete },
+    { key: "analyser",    label: tr("nav.analyser") },
+    { key: "jour",        label: tr("nav.jour")  },
+    { key: "historique",  label: tr("nav.historique") },
+    { key: "progression", label: tr("nav.progression") },
+    { key: "profil",      label: tr("nav.profil"), dot: !profileComplete },
   ];
 
   return (
@@ -3457,9 +3572,14 @@ export default function App() {
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px"}}>
           <Logo/>
           <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+            {/* Sélecteur de langue */}
+            <button onClick={()=>setLang(lang === "fr" ? "en" : "fr")} title="Language"
+              style={{padding:"5px 9px",borderRadius:"20px",border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:"#aaa",fontSize:"11px",fontWeight:"700",cursor:"pointer",fontFamily:"inherit"}}>
+              {lang === "fr" ? "FR" : "EN"}
+            </button>
             {/* Install icon */}
             {!window.matchMedia("(display-mode: standalone)").matches && !window.navigator.standalone && (
-              <button onClick={()=>setShowPWA(true)} title="Installer l'app"
+              <button onClick={()=>setShowPWA(true)} title={tr("header.installTitle")}
                 style={{width:"32px",height:"32px",borderRadius:"8px",border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.gold,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2.5">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -3472,15 +3592,15 @@ export default function App() {
             {!user ? (
               <button onClick={()=>setShowAuth(true)}
                 style={{padding:"5px 12px",borderRadius:"20px",border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:"#aaa",fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit"}}>
-                Connexion
+                {tr("header.connexion")}
               </button>
             ) : null}
             {/* Pro badge or upgrade */}
             {premium
-              ? <div style={{fontSize:"11px",color:C.green,fontWeight:"700",border:`1px solid rgba(125,249,170,0.3)`,padding:"4px 10px",borderRadius:"20px"}}>✓ PRO</div>
+              ? <div style={{fontSize:"11px",color:C.green,fontWeight:"700",border:`1px solid rgba(125,249,170,0.3)`,padding:"4px 10px",borderRadius:"20px"}}>{tr("header.pro")}</div>
               : <button onClick={()=>setShowPaywall(true)}
                   style={{padding:"5px 12px",borderRadius:"20px",border:`1px solid rgba(255,215,0,0.4)`,background:"rgba(255,215,0,0.08)",color:C.gold,fontSize:"11px",fontWeight:"700",cursor:"pointer",fontFamily:"inherit"}}>
-                  PREMIUM
+                  {tr("header.premium")}
                 </button>
             }
           </div>
@@ -3502,5 +3622,13 @@ export default function App() {
       {view === "progression" && <ViewProgression key={syncVersion} premium={premium} onShowPaywall={()=>setShowPaywall(true)}/>}
       {view === "profil"      && <ViewProfil key={syncVersion} user={user} premium={premium} onShowAuth={()=>setShowAuth(true)} setPremiumState={setPremiumState}/>}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LangProvider>
+      <AppInner/>
+    </LangProvider>
   );
 }
