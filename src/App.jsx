@@ -2774,15 +2774,46 @@ function ViewProgression({ premium, onShowPaywall }) {
 
 function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
   const [profile, setProfile] = useState(getProfile());
+  const [saved, setSaved] = useState(false);
   const completion = getProfileCompletion(profile);
   const w = parseFloat(get(keys.weight) || profile.weight || 0);
   const tdee = calcTDEE(profile.gender, profile.age, profile.height, w, profile.activity, profile.steps);
   const goalCals = calcGoal(tdee, profile.goal);
 
+  // Récupère la dernière version distante à chaque ouverture de l'onglet Profil
+  // (et pas seulement au chargement complet de l'app) pour refléter les changements
+  // faits sur un autre appareil sans avoir à recharger toute l'app.
+  useEffect(() => {
+    const token = localStorage.getItem("pq_token");
+    if (!token) return;
+    const today = new Date().toISOString().slice(0, 10);
+    syncPull(token, today).then(remote => {
+      if (!remote?.profile) return;
+      const p = remote.profile;
+      const localTs = localStorage.getItem("pq_profile_updated_at");
+      const remoteTs = p.updated_at;
+      const useRemote = !localTs || (remoteTs && new Date(remoteTs) > new Date(localTs));
+      if (useRemote && (p.gender || p.age || p.weight || p.height)) {
+        applyRemoteProfile(p);
+        setProfile(getProfile());
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Met à jour l'affichage et la persistance locale immédiatement (rien n'est perdu
+  // en cas de navigation), mais NE pousse PAS vers le serveur à chaque frappe —
+  // ça évite les requêtes en rafale qui peuvent arriver dans le désordre.
   function update(key, val) {
     const updated = { ...profile, [key]: val };
     setProfile(updated);
-    saveProfile(updated);
+    set(keys.profile, updated);
+    setSaved(false);
+  }
+
+  function handleSave() {
+    saveProfile(profile);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   }
 
   return (
@@ -2847,6 +2878,10 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
             <button key={g.key} style={css.optBtn(profile.goal===g.key)} onClick={()=>update("goal",g.key)}>{g.label}</button>
           ))}
         </div>
+
+        <button onClick={handleSave} style={{...css.btn(saved ? C.green : C.gold), marginTop:"18px"}}>
+          {saved ? "✓ Profil sauvegardé" : "Sauvegarder le profil"}
+        </button>
       </div>
 
       {tdee && (
