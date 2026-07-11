@@ -843,17 +843,18 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
         const sc = Math.max(W / photo.width, ph / photo.height);
         ctx.drawImage(photo, (W - photo.width*sc)/2, 0, photo.width*sc, photo.height*sc);
 
-        // Gradient fade bottom
-        const fade = ctx.createLinearGradient(0, ph*0.2, 0, ph);
+        // Léger fondu tout en bas seulement — pour une transition douce avec le panneau du score,
+        // sans assombrir toute la photo
+        const fade = ctx.createLinearGradient(0, ph*0.82, 0, ph);
         fade.addColorStop(0, "rgba(9,9,15,0)");
         fade.addColorStop(1, "rgba(9,9,15,1)");
         ctx.fillStyle = fade;
         ctx.fillRect(0, 0, W, ph);
 
-        // Vignette edges
-        const vig = ctx.createRadialGradient(W/2, ph/2, W*0.3, W/2, ph/2, W*0.8);
+        // Vignette très légère sur les bords, la photo reste fidèle à l'originale
+        const vig = ctx.createRadialGradient(W/2, ph/2, W*0.55, W/2, ph/2, W*0.95);
         vig.addColorStop(0, "rgba(9,9,15,0)");
-        vig.addColorStop(1, "rgba(9,9,15,0.5)");
+        vig.addColorStop(1, "rgba(9,9,15,0.15)");
         ctx.fillStyle = vig;
         ctx.fillRect(0, 0, W, ph);
       } else {
