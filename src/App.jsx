@@ -980,50 +980,50 @@ function Paywall({ daysLeft, onClose, onWatchAd, adAvailable }) {
   }
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(10px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
-      <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"28px",padding:"32px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(10px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",overflowY:"auto"}}>
+      <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"22px 20px",maxWidth:"380px",width:"100%",textAlign:"center",maxHeight:"calc(100vh - 32px)",overflowY:"auto",margin:"auto"}}>
 
         {/* Header */}
-        <div style={{fontSize:"11px",letterSpacing:"3px",color:C.gold,marginBottom:"14px",opacity:0.7}}>PHYSIQRATE PRO</div>
-        <div style={{fontSize:"22px",fontWeight:"800",marginBottom:"6px",lineHeight:"1.2"}}>{tr("paywall.title")}</div>
-        <div style={{fontSize:"13px",color:"#666",marginBottom:"28px"}}>
+        <div style={{fontSize:"10px",letterSpacing:"3px",color:C.gold,marginBottom:"10px",opacity:0.7}}>PHYSIQRATE PRO</div>
+        <div style={{fontSize:"19px",fontWeight:"800",marginBottom:"4px",lineHeight:"1.2"}}>{tr("paywall.title")}</div>
+        <div style={{fontSize:"12px",color:"#666",marginBottom:"16px"}}>
           {daysLeft > 0 && adAvailable === false
             ? tr("ads.adAlreadyUsed")
             : daysLeft > 0 ? trf("paywall.nextFree",{n:daysLeft,s:daysLeft>1?"s":""}) : tr("paywall.continueProgress")}
         </div>
 
         {/* Features list */}
-        <div style={{background:"rgba(255,255,255,0.03)",borderRadius:"16px",padding:"16px",marginBottom:"24px",textAlign:"left"}}>
+        <div style={{background:"rgba(255,255,255,0.03)",borderRadius:"14px",padding:"12px 14px",marginBottom:"16px",textAlign:"left"}}>
           {[
             [tr("paywall.feat1Title"), tr("paywall.feat1Sub")],
             [tr("paywall.feat2Title"), tr("paywall.feat2Sub")],
             [tr("paywall.feat3Title"), tr("paywall.feat3Sub")],
             [tr("paywall.feat4Title"), tr("paywall.feat4Sub")],
           ].map(([title, sub], i) => (
-            <div key={i} style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:i<3?"12px":"0"}}>
-              <div style={{width:"20px",height:"20px",borderRadius:"50%",background:"rgba(125,249,170,0.15)",border:"1px solid rgba(125,249,170,0.3)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <div key={i} style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:i<3?"9px":"0"}}>
+              <div style={{width:"18px",height:"18px",borderRadius:"50%",background:"rgba(125,249,170,0.15)",border:"1px solid rgba(125,249,170,0.3)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
               </div>
               <div>
-                <div style={{fontSize:"13px",fontWeight:"600",color:"white"}}>{title}</div>
-                <div style={{fontSize:"11px",color:"#555"}}>{sub}</div>
+                <div style={{fontSize:"12px",fontWeight:"600",color:"white"}}>{title}</div>
+                <div style={{fontSize:"10px",color:"#555"}}>{sub}</div>
               </div>
             </div>
           ))}
         </div>
 
         {/* Price */}
-        <div style={{marginBottom:"16px"}}>
-          <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:"4px",marginBottom:"4px"}}>
-            <span style={{fontSize:"42px",fontWeight:"800",color:C.gold}}>4,99€</span>
-            <span style={{fontSize:"14px",color:"#555"}}>{tr("paywall.perMonth")}</span>
+        <div style={{marginBottom:"12px"}}>
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:"4px",marginBottom:"2px"}}>
+            <span style={{fontSize:"34px",fontWeight:"800",color:C.gold}}>4,99€</span>
+            <span style={{fontSize:"13px",color:"#555"}}>{tr("paywall.perMonth")}</span>
           </div>
-          <div style={{fontSize:"11px",color:"#444"}}>{tr("paywall.cancelNoCommit")}</div>
+          <div style={{fontSize:"10px",color:"#444"}}>{tr("paywall.cancelNoCommit")}</div>
         </div>
 
         {/* Option : débloquer via pub, si proposée */}
         {onWatchAd && (
-          <button onClick={onWatchAd} style={{...css.btnSec,marginBottom:"12px",borderColor:"rgba(255,215,0,0.25)",color:C.gold,fontWeight:"700"}}>
+          <button onClick={onWatchAd} style={{...css.btnSec,marginBottom:"10px",borderColor:"rgba(255,215,0,0.25)",color:C.gold,fontWeight:"700"}}>
             {tr("ads.watchAdBtn")}
           </button>
         )}
@@ -1032,46 +1032,46 @@ function Paywall({ daysLeft, onClose, onWatchAd, adAvailable }) {
         <button
           onClick={handleCheckout}
           disabled={loading}
-          style={{width:"100%",padding:"16px",borderRadius:"14px",border:"none",background:loading?"#333":`linear-gradient(135deg,#FFD700,#FFA500)`,color:loading?"#666":"#000",fontSize:"15px",fontWeight:"800",cursor:loading?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:"12px",transition:"all 0.2s"}}>
+          style={{width:"100%",padding:"14px",borderRadius:"14px",border:"none",background:loading?"#333":`linear-gradient(135deg,#FFD700,#FFA500)`,color:loading?"#666":"#000",fontSize:"14px",fontWeight:"800",cursor:loading?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:"10px",transition:"all 0.2s"}}>
           {loading ? tr("paywall.redirecting") : tr("paywall.startNow")}
         </button>
 
         {/* Avertissement Apple Pay */}
-        <div style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"10px 12px",background:"rgba(255,255,255,0.03)",border:`1px solid rgba(255,255,255,0.08)`,borderRadius:"10px",marginBottom:"12px",textAlign:"left"}}>
-          <span style={{fontSize:"14px",flexShrink:0}}>ℹ️</span>
-          <div style={{fontSize:"11px",color:"#666",lineHeight:"1.5"}}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"8px 10px",background:"rgba(255,255,255,0.03)",border:`1px solid rgba(255,255,255,0.08)`,borderRadius:"10px",marginBottom:"10px",textAlign:"left"}}>
+          <span style={{fontSize:"13px",flexShrink:0}}>ℹ️</span>
+          <div style={{fontSize:"10px",color:"#666",lineHeight:"1.4"}}>
             {tr("paywall.payWarning").split("{strong}")[0]}<strong style={{color:"#aaa"}}>{tr("paywall.payWarningStrong")}</strong>{tr("paywall.payWarning").split("{strong}")[1]}
           </div>
         </div>
 
         {/* Payment methods */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",marginBottom:"16px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",marginBottom:"12px"}}>
           {/* Apple Pay */}
-          <div style={{display:"flex",alignItems:"center",gap:"4px",background:"rgba(255,255,255,0.06)",borderRadius:"6px",padding:"4px 8px"}}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="#aaa"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-            <span style={{fontSize:"10px",color:"#aaa"}}>Pay</span>
+          <div style={{display:"flex",alignItems:"center",gap:"4px",background:"rgba(255,255,255,0.06)",borderRadius:"6px",padding:"3px 7px"}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#aaa"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            <span style={{fontSize:"9px",color:"#aaa"}}>Pay</span>
           </div>
           {/* Google Pay */}
-          <div style={{display:"flex",alignItems:"center",gap:"4px",background:"rgba(255,255,255,0.06)",borderRadius:"6px",padding:"4px 8px"}}>
-            <span style={{fontSize:"10px",color:"#aaa",fontWeight:"600"}}>G</span>
-            <span style={{fontSize:"10px",color:"#aaa"}}>Pay</span>
+          <div style={{display:"flex",alignItems:"center",gap:"4px",background:"rgba(255,255,255,0.06)",borderRadius:"6px",padding:"3px 7px"}}>
+            <span style={{fontSize:"9px",color:"#aaa",fontWeight:"600"}}>G</span>
+            <span style={{fontSize:"9px",color:"#aaa"}}>Pay</span>
           </div>
           {/* Cards */}
           <div style={{display:"flex",gap:"4px"}}>
-            <div style={{width:"24px",height:"16px",borderRadius:"3px",background:"#1a1f71",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <span style={{fontSize:"6px",color:"white",fontWeight:"800"}}>VISA</span>
+            <div style={{width:"22px",height:"14px",borderRadius:"3px",background:"#1a1f71",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{fontSize:"5px",color:"white",fontWeight:"800"}}>VISA</span>
             </div>
-            <div style={{width:"24px",height:"16px",borderRadius:"3px",background:"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <div style={{width:"22px",height:"14px",borderRadius:"3px",background:"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center"}}>
               <div style={{display:"flex"}}>
-                <div style={{width:"9px",height:"9px",borderRadius:"50%",background:"#EB001B",opacity:0.9}}/>
-                <div style={{width:"9px",height:"9px",borderRadius:"50%",background:"#F79E1B",opacity:0.9,marginLeft:"-4px"}}/>
+                <div style={{width:"8px",height:"8px",borderRadius:"50%",background:"#EB001B",opacity:0.9}}/>
+                <div style={{width:"8px",height:"8px",borderRadius:"50%",background:"#F79E1B",opacity:0.9,marginLeft:"-3px"}}/>
               </div>
             </div>
           </div>
           {/* Lock */}
           <div style={{display:"flex",alignItems:"center",gap:"3px"}}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            <span style={{fontSize:"10px",color:"#444"}}>SSL</span>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span style={{fontSize:"9px",color:"#444"}}>SSL</span>
           </div>
         </div>
 
