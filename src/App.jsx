@@ -1912,6 +1912,7 @@ function MacroEditor({ targets, custom, onSave }) {
 
 function ViewAnalyze({ premium }) {
   const { tr, lang } = useI18n();
+  const [step, setStep] = useState("upload");
   const [imagePreview, setImagePreview] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [gender, setGender] = useState(null);
