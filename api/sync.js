@@ -84,6 +84,14 @@ function validateAnalysis(a) {
   };
 }
 
+function validateSavedSession(s) {
+  if (!s || typeof s !== "object" || !s.type) return null;
+  return {
+    type: String(s.type).slice(0, 100),
+    duration: Math.min(Math.max(parseInt(s.duration) || 0, 0), 600),
+  };
+}
+
 export default async function handler(req) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const origin = req.headers.get("origin") || "https://physiqrate.com";
@@ -119,7 +127,7 @@ export default async function handler(req) {
   const meta = newToken ? { newToken, newRefresh } : {};
 
   if (action === "push") {
-    const { journal, analyses, profile, savedFoods } = data || {};
+    const { journal, analyses, profile, savedFoods, savedSessions } = data || {};
 
     if (journal) {
       const j = validateJournal(journal);
@@ -163,21 +171,32 @@ export default async function handler(req) {
       }
     }
 
+    if (Array.isArray(savedSessions)) {
+      for (const s of savedSessions.slice(0, 20)) {
+        const v = validateSavedSession(s);
+        if (!v) continue;
+        await db(`saved_sessions?on_conflict=user_email,type`, "POST", {
+          user_email: email, ...v
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ success: true, ...meta }), { status: 200, headers });
   }
 
   if (action === "pull") {
     const date = String((data || {}).date || "").slice(0, 10) || new Date().toISOString().slice(0, 10);
 
-    const [journalRes, analysesRes, profileRes, foodsRes] = await Promise.all([
+    const [journalRes, analysesRes, profileRes, foodsRes, sessionsRes] = await Promise.all([
       db(`journals?user_email=eq.${encodeURIComponent(email)}&date=eq.${date}&select=*&limit=1`),
       db(`analyses?user_email=eq.${encodeURIComponent(email)}&order=date.desc&limit=100`),
       db(`profiles?user_email=eq.${encodeURIComponent(email)}&select=*&limit=1`),
-      db(`saved_foods?user_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=50`)
+      db(`saved_foods?user_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=50`),
+      db(`saved_sessions?user_email=eq.${encodeURIComponent(email)}&order=created_at.desc&limit=20`)
     ]);
 
-    const [journals, analyses, profiles, savedFoods] = await Promise.all([
-      journalRes.json(), analysesRes.json(), profileRes.json(), foodsRes.json()
+    const [journals, analyses, profiles, savedFoods, savedSessions] = await Promise.all([
+      journalRes.json(), analysesRes.json(), profileRes.json(), foodsRes.json(), sessionsRes.json()
     ]);
 
     return new Response(JSON.stringify({
@@ -185,6 +204,7 @@ export default async function handler(req) {
       analyses: analyses || [],
       profile: profiles?.[0] || null,
       savedFoods: savedFoods || [],
+      savedSessions: savedSessions || [],
       ...meta
     }), { status: 200, headers });
   }
