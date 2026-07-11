@@ -318,6 +318,26 @@ const STRINGS = {
     then:           { fr: "puis", en: "then" },
     installApp:     { fr: "Installer l'app", en: "Install app" },
   },
+  scanner: {
+    defaultProductName: { fr: "Produit scanné", en: "Scanned product" },
+    notFound:       { fr: "Produit non trouvé. Essaie un autre.", en: "Product not found. Try another one." },
+    networkError:   { fr: "Erreur réseau.", en: "Network error." },
+    cameraDenied:   { fr: "Accès caméra refusé.\nVa dans Réglages → Safari → Caméra → Autoriser.", en: "Camera access denied.\nGo to Settings → Safari → Camera → Allow." },
+    cameraStartFail:{ fr: "Impossible de démarrer la caméra.", en: "Unable to start the camera." },
+    scannerLoadFail:{ fr: "Impossible de charger le scanner.", en: "Unable to load the scanner." },
+    loading:        { fr: "Chargement du scanner…", en: "Loading scanner…" },
+    placeBarcode:   { fr: "Place le code-barres dans le cadre", en: "Place the barcode in the frame" },
+    holdPhone:      { fr: "Tiens le téléphone à 15-20cm", en: "Hold the phone 15-20cm away" },
+    productFound:   { fr: "Produit trouvé !", en: "Product found!" },
+    retry:          { fr: "Réessayer", en: "Retry" },
+    enterManually:  { fr: "Saisir manuellement", en: "Enter manually" },
+    cancel:         { fr: "Annuler", en: "Cancel" },
+    manualEntryTitle: { fr: "SAISIE MANUELLE", en: "MANUAL ENTRY" },
+    enterDigits:    { fr: "Entre les chiffres sous le code-barres", en: "Enter the digits under the barcode" },
+    barcodePlaceholder: { fr: "Ex: 3017620422003", en: "E.g. 3017620422003" },
+    pressEnter:     { fr: "Appuie sur Entrée pour chercher", en: "Press Enter to search" },
+    close:          { fr: "Fermer", en: "Close" },
+  },
 };
 
 function detectInitialLang() {
@@ -3862,9 +3882,9 @@ function AppInner() {
             }
           </div>
         </div>
-        <div style={{display:"flex",gap:"2px",background:"rgba(255,255,255,0.03)",borderRadius:"14px",padding:"4px",overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
+        <div style={{display:"flex",gap:"2px",background:"rgba(255,255,255,0.03)",borderRadius:"14px",padding:"4px"}}>
           {tabs.map(tab=>(
-            <button key={tab.key} onClick={()=>setView(tab.key)} style={{flexShrink:0,padding:"7px 10px",borderRadius:"10px",border:"none",background:view===tab.key?"rgba(255,215,0,0.15)":"transparent",color:view===tab.key?C.gold:C.muted,fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",whiteSpace:"nowrap"}}>
+            <button key={tab.key} onClick={()=>setView(tab.key)} style={{flex:1,minWidth:0,padding:"7px 6px",borderRadius:"10px",border:"none",background:view===tab.key?"rgba(255,215,0,0.15)":"transparent",color:view===tab.key?C.gold:C.muted,fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",whiteSpace:"nowrap",textAlign:"center",overflow:"hidden",textOverflow:"ellipsis"}}>
               {tab.label}
               {tab.dot && <span style={{position:"absolute",top:"3px",right:"3px",width:"6px",height:"6px",borderRadius:"50%",background:C.red}}/>}
             </button>
