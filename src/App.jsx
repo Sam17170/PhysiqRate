@@ -182,6 +182,7 @@ function saveSessionToList(session) {
   if (!exists) {
     list.unshift({ type: session.type, duration: session.duration });
     set("pq_saved_sessions", list.slice(0, 20));
+    syncPush({ savedSessions: [session] });
   }
 }
 function removeSavedSession(type) {
@@ -1545,6 +1546,14 @@ function ViewAnalyze({ premium }) {
             }
           }
           if (changed) localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
+        }
+        if (remote.savedSessions?.length > 0) {
+          const localSessions = JSON.parse(localStorage.getItem("pq_saved_sessions") || "[]");
+          const mergedSessions = [...localSessions];
+          for (const s of remote.savedSessions) {
+            if (!mergedSessions.find(ls => ls.type === s.type)) { mergedSessions.push(s); changed = true; }
+          }
+          if (changed) localStorage.setItem("pq_saved_sessions", JSON.stringify(mergedSessions.slice(0,20)));
         }
         // Force re-render APRÈS que toutes les données sont écrites
         if (changed) setSyncVersion(v => v + 1);
@@ -3240,6 +3249,14 @@ export default function App() {
           }
           if (changed) localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
         }
+        if (remote.savedSessions?.length > 0) {
+          const localSessions = JSON.parse(localStorage.getItem("pq_saved_sessions") || "[]");
+          const mergedSessions = [...localSessions];
+          for (const s of remote.savedSessions) {
+            if (!mergedSessions.find(ls => ls.type === s.type)) { mergedSessions.push(s); changed = true; }
+          }
+          if (changed) localStorage.setItem("pq_saved_sessions", JSON.stringify(mergedSessions.slice(0,20)));
+        }
         // Force re-render APRÈS que toutes les données sont écrites
         if (changed) setSyncVersion(v => v + 1);
       } catch {}
@@ -3394,6 +3411,14 @@ export default function App() {
                   if (!merged.find(lf => lf.name === f.name)) merged.push(f);
                 }
                 localStorage.setItem("pq_saved_foods", JSON.stringify(merged.slice(0,50)));
+              }
+              if (remote.savedSessions?.length > 0) {
+                const localSessions = JSON.parse(localStorage.getItem("pq_saved_sessions") || "[]");
+                const mergedSessions = [...localSessions];
+                for (const s of remote.savedSessions) {
+                  if (!mergedSessions.find(ls => ls.type === s.type)) mergedSessions.push(s);
+                }
+                localStorage.setItem("pq_saved_sessions", JSON.stringify(mergedSessions.slice(0,20)));
               }
               setShowAuth(false);
               window.location.reload();
