@@ -338,6 +338,17 @@ const STRINGS = {
     pressEnter:     { fr: "Appuie sur Entrée pour chercher", en: "Press Enter to search" },
     close:          { fr: "Fermer", en: "Close" },
   },
+  ads: {
+    label:          { fr: "PUBLICITÉ", en: "ADVERTISEMENT" },
+    placeholderNote:{ fr: "Emplacement publicitaire (à connecter à Google Ad Manager)", en: "Ad placeholder (connect to Google Ad Manager)" },
+    secondsLeft:    { fr: "{n}s", en: "{n}s" },
+    continueBtn:    { fr: "Continuer", en: "Continue" },
+    unlockTitle:    { fr: "Débloquer une analyse maintenant", en: "Unlock an analysis now" },
+    unlockSub:      { fr: "Regarde une courte pub pour analyser ton physique sans attendre", en: "Watch a short ad to analyze your physique without waiting" },
+    watchAdBtn:     { fr: "Regarder une pub (30s)", en: "Watch an ad (30s)" },
+    orUpgrade:      { fr: "ou passe Pro pour un accès illimité", en: "or go Pro for unlimited access" },
+    scanUnlockNote: { fr: "Une courte pub pour continuer à scanner gratuitement", en: "A short ad to keep scanning for free" },
+  },
 };
 
 function detectInitialLang() {
@@ -523,6 +534,13 @@ function saveCustomMacros(m) { set("pq_custom_macros", m); }
 function isPremium()   { const v = localStorage.getItem(keys.premium); return v === true || v === "true"; }
 function setPremium(v) { set(keys.premium, v); }
 
+function getScanCount() { return parseInt(localStorage.getItem("pq_scan_count") || "0", 10); }
+function incrementScanCount() {
+  const n = getScanCount() + 1;
+  localStorage.setItem("pq_scan_count", String(n));
+  return n;
+}
+
 function getUsage()    { return get(keys.usage) || { count: 0, weeklyUsed: null }; }
 function saveUsage(u)  { set(keys.usage, u); }
 function canAnalyze(u) {
@@ -646,6 +664,44 @@ const css = {
 
 
 // ─── TOAST ───────────────────────────────────────────────────────────────────
+// ─── PUBLICITÉ (placeholder) ──────────────────────────────────────────────────
+// Composant générique qui simule un affichage publicitaire pendant `duration` secondes.
+// À REMPLACER par l'intégration réelle Google Ad Manager (GPT rewarded ads for web)
+// une fois le compte Ad Manager créé et les ad unit IDs obtenus :
+// https://developers.google.com/publisher-tag/samples/display-rewarded-ad
+// Le reste de l'app (compteurs, déblocage, etc.) n'aura pas besoin de changer —
+// il suffira de brancher le vrai SDK à l'intérieur de ce composant.
+function AdPlaceholder({ duration = 15, onComplete }) {
+  const { tr, trf } = useI18n();
+  const [secondsLeft, setSecondsLeft] = useState(duration);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const t = setTimeout(() => setSecondsLeft(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [secondsLeft]);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"#000",zIndex:400,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div style={{fontSize:"9px",letterSpacing:"3px",color:"#555",marginBottom:"20px"}}>{tr("ads.label")}</div>
+      <div style={{width:"100%",maxWidth:"320px",aspectRatio:"16/9",background:"linear-gradient(135deg,#1a1a24,#0f0f1a)",border:`1px solid ${C.border}`,borderRadius:"16px",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"20px",marginBottom:"20px"}}>
+        <div style={{fontSize:"12px",color:"#444",lineHeight:"1.6"}}>{tr("ads.placeholderNote")}</div>
+      </div>
+      <div style={{width:"180px",height:"4px",background:"rgba(255,255,255,0.1)",borderRadius:"2px",overflow:"hidden",marginBottom:"10px"}}>
+        <div style={{height:"100%",width:`${((duration-secondsLeft)/duration)*100}%`,background:C.gold,borderRadius:"2px",transition:"width 1s linear"}}/>
+      </div>
+      {secondsLeft > 0 ? (
+        <div style={{fontSize:"13px",color:"#666"}}>{trf("ads.secondsLeft",{n:secondsLeft})}</div>
+      ) : (
+        <button style={{...css.btn(C.gold),width:"auto",padding:"12px 32px",marginTop:"6px"}} onClick={onComplete}>
+          {tr("ads.continueBtn")}
+        </button>
+      )}
+    </div>
+  );
+}
+
+
 function Toast({ message, visible }) {
   return visible ? (
     <div style={{position:"fixed",top:"20px",left:"50%",transform:"translateX(-50%)",background:"rgba(125,249,170,0.95)",color:"#000",padding:"10px 20px",borderRadius:"20px",fontSize:"12px",fontWeight:"700",zIndex:300,whiteSpace:"nowrap",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
@@ -886,7 +942,7 @@ async function redirectToCheckout(type) {
   }
 }
 
-function Paywall({ daysLeft, onClose }) {
+function Paywall({ daysLeft, onClose, onWatchAd }) {
   const { tr, trf } = useI18n();
   const [loading, setLoading] = useState(false);
 
@@ -935,6 +991,13 @@ function Paywall({ daysLeft, onClose }) {
           </div>
           <div style={{fontSize:"11px",color:"#444"}}>{tr("paywall.cancelNoCommit")}</div>
         </div>
+
+        {/* Option : débloquer via pub, si proposée */}
+        {onWatchAd && (
+          <button onClick={onWatchAd} style={{...css.btnSec,marginBottom:"12px",borderColor:"rgba(255,215,0,0.25)",color:C.gold,fontWeight:"700"}}>
+            {tr("ads.watchAdBtn")}
+          </button>
+        )}
 
         {/* CTA Button */}
         <button
@@ -1970,6 +2033,8 @@ function ViewAnalyze({ premium }) {
   const [daysLeft, setDaysLeft] = useState(0);
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [newWeight, setNewWeight] = useState(null);
+  const [showPreAd, setShowPreAd] = useState(false);
+  const [showUnlockAd, setShowUnlockAd] = useState(false);
   const fileRef = useRef();
 
   const profile = getProfile();
@@ -2006,10 +2071,17 @@ function ViewAnalyze({ premium }) {
 
     if (!premium) {
       const usage = getUsage();
+      // 2ème analyse (count===1 avant incrément) → pub courte obligatoire de 15s, pas de blocage
+      if (usage.count === 1) { setShowPreAd(true); return; }
       const check = canAnalyze(usage);
+      // 3ème+ analyse de la semaine déjà utilisée → offre de débloquer via pub au lieu de bloquer direct
       if (!check.allowed) { setDaysLeft(check.daysLeft); setShowPaywall(true); return; }
     }
 
+    await runAnalysis(false);
+  }
+
+  async function runAnalysis(adWatched) {
     setStep("analyzing");
     try {
       const resolvedAge = age || profile.age || 25;
@@ -2031,7 +2103,8 @@ function ViewAnalyze({ premium }) {
           age: resolvedAge,
           weight: weight || profile.weight || null,
           profilePrompt,
-          isPro: !!premium
+          isPro: !!premium,
+          adWatched: !!adWatched
         })
       });
 
@@ -2055,7 +2128,7 @@ function ViewAnalyze({ premium }) {
       // Usage tracking
       if (!premium) {
         const usage = getUsage();
-        saveUsage({ count: usage.count + 1, weeklyUsed: usage.count >= 1 ? new Date().toISOString() : usage.weeklyUsed });
+        saveUsage({ count: usage.count + 1, weeklyUsed: (usage.count >= 1 || adWatched) ? new Date().toISOString() : usage.weeklyUsed });
       }
 
       // Weight update check
@@ -2088,7 +2161,13 @@ function ViewAnalyze({ premium }) {
 
   return (
     <div style={{width:"100%",maxWidth:"420px"}}>
-      {showPaywall && <Paywall daysLeft={daysLeft} onClose={()=>setShowPaywall(false)}/>}
+      {showPaywall && <Paywall daysLeft={daysLeft} onClose={()=>setShowPaywall(false)} onWatchAd={daysLeft>0 ? ()=>{ setShowPaywall(false); setShowUnlockAd(true); } : null}/>}
+      {showPreAd && (
+        <AdPlaceholder duration={15} onComplete={()=>{ setShowPreAd(false); runAnalysis(false); }}/>
+      )}
+      {showUnlockAd && (
+        <AdPlaceholder duration={30} onComplete={()=>{ setShowUnlockAd(false); runAnalysis(true); }}/>
+      )}
       {showWeightModal && newWeight && (
         <WeightUpdateModal
           currentWeight={parseFloat(profile.weight)}
@@ -2331,7 +2410,7 @@ function ViewAnalyze({ premium }) {
   );
 }
 
-function ViewJour() {
+function ViewJour({ premium }) {
   const { tr, trf, lang } = useI18n();
   const [journal, setJournal] = useState(getTodayJournal());
   const [showMealForm, setShowMealForm] = useState(false);
@@ -2340,6 +2419,8 @@ function ViewJour() {
   const [showSavedFoods, setShowSavedFoods] = useState(false);
   const [showSavedSessions, setShowSavedSessions] = useState(false);
   const [scannedProduct, setScannedProduct] = useState(null);
+  const [pendingProduct, setPendingProduct] = useState(null);
+  const [showScanAd, setShowScanAd] = useState(false);
   const [mealForm, setMealForm] = useState({ name:"", calories:"", protein:"", carbs:"", fat:"" });
   const [sessionForm, setSessionForm] = useState({ type:"", duration:"60" });
   const [toast, setToast] = useState({ visible:false, message:"" });
@@ -2423,10 +2504,19 @@ function ViewJour() {
         <BarcodeScanner
           onResult={(product) => {
             setShowScanner(false);
+            if (!premium) {
+              const n = incrementScanCount();
+              // 1 pub toutes les 2 scans pour les utilisateurs gratuits
+              if (n % 2 === 0) { setPendingProduct(product); setShowScanAd(true); return; }
+            }
             setScannedProduct(product);
           }}
           onClose={() => setShowScanner(false)}
         />
+      )}
+
+      {showScanAd && (
+        <AdPlaceholder duration={15} onComplete={()=>{ setShowScanAd(false); setScannedProduct(pendingProduct); setPendingProduct(null); }}/>
       )}
 
       {scannedProduct && (
@@ -3894,7 +3984,7 @@ function AppInner() {
 
       {/* VIEWS */}
       {view === "analyser"    && <ViewAnalyze key={syncVersion} premium={premium}/>}
-      {view === "jour"        && <ViewJour key={syncVersion}/>}
+      {view === "jour"        && <ViewJour key={syncVersion} premium={premium}/>}
       {view === "historique"  && <ViewHistorique key={syncVersion} premium={premium} onShowPaywall={()=>setShowPaywall(true)}/>}
       {view === "progression" && <ViewProgression key={syncVersion} premium={premium} onShowPaywall={()=>setShowPaywall(true)}/>}
       {view === "profil"      && <ViewProfil key={syncVersion} user={user} premium={premium} onShowAuth={()=>setShowAuth(true)} setPremiumState={setPremiumState}/>}
