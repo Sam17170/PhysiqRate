@@ -2507,7 +2507,7 @@ function ViewJour({ premium }) {
             if (!premium) {
               const n = incrementScanCount();
               // 1 pub toutes les 2 scans pour les utilisateurs gratuits
-              if (n % 2 === 0) { setPendingProduct(product); setShowScanAd(true); return; }
+              if (n % 3 === 0) { setPendingProduct(product); setShowScanAd(true); return; }
             }
             setScannedProduct(product);
           }}
