@@ -77,6 +77,247 @@ const STRINGS = {
     errorPrefix:    { fr: "Erreur : ", en: "Error: " },
     shareText:      { fr: "Mon body fat : {bf}% — {ref} | PHYSIQRATE", en: "My body fat: {bf}% — {ref} | PHYSIQRATE" },
   },
+  common: {
+    add:      { fr: "Ajouter", en: "Add" },
+    cancel:   { fr: "Annuler", en: "Cancel" },
+    profileArrow: { fr: "Profil →", en: "Profile →" },
+    quickAccess: { fr: "Accessible rapidement la prochaine fois", en: "Quick access next time" },
+  },
+  jour: {
+    completeProfileCal: { fr: "Complète ton profil pour voir ton objectif calorique", en: "Complete your profile to see your calorie target" },
+    goalTitle:      { fr: "OBJECTIF DU JOUR", en: "TODAY'S GOAL" },
+    maintenance:    { fr: "Maintien", en: "Maintenance" },
+    goal:           { fr: "Objectif", en: "Goal" },
+    consumed:       { fr: "Consommé", en: "Consumed" },
+    remaining:      { fr: "{n} restantes", en: "{n} remaining" },
+    exceeded:       { fr: "{n} dépassées", en: "{n} over" },
+    macrosTitle:    { fr: "MACROS DU JOUR", en: "TODAY'S MACROS" },
+    protShort:      { fr: "PROT.", en: "PROT." },
+    carbShort:      { fr: "GLUC.", en: "CARBS" },
+    fatShort:       { fr: "LIP.", en: "FAT" },
+    kcal:           { fr: "KCAL", en: "KCAL" },
+    macroGoalsTitle:{ fr: "OBJECTIFS MACROS", en: "MACRO GOALS" },
+    protein:        { fr: "Protéines", en: "Protein" },
+    carbs:          { fr: "Glucides", en: "Carbs" },
+    fat:            { fr: "Lipides", en: "Fat" },
+    basedOn:        { fr: "Basé sur {p}g prot · {f}g lip · {c}g gluc", en: "Based on {p}g protein · {f}g fat · {c}g carbs" },
+    mealsTitle:     { fr: "REPAS", en: "MEALS" },
+    noMealToday:    { fr: "Aucun repas ajouté aujourd'hui", en: "No meal added today" },
+    mealAdded:      { fr: "{name} ajouté — {cal} kcal", en: "{name} added — {cal} kcal" },
+    mealDeleted:    { fr: "Repas supprimé", en: "Meal deleted" },
+    sessionDeleted: { fr: "Séance supprimée", en: "Session deleted" },
+    sessionAdded:   { fr: "Séance \"{type}\" ajoutée ✓", en: "Session \"{type}\" added ✓" },
+    myFoodsTitle:   { fr: "MES ALIMENTS", en: "MY FOODS" },
+    noFoodSaved:    { fr: "Aucun aliment enregistré.", en: "No food saved yet." },
+    scanHint:       { fr: "Scanne un produit et coche \"Enregistrer cet aliment\".", en: "Scan a product and check \"Save this food\"." },
+    per100g:        { fr: "(pour 100g)", en: "(per 100g)" },
+    newMealTitle:   { fr: "NOUVEAU REPAS", en: "NEW MEAL" },
+    scannerBtn:     { fr: "Scanner", en: "Scan" },
+    myFoodsBtn:     { fr: "Mes aliments", en: "My foods" },
+    mealNamePh:     { fr: "Nom du repas", en: "Meal name" },
+    caloriesPh:     { fr: "Calories (kcal)", en: "Calories (kcal)" },
+    proteinPh:      { fr: "Protéines (g)", en: "Protein (g)" },
+    carbsPh:        { fr: "Glucides (g)", en: "Carbs (g)" },
+    fatPh:          { fr: "Lipides (g)", en: "Fat (g)" },
+    saveFood:       { fr: "Enregistrer cet aliment", en: "Save this food" },
+    addFoodDashed:  { fr: "Ajouter un aliment", en: "Add a food" },
+    activityTitle:  { fr: "ACTIVITÉ", en: "ACTIVITY" },
+    stepsDone:      { fr: "Pas effectués", en: "Steps taken" },
+    stepsGoal:      { fr: "Objectif · 10 000 pas", en: "Goal · 10,000 steps" },
+    mySessionsTitle:{ fr: "MES SÉANCES", en: "MY SESSIONS" },
+    noSessionSaved: { fr: "Aucune séance enregistrée.", en: "No session saved yet." },
+    newSessionTitle:{ fr: "NOUVELLE SÉANCE", en: "NEW SESSION" },
+    sessionTypePh:  { fr: "Type de séance (ex: Dos biceps)", en: "Session type (e.g. Back & biceps)" },
+    durationPh:     { fr: "Durée (minutes)", en: "Duration (minutes)" },
+    saveSession:    { fr: "Enregistrer cette séance", en: "Save this session" },
+    editSession:    { fr: "Modifier la séance", en: "Edit session" },
+    addSession:     { fr: "Ajouter une séance", en: "Add a session" },
+    mySessionsBtn:  { fr: "Mes séances", en: "My sessions" },
+  },
+  historique: {
+    title:          { fr: "HISTORIQUE", en: "HISTORY" },
+    analysesTitle:  { fr: "ANALYSES", en: "ANALYSES" },
+    proTitle:       { fr: "PHYSIQRATE PRO", en: "PHYSIQRATE PRO" },
+    fullHistory:    { fr: "Ton historique complet", en: "Your full history" },
+    calendarPerk:   { fr: "Calendrier de tes analyses", en: "Calendar of your analyses" },
+    historyPerk:    { fr: "Historique body fat sur tous tes appareils", en: "Body fat history across all your devices" },
+    syncPerk:       { fr: "Synchronisation cloud sécurisée", en: "Secure cloud sync" },
+    unlockPro:      { fr: "Débloquer Pro — 4,99€/mois", en: "Unlock Pro — €4.99/month" },
+    cancelAnytime:  { fr: "Résiliation à tout moment", en: "Cancel anytime" },
+    kcalLabel:      { fr: "KCAL", en: "KCAL" },
+    stepsLabel:     { fr: "PAS", en: "STEPS" },
+    sessionLabel:   { fr: "SÉANCE", en: "SESSION" },
+    mealsLabel:     { fr: "REPAS", en: "MEALS" },
+    macrosLabel:    { fr: "MACROS", en: "MACROS" },
+    protein:        { fr: "Protéines", en: "Protein" },
+    carbs:          { fr: "Glucides", en: "Carbs" },
+    fat:            { fr: "Lipides", en: "Fat" },
+    inGoal:         { fr: "Dans l'objectif", en: "On target" },
+    over:           { fr: "Au-dessus", en: "Over" },
+    today:          { fr: "Aujourd'hui", en: "Today" },
+    clickDay:       { fr: "Clique sur un jour pour voir le détail", en: "Click on a day to see details" },
+  },
+  progression: {
+    current:        { fr: "ACTUEL", en: "CURRENT" },
+    evolution:      { fr: "ÉVOLUTION", en: "CHANGE" },
+    analysesCount:  { fr: "ANALYSES", en: "ANALYSES" },
+    photoHistoryTitle: { fr: "HISTORIQUE PHOTOS", en: "PHOTO HISTORY" },
+    proTitle:       { fr: "PHYSIQRATE PRO", en: "PHYSIQRATE PRO" },
+    followTransfo:  { fr: "Suis ta transformation", en: "Track your transformation" },
+    photoHistoryPerk: { fr: "Historique de tes photos", en: "History of your photos" },
+    curvePerk:      { fr: "Courbe de progression body fat", en: "Body fat progress curve" },
+    comparePerk:    { fr: "Comparatif IA entre deux dates", en: "AI comparison between two dates" },
+    unlockPro:      { fr: "Débloquer Pro — 4,99€/mois", en: "Unlock Pro — €4.99/month" },
+    cancelAnytime:  { fr: "Résiliation à tout moment", en: "Cancel anytime" },
+    milestoneTitle: { fr: "MILESTONE", en: "MILESTONE" },
+    milestoneAmazing:  { fr: "Incroyable — tu as perdu {n}% de body fat. C'est une transformation majeure.", en: "Incredible — you've lost {n}% body fat. That's a major transformation." },
+    milestoneExcellent:{ fr: "Excellente progression — {n}% de body fat en moins. Tu es sur la bonne voie.", en: "Excellent progress — {n}% less body fat. You're on the right track." },
+    milestoneGood:     { fr: "Bonne progression — {n}% de body fat perdu. Continue ta consistance.", en: "Good progress — {n}% body fat lost. Keep up your consistency." },
+    milestoneMuscle:   { fr: "Prise de muscle détectée — +{n}% sur un physique déjà sec. Probablement de la masse musculaire.", en: "Muscle gain detected — +{n}% on an already lean physique. Likely muscle mass." },
+    milestoneAdjust:   { fr: "+{n}% de body fat depuis le début. Il est temps d'ajuster ton alimentation.", en: "+{n}% body fat since the start. Time to adjust your diet." },
+    comparePro:     { fr: "Comparatif — Pro", en: "Comparison — Pro" },
+    noAnalysisYet:  { fr: "Aucune analyse encore. Lance ta première analyse photo.", en: "No analysis yet. Run your first photo analysis." },
+    compareAvailable: { fr: "Comparatif IA disponible", en: "AI comparison available" },
+    selectTwoPhotos:  { fr: "Sélectionne 2 photos pour voir l'évolution de ton physique analysée par l'IA", en: "Select 2 photos to see your physique's evolution analyzed by AI" },
+    unlockFor:      { fr: "Débloquer pour 4,99€/mois", en: "Unlock for €4.99/month" },
+    aiCompare:      { fr: "Comparatif IA", en: "AI comparison" },
+    proLabel:       { fr: "PRO", en: "PRO" },
+    compareTwoBtn:  { fr: "Comparer les 2 photos sélectionnées", en: "Compare the 2 selected photos" },
+    aiCompareTitle: { fr: "COMPARATIF IA", en: "AI COMPARISON" },
+    fatLossConfirmed: { fr: "Perte de graisse confirmée", en: "Fat loss confirmed" },
+    massGainDetected: { fr: "Prise de masse détectée", en: "Mass gain detected" },
+    lessBetween:    { fr: "en moins", en: "less" },
+    moreBetween:    { fr: "en plus", en: "more" },
+    betweenAnalyses:{ fr: "{n}% de body fat {dir} entre ces deux analyses.", en: "{n}% body fat {dir} between these two analyses." },
+    definitionImproved: { fr: " Définition musculaire améliorée.", en: " Muscle definition improved." },
+    keepWork:       { fr: " Continue ton travail.", en: " Keep up the work." },
+    curveTitle:     { fr: "COURBE BODY FAT", en: "BODY FAT CURVE" },
+  },
+  activityLevels: {
+    sedentary:     { fr: "Sédentaire — peu ou pas d'exercice", en: "Sedentary — little or no exercise" },
+    light:         { fr: "Légèrement actif — 1 à 3x/sem", en: "Lightly active — 1 to 3x/week" },
+    moderate:      { fr: "Modérément actif — 3 à 5x/sem", en: "Moderately active — 3 to 5x/week" },
+    active:        { fr: "Très actif — 4 à 6x/sem", en: "Very active — 4 to 6x/week" },
+    extra_active:  { fr: "Extrêmement actif — 2x/jour", en: "Extremely active — 2x/day" },
+  },
+  activityLevelsShort: {
+    sedentary:     { fr: "Sédentaire", en: "Sedentary" },
+    light:         { fr: "Légèrement actif", en: "Lightly active" },
+    moderate:      { fr: "Modérément actif", en: "Moderately active" },
+    active:        { fr: "Très actif", en: "Very active" },
+    extra_active:  { fr: "Extrêmement actif", en: "Extremely active" },
+  },
+  dailySteps: {
+    under_3k: { fr: "Moins de 3 000 pas/jour", en: "Less than 3,000 steps/day" },
+    "3k_6k":  { fr: "3 000 à 6 000 pas/jour", en: "3,000 to 6,000 steps/day" },
+    "6k_10k": { fr: "6 000 à 10 000 pas/jour", en: "6,000 to 10,000 steps/day" },
+    "10k_15k":{ fr: "10 000 à 15 000 pas/jour", en: "10,000 to 15,000 steps/day" },
+    over_15k: { fr: "Plus de 15 000 pas/jour", en: "More than 15,000 steps/day" },
+  },
+  goals: {
+    cut_hard:  { fr: "Perte de gras agressive (−25%)", en: "Aggressive fat loss (−25%)" },
+    cut:       { fr: "Perte de gras (−15%)", en: "Fat loss (−15%)" },
+    maintain:  { fr: "Maintien (0%)", en: "Maintenance (0%)" },
+    lean_bulk: { fr: "Prise de muscle (+10%)", en: "Lean bulk (+10%)" },
+    bulk:      { fr: "Prise de masse (+20%)", en: "Bulk (+20%)" },
+  },
+  profil: {
+    completionTitle: { fr: "COMPLÉTION DU PROFIL", en: "PROFILE COMPLETION" },
+    completionHint:  { fr: "Plus ton profil est complet, plus l'analyse est précise", en: "The more complete your profile, the more accurate the analysis" },
+    ageLabel:        { fr: "Âge", en: "Age" },
+    heightLabel:     { fr: "Taille (cm)", en: "Height (cm)" },
+    heightPlaceholder: { fr: "Ex : 178", en: "E.g. 178" },
+    refWeightLabel:  { fr: "Poids de référence (kg)", en: "Reference weight (kg)" },
+    autoUpdated:     { fr: "Mis à jour automatiquement à chaque analyse", en: "Automatically updated with each analysis" },
+    activityLabel:   { fr: "Niveau d'activité", en: "Activity level" },
+    stepsLabel:      { fr: "Pas moyens par jour", en: "Average daily steps" },
+    trainingLabel:   { fr: "Type d'entraînement", en: "Training type" },
+    strength:        { fr: "Muscu", en: "Strength" },
+    cardio:          { fr: "Cardio", en: "Cardio" },
+    mixed:           { fr: "Mixte", en: "Mixed" },
+    sport:           { fr: "Sport", en: "Sport" },
+    goalLabel:       { fr: "Objectif", en: "Goal" },
+    saved:           { fr: "✓ Profil sauvegardé", en: "✓ Profile saved" },
+    saveBtn:         { fr: "Sauvegarder le profil", en: "Save profile" },
+    tdeeTitle:       { fr: "TDEE — FORMULE MIFFLIN-ST JEOR", en: "TDEE — MIFFLIN-ST JEOR FORMULA" },
+    homme:           { fr: "Homme", en: "Male" },
+    femme:           { fr: "Femme", en: "Female" },
+    yearsOld:        { fr: "ans", en: "y/o" },
+    maintenanceKcal: { fr: "Maintien (kcal/jour)", en: "Maintenance (kcal/day)" },
+    goalKcal:        { fr: "Objectif (kcal/jour)", en: "Goal (kcal/day)" },
+    calcDetail:      { fr: "DÉTAIL DU CALCUL", en: "CALCULATION DETAILS" },
+    bmr:             { fr: "Métabolisme de base (TMB)", en: "Basal metabolic rate (BMR)" },
+    activityMult:    { fr: "Multiplicateur activité", en: "Activity multiplier" },
+    stepsBonus:      { fr: "Bonus pas quotidiens", en: "Daily steps bonus" },
+    mifflinRef:      { fr: "Formule Mifflin-St Jeor · Référence clinique internationale", en: "Mifflin-St Jeor formula · International clinical reference" },
+    dailyMacroGoals: { fr: "OBJECTIFS MACROS JOURNALIERS", en: "DAILY MACRO GOALS" },
+    reset:           { fr: "Réinitialiser", en: "Reset" },
+    modified:        { fr: "Modifié", en: "Modified" },
+    custom:          { fr: "Personnalisé", en: "Custom" },
+    remainingCals:   { fr: "Reste des cals", en: "Remaining cals" },
+    totalCalculated: { fr: "Total calculé", en: "Total calculated" },
+    accountTitle:    { fr: "MON COMPTE", en: "MY ACCOUNT" },
+    proMember:       { fr: "Abonné Pro", en: "Pro member" },
+    free:            { fr: "Gratuit", en: "Free" },
+    logout:          { fr: "Se déconnecter", en: "Log out" },
+    createAccountHint: { fr: "Crée un compte pour que ton abonnement Pro soit lié à ton email et accessible sur tous tes appareils.", en: "Create an account so your Pro subscription is linked to your email and accessible on all your devices." },
+    createOrLogin:   { fr: "Créer un compte / Se connecter", en: "Create account / Log in" },
+    subscriptionTitle: { fr: "MON ABONNEMENT", en: "MY SUBSCRIPTION" },
+    proActive:       { fr: "Physiqrate Pro — Actif", en: "Physiqrate Pro — Active" },
+    proFeatures:     { fr: "Analyses illimitées · Scans nutrition illimités · Historique complet", en: "Unlimited analyses · Unlimited nutrition scans · Full history" },
+    manageSubscription: { fr: "Gérer mon abonnement", en: "Manage my subscription" },
+    editCardCancel:  { fr: "Modifier ta carte · Annuler à tout moment", en: "Update your card · Cancel anytime" },
+    installTitle:    { fr: "INSTALLER L'APPLICATION", en: "INSTALL THE APP" },
+    appInstalled:    { fr: "Application installée", en: "App installed" },
+    installHint:     { fr: "Installe Physiqrate sur ton écran d'accueil pour un accès rapide, sans passer par le navigateur.", en: "Install Physiqrate on your home screen for quick access, without going through the browser." },
+    onIphoneIpad:    { fr: "SUR IPHONE / IPAD", en: "ON IPHONE / IPAD" },
+    openSafari:      { fr: "Ouvrir dans Safari", en: "Open in Safari" },
+    followSteps:      { fr: "puis suis ces étapes :", en: "then follow these steps:" },
+    stepShare:        { fr: "Appuie sur le bouton Partager en bas de Safari", en: "Tap the Share button at the bottom of Safari" },
+    stepHomeScreen:   { fr: "Sélectionne \"Sur l'écran d'accueil\"", en: "Select \"Add to Home Screen\"" },
+    stepAdd:          { fr: "Appuie sur \"Ajouter\"", en: "Tap \"Add\"" },
+    installAlert:     { fr: "Ouvre le menu de ton navigateur et sélectionne 'Ajouter à l'écran d'accueil'", en: "Open your browser menu and select 'Add to Home Screen'" },
+    installBtn:       { fr: "Installer Physiqrate", en: "Install Physiqrate" },
+  },
+  paywall: {
+    title:          { fr: "Analyse ton physique sans limite", en: "Analyze your physique without limits" },
+    nextFree:       { fr: "Prochaine analyse gratuite dans {n} jour{s}", en: "Next free analysis in {n} day{s}" },
+    continueProgress: { fr: "Continue ta progression", en: "Continue your progress" },
+    feat1Title:     { fr: "Analyses corporelles illimitées", en: "Unlimited body analyses" },
+    feat1Sub:       { fr: "Scan photo IA chaque semaine", en: "AI photo scan every week" },
+    feat2Title:     { fr: "Scans nutrition illimités", en: "Unlimited nutrition scans" },
+    feat2Sub:       { fr: "Photo d'assiette · code-barres", en: "Plate photo · barcode" },
+    feat3Title:     { fr: "Comparatif photos IA", en: "AI photo comparison" },
+    feat3Sub:       { fr: "Vois ton évolution en détail", en: "See your progress in detail" },
+    feat4Title:     { fr: "Historique complet", en: "Full history" },
+    feat4Sub:       { fr: "Toutes tes données conservées", en: "All your data kept" },
+    perMonth:       { fr: "/mois", en: "/month" },
+    cancelNoCommit: { fr: "Résiliation à tout moment · Aucun engagement", en: "Cancel anytime · No commitment" },
+    redirecting:    { fr: "Redirection…", en: "Redirecting…" },
+    startNow:       { fr: "Commencer maintenant", en: "Start now" },
+    payWarning:     { fr: "Si tu paies avec {strong}, l'email associé à ton compte sera utilisé pour créer ton compte Physiqrate. Pour utiliser un email différent, paie par carte.", en: "If you pay with {strong}, the email linked to your account will be used to create your Physiqrate account. To use a different email, pay by card." },
+    payWarningStrong: { fr: "Apple Pay ou Google Pay", en: "Apple Pay or Google Pay" },
+    continueWithoutPro: { fr: "Continuer sans Pro", en: "Continue without Pro" },
+  },
+  weightModal: {
+    newWeightDetected: { fr: "NOUVEAU POIDS DÉTECTÉ", en: "NEW WEIGHT DETECTED" },
+    youIndicated:   { fr: "Tu as indiqué", en: "You entered" },
+    profileShows:   { fr: "Ton profil indique {w} kg.", en: "Your profile shows {w} kg." },
+    willRecalc:     { fr: "Mettre à jour recalculera ton TDEE automatiquement.", en: "Updating will automatically recalculate your TDEE." },
+    updateBtn:      { fr: "Mettre à jour ({from} → {to} kg)", en: "Update ({from} → {to} kg)" },
+    keepBtn:        { fr: "Garder {w} kg", en: "Keep {w} kg" },
+  },
+  pwaBanner: {
+    installTitle:   { fr: "Installe Physiqrate", en: "Install Physiqrate" },
+    tapOn:          { fr: "Appuie sur", en: "Tap" },
+    iosHint:        { fr: "pour l'installer", en: "to install it" },
+    androidHint:    { fr: "Ajoute l'app sur ton écran d'accueil pour un accès rapide et une meilleure expérience", en: "Add the app to your home screen for quick access and a better experience" },
+    share:          { fr: "Partager", en: "Share" },
+    homeScreen:     { fr: "Sur l'écran d'accueil", en: "Add to Home Screen" },
+    openSafari:     { fr: "Ouvrir dans Safari", en: "Open in Safari" },
+    then:           { fr: "puis", en: "then" },
+    installApp:     { fr: "Installer l'app", en: "Install app" },
+  },
 };
 
 function detectInitialLang() {
@@ -88,7 +329,7 @@ function detectInitialLang() {
   return nav.startsWith("fr") ? "fr" : "en";
 }
 
-const LangContext = createContext({ lang: "fr", setLang: () => {}, tr: (path) => path });
+const LangContext = createContext({ lang: "fr", setLang: () => {}, tr: (path) => path, trf: (path) => path });
 
 function LangProvider({ children }) {
   const [lang, setLangState] = useState(detectInitialLang());
@@ -105,7 +346,12 @@ function LangProvider({ children }) {
     }
     return node[lang] || node.fr || path;
   }
-  return <LangContext.Provider value={{ lang, setLang, tr }}>{children}</LangContext.Provider>;
+  function trf(path, vars) {
+    let str = tr(path);
+    for (const k in vars) str = str.replaceAll(`{${k}}`, vars[k]);
+    return str;
+  }
+  return <LangContext.Provider value={{ lang, setLang, tr, trf }}>{children}</LangContext.Provider>;
 }
 
 function useI18n() {
@@ -621,6 +867,7 @@ async function redirectToCheckout(type) {
 }
 
 function Paywall({ daysLeft, onClose }) {
+  const { tr, trf } = useI18n();
   const [loading, setLoading] = useState(false);
 
   async function handleCheckout() {
@@ -635,18 +882,18 @@ function Paywall({ daysLeft, onClose }) {
 
         {/* Header */}
         <div style={{fontSize:"11px",letterSpacing:"3px",color:C.gold,marginBottom:"14px",opacity:0.7}}>PHYSIQRATE PRO</div>
-        <div style={{fontSize:"22px",fontWeight:"800",marginBottom:"6px",lineHeight:"1.2"}}>Analyse ton physique sans limite</div>
+        <div style={{fontSize:"22px",fontWeight:"800",marginBottom:"6px",lineHeight:"1.2"}}>{tr("paywall.title")}</div>
         <div style={{fontSize:"13px",color:"#666",marginBottom:"28px"}}>
-          {daysLeft > 0 ? `Prochaine analyse gratuite dans ${daysLeft} jour${daysLeft>1?"s":""}` : "Continue ta progression"}
+          {daysLeft > 0 ? trf("paywall.nextFree",{n:daysLeft,s:daysLeft>1?"s":""}) : tr("paywall.continueProgress")}
         </div>
 
         {/* Features list */}
         <div style={{background:"rgba(255,255,255,0.03)",borderRadius:"16px",padding:"16px",marginBottom:"24px",textAlign:"left"}}>
           {[
-            ["Analyses corporelles illimitées", "Scan photo IA chaque semaine"],
-            ["Scans nutrition illimités", "Photo d'assiette · code-barres"],
-            ["Comparatif photos IA", "Vois ton évolution en détail"],
-            ["Historique complet", "Toutes tes données conservées"],
+            [tr("paywall.feat1Title"), tr("paywall.feat1Sub")],
+            [tr("paywall.feat2Title"), tr("paywall.feat2Sub")],
+            [tr("paywall.feat3Title"), tr("paywall.feat3Sub")],
+            [tr("paywall.feat4Title"), tr("paywall.feat4Sub")],
           ].map(([title, sub], i) => (
             <div key={i} style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:i<3?"12px":"0"}}>
               <div style={{width:"20px",height:"20px",borderRadius:"50%",background:"rgba(125,249,170,0.15)",border:"1px solid rgba(125,249,170,0.3)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -664,9 +911,9 @@ function Paywall({ daysLeft, onClose }) {
         <div style={{marginBottom:"16px"}}>
           <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:"4px",marginBottom:"4px"}}>
             <span style={{fontSize:"42px",fontWeight:"800",color:C.gold}}>4,99€</span>
-            <span style={{fontSize:"14px",color:"#555"}}>/mois</span>
+            <span style={{fontSize:"14px",color:"#555"}}>{tr("paywall.perMonth")}</span>
           </div>
-          <div style={{fontSize:"11px",color:"#444"}}>Résiliation à tout moment · Aucun engagement</div>
+          <div style={{fontSize:"11px",color:"#444"}}>{tr("paywall.cancelNoCommit")}</div>
         </div>
 
         {/* CTA Button */}
@@ -674,14 +921,14 @@ function Paywall({ daysLeft, onClose }) {
           onClick={handleCheckout}
           disabled={loading}
           style={{width:"100%",padding:"16px",borderRadius:"14px",border:"none",background:loading?"#333":`linear-gradient(135deg,#FFD700,#FFA500)`,color:loading?"#666":"#000",fontSize:"15px",fontWeight:"800",cursor:loading?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:"12px",transition:"all 0.2s"}}>
-          {loading ? "Redirection…" : "Commencer maintenant"}
+          {loading ? tr("paywall.redirecting") : tr("paywall.startNow")}
         </button>
 
         {/* Avertissement Apple Pay */}
         <div style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"10px 12px",background:"rgba(255,255,255,0.03)",border:`1px solid rgba(255,255,255,0.08)`,borderRadius:"10px",marginBottom:"12px",textAlign:"left"}}>
           <span style={{fontSize:"14px",flexShrink:0}}>ℹ️</span>
           <div style={{fontSize:"11px",color:"#666",lineHeight:"1.5"}}>
-            Si tu paies avec <strong style={{color:"#aaa"}}>Apple Pay ou Google Pay</strong>, l'email associé à ton compte sera utilisé pour créer ton compte Physiqrate. Pour utiliser un email différent, paie par carte.
+            {tr("paywall.payWarning").split("{strong}")[0]}<strong style={{color:"#aaa"}}>{tr("paywall.payWarningStrong")}</strong>{tr("paywall.payWarning").split("{strong}")[1]}
           </div>
         </div>
 
@@ -717,7 +964,7 @@ function Paywall({ daysLeft, onClose }) {
         </div>
 
         <button style={{background:"transparent",border:"none",color:"#333",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}} onClick={onClose}>
-          Continuer sans Pro
+          {tr("paywall.continueWithoutPro")}
         </button>
       </div>
     </div>
@@ -725,15 +972,16 @@ function Paywall({ daysLeft, onClose }) {
 }
 
 function WeightUpdateModal({ currentWeight, newWeight, onAccept, onDecline }) {
+  const { tr, trf } = useI18n();
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"linear-gradient(135deg,#0f0f1a,#0a0a0f)",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"24px",width:"100%",maxWidth:"420px",textAlign:"center",marginBottom:"10px"}}>
-        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"12px"}}>NOUVEAU POIDS DÉTECTÉ</div>
-        <div style={{fontSize:"16px",fontWeight:"700",marginBottom:"6px"}}>Tu as indiqué <span style={{color:C.gold}}>{newWeight} kg</span></div>
-        <div style={{fontSize:"13px",color:C.muted,marginBottom:"6px"}}>Ton profil indique {currentWeight} kg.</div>
-        <div style={{fontSize:"11px",color:"#444",marginBottom:"20px"}}>Mettre à jour recalculera ton TDEE automatiquement.</div>
-        <button style={css.btn(C.gold)} onClick={onAccept}>Mettre à jour ({currentWeight} → {newWeight} kg)</button>
-        <button style={css.btnSec} onClick={onDecline}>Garder {currentWeight} kg</button>
+        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"12px"}}>{tr("weightModal.newWeightDetected")}</div>
+        <div style={{fontSize:"16px",fontWeight:"700",marginBottom:"6px"}}>{tr("weightModal.youIndicated")} <span style={{color:C.gold}}>{newWeight} kg</span></div>
+        <div style={{fontSize:"13px",color:C.muted,marginBottom:"6px"}}>{trf("weightModal.profileShows",{w:currentWeight})}</div>
+        <div style={{fontSize:"11px",color:"#444",marginBottom:"20px"}}>{tr("weightModal.willRecalc")}</div>
+        <button style={css.btn(C.gold)} onClick={onAccept}>{trf("weightModal.updateBtn",{from:currentWeight,to:newWeight})}</button>
+        <button style={css.btnSec} onClick={onDecline}>{trf("weightModal.keepBtn",{w:currentWeight})}</button>
       </div>
     </div>
   );
@@ -743,6 +991,7 @@ function WeightUpdateModal({ currentWeight, newWeight, onAccept, onDecline }) {
 
 // ─── PWA INSTALL BANNER ───────────────────────────────────────────────────────
 function PWABanner({ onDismiss }) {
+  const { tr } = useI18n();
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isAndroid = /android/i.test(navigator.userAgent);
   const isInStandaloneMode = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
@@ -754,31 +1003,31 @@ function PWABanner({ onDismiss }) {
       <div style={{maxWidth:"420px",margin:"0 auto"}}>
         <div style={{display:"flex",alignItems:"flex-start",gap:"12px",background:"linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.03))",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"16px",padding:"14px"}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:"13px",fontWeight:"700",marginBottom:"3px"}}>Installe Physiqrate</div>
+            <div style={{fontSize:"13px",fontWeight:"700",marginBottom:"3px"}}>{tr("pwaBanner.installTitle")}</div>
             <div style={{fontSize:"11px",color:"#888",marginBottom:"10px",lineHeight:"1.4"}}>
               {isIOS
-                ? <>Appuie sur <strong style={{color:"#FFD700"}}>Partager</strong> puis <strong style={{color:"#FFD700"}}>"Sur l'écran d'accueil"</strong> pour l'installer</>
-                : <>Ajoute l'app sur ton écran d'accueil pour un accès rapide et une meilleure expérience</>
+                ? <>{tr("pwaBanner.tapOn")} <strong style={{color:"#FFD700"}}>{tr("pwaBanner.share")}</strong> {tr("pwaBanner.then")} <strong style={{color:"#FFD700"}}>"{tr("pwaBanner.homeScreen")}"</strong> {tr("pwaBanner.iosHint")}</>
+                : <>{tr("pwaBanner.androidHint")}</>
               }
             </div>
             {isIOS ? (
               <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
                 <a href="x-safari-https://physiqrate.com"
                   style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"6px",padding:"9px 14px",borderRadius:"10px",background:"linear-gradient(135deg,#FFD700,#FFA500)",color:"#000",fontSize:"12px",fontWeight:"700",textDecoration:"none"}}>
-                  Ouvrir dans Safari
+                  {tr("pwaBanner.openSafari")}
                 </a>
                 <div style={{display:"flex",alignItems:"center",gap:"6px",fontSize:"11px",color:"#555"}}>
-                  <span>puis</span>
-                  <div style={{background:"rgba(255,255,255,0.08)",borderRadius:"6px",padding:"3px 8px"}}>Partager</div>
+                  <span>{tr("pwaBanner.then")}</span>
+                  <div style={{background:"rgba(255,255,255,0.08)",borderRadius:"6px",padding:"3px 8px"}}>{tr("pwaBanner.share")}</div>
                   <span>→</span>
-                  <div style={{background:"rgba(255,255,255,0.08)",borderRadius:"6px",padding:"3px 8px"}}>"Sur l'écran d'accueil"</div>
+                  <div style={{background:"rgba(255,255,255,0.08)",borderRadius:"6px",padding:"3px 8px"}}>"{tr("pwaBanner.homeScreen")}"</div>
                 </div>
               </div>
             ) : (
               <button
                 onClick={()=>{ window._pwaInstallPrompt?.prompt(); onDismiss(); }}
                 style={{padding:"8px 16px",borderRadius:"10px",border:"none",background:"linear-gradient(135deg,#FFD700,#FFA500)",color:"#000",fontSize:"12px",fontWeight:"700",cursor:"pointer",fontFamily:"inherit"}}>
-                Installer l'app
+                {tr("pwaBanner.installApp")}
               </button>
             )}
           </div>
@@ -2063,6 +2312,7 @@ function ViewAnalyze({ premium }) {
 }
 
 function ViewJour() {
+  const { tr, trf, lang } = useI18n();
   const [journal, setJournal] = useState(getTodayJournal());
   const [showMealForm, setShowMealForm] = useState(false);
   const [showSessionForm, setShowSessionForm] = useState(false);
@@ -2116,14 +2366,14 @@ function ViewJour() {
 
   function addMeal() {
     if (!mealForm.name || !mealForm.calories) return;
-    const now = new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+    const now = new Date().toLocaleTimeString(lang==="fr"?"fr-FR":"en-US",{hour:"2-digit",minute:"2-digit"});
     const meal = { name:mealForm.name, calories:parseInt(mealForm.calories)||0, protein:parseInt(mealForm.protein)||0, carbs:parseInt(mealForm.carbs)||0, fat:parseInt(mealForm.fat)||0, time:now, detail:"Ajout manuel" };
     save({ ...journal, meals: [...journal.meals, meal] });
     if (saveMeal) saveFoodToList({ name:mealForm.name, brand:"", calories:parseInt(mealForm.calories)||0, protein:parseInt(mealForm.protein)||0, carbs:parseInt(mealForm.carbs)||0, fat:parseInt(mealForm.fat)||0 });
     setMealForm({ name:"", calories:"", protein:"", carbs:"", fat:"" });
     setSaveMeal(false);
     setShowMealForm(false);
-    showToast(`${mealForm.name} ajouté — ${mealForm.calories} kcal`);
+    showToast(trf("jour.mealAdded",{name:mealForm.name,cal:mealForm.calories}));
   }
 
   const [saveSession, setSaveSession] = useState(false);
@@ -2135,7 +2385,7 @@ function ViewJour() {
     setSessionForm({ type:"", duration:"60" });
     setSaveSession(false);
     setShowSessionForm(false);
-    showToast(`Séance "${sessionForm.type}" ajoutée ✓`);
+    showToast(trf("jour.sessionAdded",{type:sessionForm.type}));
   }
 
   const formStyle = { background:"rgba(255,215,0,0.04)", border:`1px solid rgba(255,215,0,0.15)`, borderRadius:"14px", padding:"16px", marginBottom:"10px" };
@@ -2163,10 +2413,10 @@ function ViewJour() {
         <ProductModal
           product={scannedProduct}
           onConfirm={(meal) => {
-            const now = new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+            const now = new Date().toLocaleTimeString(lang==="fr"?"fr-FR":"en-US",{hour:"2-digit",minute:"2-digit"});
             const updated = { ...journal, meals: [...journal.meals, {...meal, time:now, detail:"Code-barres"}] };
             save(updated);
-            showToast(`${meal.name} ajouté — ${meal.calories} kcal`);
+            showToast(trf("jour.mealAdded",{name:meal.name,cal:meal.calories}));
             setScannedProduct(null);
           }}
           onClose={() => setScannedProduct(null)}
@@ -2178,18 +2428,18 @@ function ViewJour() {
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"rgba(255,215,0,0.06)",border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"12px",marginBottom:"10px",cursor:"pointer"}} onClick={()=>document.dispatchEvent(new CustomEvent("navigate",{detail:"profil"}))}>
           <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
             <div style={{width:"7px",height:"7px",borderRadius:"50%",background:C.red,flexShrink:0}}/>
-            <span style={{fontSize:"12px",color:"#aaa"}}>Complète ton profil pour voir ton objectif calorique</span>
+            <span style={{fontSize:"12px",color:"#aaa"}}>{tr("jour.completeProfileCal")}</span>
           </div>
-          <span style={{fontSize:"11px",color:C.gold,fontWeight:"600"}}>Profil →</span>
+          <span style={{fontSize:"11px",color:C.gold,fontWeight:"600"}}>{tr("common.profileArrow")}</span>
         </div>
       )}
 
       {/* Objectif */}
       {tdee && (
         <div style={{background:`linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))`,border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"16px",padding:"16px",marginBottom:"12px"}}>
-          <div style={css.cardTitle}>OBJECTIF DU JOUR</div>
+          <div style={css.cardTitle}>{tr("jour.goalTitle")}</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"12px"}}>
-            {[{val:tdee.toLocaleString(),label:"Maintien"},{val:(goalCals||tdee).toLocaleString(),label:"Objectif",color:C.green},{val:totalCals.toLocaleString(),label:"Consommé"}].map((item,i)=>(
+            {[{val:tdee.toLocaleString(),label:tr("jour.maintenance")},{val:(goalCals||tdee).toLocaleString(),label:tr("jour.goal"),color:C.green},{val:totalCals.toLocaleString(),label:tr("jour.consumed")}].map((item,i)=>(
               <div key={i} style={{textAlign:"center"}}>
                 <div style={{fontSize:"18px",fontWeight:"800",color:item.color||C.gold}}>{item.val}</div>
                 <div style={{fontSize:"9px",color:C.muted,marginTop:"2px"}}>{item.label}</div>
@@ -2201,16 +2451,16 @@ function ViewJour() {
           </div>
           <div style={{display:"flex",justifyContent:"space-between",marginTop:"6px"}}>
             <span style={{fontSize:"10px",color:C.muted}}>{totalCals} kcal</span>
-            {remaining !== null && <span style={{fontSize:"10px",color:remaining>=0?C.green:C.red}}>{remaining>=0?`${remaining} restantes`:`${Math.abs(remaining)} dépassées`}</span>}
+            {remaining !== null && <span style={{fontSize:"10px",color:remaining>=0?C.green:C.red}}>{remaining>=0?trf("jour.remaining",{n:remaining}):trf("jour.exceeded",{n:Math.abs(remaining)})}</span>}
           </div>
         </div>
       )}
 
       {/* Macros + Repas */}
       <div style={css.card}>
-        <div style={css.cardTitle}>MACROS DU JOUR</div>
+        <div style={css.cardTitle}>{tr("jour.macrosTitle")}</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"16px"}}>
-          {[{val:`${macros.protein}g`,label:"PROT.",color:"#7DF9FF"},{val:`${macros.carbs}g`,label:"GLUC.",color:"#FFB347"},{val:`${macros.fat}g`,label:"LIP.",color:"#FF8C69"},{val:totalCals,label:"KCAL",color:C.gold}].map((m,i)=>(
+          {[{val:`${macros.protein}g`,label:tr("jour.protShort"),color:"#7DF9FF"},{val:`${macros.carbs}g`,label:tr("jour.carbShort"),color:"#FFB347"},{val:`${macros.fat}g`,label:tr("jour.fatShort"),color:"#FF8C69"},{val:totalCals,label:tr("jour.kcal"),color:C.gold}].map((m,i)=>(
             <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"12px",padding:"10px 6px",textAlign:"center"}}>
               <div style={{fontSize:"16px",fontWeight:"800",color:m.color}}>{m.val}</div>
               <div style={{fontSize:"9px",color:C.muted,marginTop:"2px",letterSpacing:"1px"}}>{m.label}</div>
@@ -2230,12 +2480,12 @@ function ViewJour() {
           if (!targets) return null;
           return (
             <div style={{background:"rgba(255,255,255,0.02)",borderRadius:"12px",padding:"12px",marginBottom:"16px",border:`1px solid ${C.border}`}}>
-              <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",marginBottom:"10px"}}>OBJECTIFS MACROS</div>
+              <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",marginBottom:"10px"}}>{tr("jour.macroGoalsTitle")}</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
                 {[
-                  {label:"Protéines",consumed:macros.protein,target:targets.protein,color:"#7DF9FF",pct:targets.proteinPct},
-                  {label:"Glucides", consumed:macros.carbs,  target:targets.carbs,  color:"#FFB347",pct:targets.carbsPct},
-                  {label:"Lipides",  consumed:macros.fat,    target:targets.fat,    color:"#FF8C69",pct:targets.fatPct},
+                  {label:tr("jour.protein"),consumed:macros.protein,target:targets.protein,color:"#7DF9FF",pct:targets.proteinPct},
+                  {label:tr("jour.carbs"), consumed:macros.carbs,  target:targets.carbs,  color:"#FFB347",pct:targets.carbsPct},
+                  {label:tr("jour.fat"),  consumed:macros.fat,    target:targets.fat,    color:"#FF8C69",pct:targets.fatPct},
                 ].map((m,i)=>{
                   const progress = Math.min(100, Math.round(m.consumed / m.target * 100));
                   const over = m.consumed > m.target;
@@ -2250,14 +2500,14 @@ function ViewJour() {
                   );
                 })}
               </div>
-              <div style={{fontSize:"10px",color:"#333",marginTop:"8px",textAlign:"center"}}>Basé sur {targets.protein}g prot · {targets.fat}g lip · {targets.carbs}g gluc</div>
+              <div style={{fontSize:"10px",color:"#333",marginTop:"8px",textAlign:"center"}}>{trf("jour.basedOn",{p:targets.protein,f:targets.fat,c:targets.carbs})}</div>
             </div>
           );
         })()}
 
-        <div style={css.cardTitle}>REPAS</div>
+        <div style={css.cardTitle}>{tr("jour.mealsTitle")}</div>
         {journal.meals.length === 0 && !showMealForm && (
-          <div style={{fontSize:"12px",color:"#444",textAlign:"center",padding:"12px 0"}}>Aucun repas ajouté aujourd'hui</div>
+          <div style={{fontSize:"12px",color:"#444",textAlign:"center",padding:"12px 0"}}>{tr("jour.noMealToday")}</div>
         )}
         {journal.meals.map((meal,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:"rgba(255,255,255,0.03)",borderRadius:"10px",marginBottom:"6px"}}>
@@ -2270,7 +2520,7 @@ function ViewJour() {
               <button onClick={()=>{
                 const updated = {...journal, meals: journal.meals.filter((_,idx)=>idx!==i)};
                 save(updated);
-                showToast("Repas supprimé");
+                showToast(tr("jour.mealDeleted"));
               }} style={{background:"transparent",border:"none",color:"#444",fontSize:"16px",cursor:"pointer",padding:"4px",lineHeight:1}}>×</button>
             </div>
           </div>
@@ -2281,19 +2531,19 @@ function ViewJour() {
           <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"20px"}}>
             <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"24px",width:"100%",maxWidth:"420px",marginBottom:"10px",maxHeight:"70vh",overflowY:"auto"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
-                <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px"}}>MES ALIMENTS</div>
+                <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px"}}>{tr("jour.myFoodsTitle")}</div>
                 <button onClick={()=>setShowSavedFoods(false)} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>
               </div>
               {getSavedFoods().length === 0 ? (
                 <div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:"12px"}}>
-                  <div>Aucun aliment enregistré.</div>
-                  <div style={{marginTop:"4px"}}>Scanne un produit et coche "Enregistrer cet aliment".</div>
+                  <div>{tr("jour.noFoodSaved")}</div>
+                  <div style={{marginTop:"4px"}}>{tr("jour.scanHint")}</div>
                 </div>
               ) : getSavedFoods().map((food,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:"12px",marginBottom:"8px"}}>
                   <div style={{flex:1,cursor:"pointer"}} onClick={()=>{setShowSavedFoods(false);setScannedProduct(food);}}>
                     <div style={{fontSize:"13px",fontWeight:"600"}}>{food.name}</div>
-                    <div style={{fontSize:"10px",color:C.muted}}>{food.brand && `${food.brand} · `}{food.calories} kcal · P:{food.protein}g G:{food.carbs}g L:{food.fat}g <span style={{color:"#444"}}>(pour 100g)</span></div>
+                    <div style={{fontSize:"10px",color:C.muted}}>{food.brand && `${food.brand} · `}{food.calories} kcal · P:{food.protein}g G:{food.carbs}g L:{food.fat}g <span style={{color:"#444"}}>{tr("jour.per100g")}</span></div>
                   </div>
                   <button onClick={()=>{removeSavedFood(food.name); setShowSavedFoods(false); setTimeout(()=>setShowSavedFoods(true),50);}}
                     style={{background:"transparent",border:"none",color:"#333",fontSize:"16px",cursor:"pointer",padding:"4px 8px",flexShrink:0}}>×</button>
@@ -2305,22 +2555,22 @@ function ViewJour() {
 
         {showMealForm ? (
           <div style={formStyle}>
-            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"10px"}}>NOUVEAU REPAS</div>
+            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"10px"}}>{tr("jour.newMealTitle")}</div>
             <div style={{display:"flex",gap:"8px",marginBottom:"8px"}}>
               <button style={{flex:1,padding:"10px",borderRadius:"10px",border:`1.5px solid rgba(255,215,0,0.3)`,background:"rgba(255,215,0,0.06)",color:C.gold,fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setShowMealForm(false);setShowScanner(true);}}>
-                Scanner
+                {tr("jour.scannerBtn")}
               </button>
               <button style={{flex:1,padding:"10px",borderRadius:"10px",border:`1.5px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:"#aaa",fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative"}} onClick={()=>setShowSavedFoods(true)}>
-                Mes aliments
+                {tr("jour.myFoodsBtn")}
                 {getSavedFoods().length > 0 && <span style={{position:"absolute",top:"-6px",right:"-6px",background:C.gold,color:"#000",borderRadius:"10px",fontSize:"9px",fontWeight:"800",padding:"1px 5px",minWidth:"16px",textAlign:"center"}}>{getSavedFoods().length}</span>}
               </button>
             </div>
-            <input style={formInput} placeholder="Nom du repas" value={mealForm.name} onChange={e=>setMealForm({...mealForm,name:e.target.value})}/>
-            <input style={formInput} type="number" placeholder="Calories (kcal)" value={mealForm.calories} onChange={e=>setMealForm({...mealForm,calories:e.target.value})}/>
+            <input style={formInput} placeholder={tr("jour.mealNamePh")} value={mealForm.name} onChange={e=>setMealForm({...mealForm,name:e.target.value})}/>
+            <input style={formInput} type="number" placeholder={tr("jour.caloriesPh")} value={mealForm.calories} onChange={e=>setMealForm({...mealForm,calories:e.target.value})}/>
             <div style={formRow}>
-              <input style={{...formInput,flex:1,marginBottom:0}} type="number" placeholder="Protéines (g)" value={mealForm.protein} onChange={e=>setMealForm({...mealForm,protein:e.target.value})}/>
-              <input style={{...formInput,flex:1,marginBottom:0}} type="number" placeholder="Glucides (g)" value={mealForm.carbs} onChange={e=>setMealForm({...mealForm,carbs:e.target.value})}/>
-              <input style={{...formInput,flex:1,marginBottom:0}} type="number" placeholder="Lipides (g)" value={mealForm.fat} onChange={e=>setMealForm({...mealForm,fat:e.target.value})}/>
+              <input style={{...formInput,flex:1,marginBottom:0}} type="number" placeholder={tr("jour.proteinPh")} value={mealForm.protein} onChange={e=>setMealForm({...mealForm,protein:e.target.value})}/>
+              <input style={{...formInput,flex:1,marginBottom:0}} type="number" placeholder={tr("jour.carbsPh")} value={mealForm.carbs} onChange={e=>setMealForm({...mealForm,carbs:e.target.value})}/>
+              <input style={{...formInput,flex:1,marginBottom:0}} type="number" placeholder={tr("jour.fatPh")} value={mealForm.fat} onChange={e=>setMealForm({...mealForm,fat:e.target.value})}/>
             </div>
             {/* Option enregistrer */}
             {mealForm.name && !getSavedFoods().find(f=>f.name.toLowerCase()===mealForm.name.toLowerCase()) && (
@@ -2330,24 +2580,24 @@ function ViewJour() {
                   {saveMeal && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
                 </div>
                 <div>
-                  <div style={{fontSize:"12px",fontWeight:"600",color:saveMeal?C.green:"#aaa"}}>Enregistrer cet aliment</div>
-                  <div style={{fontSize:"10px",color:"#444"}}>Accessible rapidement la prochaine fois</div>
+                  <div style={{fontSize:"12px",fontWeight:"600",color:saveMeal?C.green:"#aaa"}}>{tr("jour.saveFood")}</div>
+                  <div style={{fontSize:"10px",color:"#444"}}>{tr("common.quickAccess")}</div>
                 </div>
               </div>
             )}
             <div style={{display:"flex",gap:"8px",marginTop:"10px"}}>
-              <button style={{...css.btn(C.gold),flex:1,marginBottom:0,padding:"11px"}} onClick={addMeal}>Ajouter</button>
-              <button style={{...css.btnSec,flex:1,marginBottom:0,padding:"11px"}} onClick={()=>setShowMealForm(false)}>Annuler</button>
+              <button style={{...css.btn(C.gold),flex:1,marginBottom:0,padding:"11px"}} onClick={addMeal}>{tr("common.add")}</button>
+              <button style={{...css.btnSec,flex:1,marginBottom:0,padding:"11px"}} onClick={()=>setShowMealForm(false)}>{tr("common.cancel")}</button>
             </div>
           </div>
         ) : (
           <div style={{display:"flex",gap:"8px",marginTop:"4px"}}>
             <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",border:`1.5px dashed rgba(255,215,0,0.2)`,borderRadius:"10px",cursor:"pointer"}} onClick={()=>setShowMealForm(true)}>
-              <div style={{fontSize:"13px",color:C.muted}}>Ajouter un aliment</div>
+              <div style={{fontSize:"13px",color:C.muted}}>{tr("jour.addFoodDashed")}</div>
               <div style={{color:C.muted,fontSize:"20px",fontWeight:"300"}}>+</div>
             </div>
             <button style={{padding:"10px 14px",border:`1px solid ${C.border}`,borderRadius:"10px",background:"rgba(255,255,255,0.03)",color:"#aaa",fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",flexShrink:0}} onClick={()=>setShowSavedFoods(true)}>
-              Mes aliments
+              {tr("jour.myFoodsBtn")}
               {getSavedFoods().length > 0 && <span style={{position:"absolute",top:"-6px",right:"-6px",background:C.gold,color:"#000",borderRadius:"10px",fontSize:"9px",fontWeight:"800",padding:"1px 5px",minWidth:"16px",textAlign:"center"}}>{getSavedFoods().length}</span>}
             </button>
           </div>
@@ -2356,11 +2606,11 @@ function ViewJour() {
 
       {/* Activité */}
       <div style={css.card}>
-        <div style={css.cardTitle}>ACTIVITÉ</div>
+        <div style={css.cardTitle}>{tr("jour.activityTitle")}</div>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:"12px",marginBottom:"8px"}}>
           <div>
-            <div style={{fontSize:"13px",fontWeight:"600"}}>Pas effectués</div>
-            <div style={{fontSize:"10px",color:C.muted}}>Objectif · 10 000 pas</div>
+            <div style={{fontSize:"13px",fontWeight:"600"}}>{tr("jour.stepsDone")}</div>
+            <div style={{fontSize:"10px",color:C.muted}}>{tr("jour.stepsGoal")}</div>
           </div>
           <input type="number" placeholder="0" value={journal.steps||""} onChange={e=>{const u={...journal,steps:parseInt(e.target.value)||null};save(u);}}
             style={{width:"80px",padding:"6px 10px",borderRadius:"8px",border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.gold,fontSize:"14px",fontWeight:"700",fontFamily:"inherit",outline:"none",textAlign:"right"}}/>
@@ -2375,7 +2625,7 @@ function ViewJour() {
                 <div style={{fontSize:"10px",color:C.muted}}>{journal.session.duration} min</div>
               </div>
             </div>
-            <button onClick={()=>{ const u={...journal,session:null}; save(u); showToast("Séance supprimée"); }}
+            <button onClick={()=>{ const u={...journal,session:null}; save(u); showToast(tr("jour.sessionDeleted")); }}
               style={{background:"transparent",border:"none",color:"#444",fontSize:"18px",cursor:"pointer",padding:"4px"}}>×</button>
           </div>
         ) : null}
@@ -2385,18 +2635,18 @@ function ViewJour() {
           <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"20px"}}>
             <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"24px",width:"100%",maxWidth:"420px",marginBottom:"10px",maxHeight:"60vh",overflowY:"auto"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
-                <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px"}}>MES SÉANCES</div>
+                <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px"}}>{tr("jour.mySessionsTitle")}</div>
                 <button onClick={()=>setShowSavedSessions(false)} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>
               </div>
               {getSavedSessions().length === 0 ? (
                 <div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:"12px"}}>
-                  Aucune séance enregistrée.
+                  {tr("jour.noSessionSaved")}
                 </div>
               ) : getSavedSessions().map((s,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:"12px",marginBottom:"8px"}}>
                   <div style={{flex:1,cursor:"pointer"}} onClick={()=>{
                     save({ ...journal, session:{ type:s.type, duration:s.duration, done:true } });
-                    showToast(`Séance "${s.type}" ajoutée ✓`);
+                    showToast(trf("jour.sessionAdded",{type:s.type}));
                     setShowSavedSessions(false);
                   }}>
                     <div style={{fontSize:"13px",fontWeight:"600"}}>{s.type}</div>
@@ -2412,9 +2662,9 @@ function ViewJour() {
 
         {showSessionForm ? (
           <div style={formStyle}>
-            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"10px"}}>NOUVELLE SÉANCE</div>
-            <input style={formInput} placeholder="Type de séance (ex: Dos biceps)" value={sessionForm.type} onChange={e=>setSessionForm({...sessionForm,type:e.target.value})}/>
-            <input style={formInput} type="text" inputMode="numeric" placeholder="Durée (minutes)" maxLength={3} value={sessionForm.duration} onChange={e=>{ const v=e.target.value.replace(/[^0-9]/g,""); setSessionForm({...sessionForm,duration:v}); }}/>
+            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"10px"}}>{tr("jour.newSessionTitle")}</div>
+            <input style={formInput} placeholder={tr("jour.sessionTypePh")} value={sessionForm.type} onChange={e=>setSessionForm({...sessionForm,type:e.target.value})}/>
+            <input style={formInput} type="text" inputMode="numeric" placeholder={tr("jour.durationPh")} maxLength={3} value={sessionForm.duration} onChange={e=>{ const v=e.target.value.replace(/[^0-9]/g,""); setSessionForm({...sessionForm,duration:v}); }}/>
             {/* Option enregistrer */}
             {!getSavedSessions().find(s=>s.type.toLowerCase()===sessionForm.type.toLowerCase()) && sessionForm.type && (
               <div onClick={()=>setSaveSession(!saveSession)}
@@ -2423,24 +2673,24 @@ function ViewJour() {
                   {saveSession && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
                 </div>
                 <div>
-                  <div style={{fontSize:"12px",fontWeight:"600",color:saveSession?C.green:"#aaa"}}>Enregistrer cette séance</div>
-                  <div style={{fontSize:"10px",color:"#444"}}>Accessible rapidement la prochaine fois</div>
+                  <div style={{fontSize:"12px",fontWeight:"600",color:saveSession?C.green:"#aaa"}}>{tr("jour.saveSession")}</div>
+                  <div style={{fontSize:"10px",color:"#444"}}>{tr("common.quickAccess")}</div>
                 </div>
               </div>
             )}
             <div style={{display:"flex",gap:"8px",marginTop:"4px"}}>
-              <button style={{...css.btn(C.gold),flex:1,marginBottom:0,padding:"11px"}} onClick={addSession}>Ajouter</button>
-              <button style={{...css.btnSec,flex:1,marginBottom:0,padding:"11px"}} onClick={()=>setShowSessionForm(false)}>Annuler</button>
+              <button style={{...css.btn(C.gold),flex:1,marginBottom:0,padding:"11px"}} onClick={addSession}>{tr("common.add")}</button>
+              <button style={{...css.btnSec,flex:1,marginBottom:0,padding:"11px"}} onClick={()=>setShowSessionForm(false)}>{tr("common.cancel")}</button>
             </div>
           </div>
         ) : (
           <div style={{display:"flex",gap:"8px"}}>
             <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",border:`1.5px dashed ${C.border}`,borderRadius:"10px",cursor:"pointer"}} onClick={()=>setShowSessionForm(true)}>
-              <div style={{fontSize:"13px",color:C.muted}}>{journal.session?"Modifier la séance":"Ajouter une séance"}</div>
+              <div style={{fontSize:"13px",color:C.muted}}>{journal.session?tr("jour.editSession"):tr("jour.addSession")}</div>
               <div style={{color:C.muted,fontSize:"20px",fontWeight:"300"}}>+</div>
             </div>
             <button style={{padding:"10px 14px",border:`1px solid ${C.border}`,borderRadius:"10px",background:"rgba(255,255,255,0.03)",color:"#aaa",fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",flexShrink:0}} onClick={()=>setShowSavedSessions(true)}>
-              Mes séances
+              {tr("jour.mySessionsBtn")}
               {getSavedSessions().length > 0 && <span style={{position:"absolute",top:"-6px",right:"-6px",background:C.gold,color:"#000",borderRadius:"10px",fontSize:"9px",fontWeight:"800",padding:"1px 5px",minWidth:"16px",textAlign:"center"}}>{getSavedSessions().length}</span>}
             </button>
           </div>
@@ -2451,13 +2701,15 @@ function ViewJour() {
 }
 
 function ViewHistorique({ premium, onShowPaywall }) {
+  const { tr, lang } = useI18n();
+  const locale = lang === "fr" ? "fr-FR" : "en-US";
   if (!premium) {
     return (
       <div style={{width:"100%",maxWidth:"420px"}}>
         <div style={{position:"relative"}}>
           <div style={{filter:"blur(5px)",pointerEvents:"none",userSelect:"none"}}>
             <div style={{...css.card,marginBottom:"12px"}}>
-              <div style={css.cardTitle}>HISTORIQUE</div>
+              <div style={css.cardTitle}>{tr("historique.title")}</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"4px"}}>
                 {[...Array(21)].map((_,i)=>(
                   <div key={i} style={{aspectRatio:"1",borderRadius:"6px",background:i%3===0?"rgba(125,249,170,0.3)":i%5===0?"rgba(255,179,71,0.3)":"rgba(255,255,255,0.05)"}}/>
@@ -2465,7 +2717,7 @@ function ViewHistorique({ premium, onShowPaywall }) {
               </div>
             </div>
             <div style={{...css.card}}>
-              <div style={css.cardTitle}>ANALYSES</div>
+              <div style={css.cardTitle}>{tr("historique.analysesTitle")}</div>
               {[{bf:"14%",date:"30 juin"},{bf:"16%",date:"15 juin"},{bf:"18%",date:"1 juin"}].map((a,i)=>(
                 <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:i<2?`1px solid ${C.border}`:"none"}}>
                   <span style={{fontSize:"13px",color:"#aaa"}}>{a.date}</span>
@@ -2475,15 +2727,15 @@ function ViewHistorique({ premium, onShowPaywall }) {
             </div>
           </div>
           <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(10,10,15,0.75)",backdropFilter:"blur(3px)",borderRadius:"20px",padding:"28px 20px",textAlign:"center"}}>
-            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"14px"}}>PHYSIQRATE PRO</div>
-            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"10px"}}>Ton historique complet</div>
-            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px"}}>Calendrier de tes analyses</div>
-            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px"}}>Historique body fat sur tous tes appareils</div>
-            <div style={{fontSize:"13px",color:"#666",marginBottom:"24px"}}>Synchronisation cloud sécurisée</div>
+            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"14px"}}>{tr("historique.proTitle")}</div>
+            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"10px"}}>{tr("historique.fullHistory")}</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px"}}>{tr("historique.calendarPerk")}</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px"}}>{tr("historique.historyPerk")}</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"24px"}}>{tr("historique.syncPerk")}</div>
             <button style={{...css.btn(C.gold),width:"auto",padding:"14px 28px",marginBottom:"8px",fontSize:"14px"}} onClick={onShowPaywall}>
-              Débloquer Pro — 4,99€/mois
+              {tr("historique.unlockPro")}
             </button>
-            <div style={{fontSize:"11px",color:"#333"}}>Résiliation à tout moment</div>
+            <div style={{fontSize:"11px",color:"#333"}}>{tr("historique.cancelAnytime")}</div>
           </div>
         </div>
       </div>
@@ -2497,7 +2749,9 @@ function ViewHistorique({ premium, onShowPaywall }) {
   const month = now.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const monthNames = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  const monthNames = lang === "fr"
+    ? ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"]
+    : ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const today = now.toDateString();
 
   function getDayData(day) {
@@ -2537,14 +2791,14 @@ function ViewHistorique({ premium, onShowPaywall }) {
         return (
           <div style={{background:`linear-gradient(135deg,rgba(255,215,0,0.06),transparent)`,border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"16px",padding:"16px",marginBottom:"12px"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
-              <div style={{fontSize:"14px",fontWeight:"700",color:C.gold}}>{date.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</div>
+              <div style={{fontSize:"14px",fontWeight:"700",color:C.gold}}>{date.toLocaleDateString(locale,{weekday:"long",day:"numeric",month:"long"})}</div>
               <button style={{background:"transparent",border:"none",color:C.muted,fontSize:"20px",cursor:"pointer"}} onClick={()=>setSelectedDay(null)}>×</button>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"14px"}}>
               {[
-                {val:totalCals||"—",label:"KCAL"},
-                {val:data.steps ? data.steps.toLocaleString("fr-FR") : "—",label:"PAS"},
-                {val:data.session?.done ? "✓" : "—", label:"SÉANCE", color:data.session?.done?C.green:C.muted}
+                {val:totalCals||"—",label:tr("historique.kcalLabel")},
+                {val:data.steps ? data.steps.toLocaleString(locale) : "—",label:tr("historique.stepsLabel")},
+                {val:data.session?.done ? "✓" : "—", label:tr("historique.sessionLabel"), color:data.session?.done?C.green:C.muted}
               ].map((s,i)=>(
                 <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
                   <div style={{fontSize:"16px",fontWeight:"800",color:s.color||C.text}}>{s.val}</div>
@@ -2564,7 +2818,7 @@ function ViewHistorique({ premium, onShowPaywall }) {
             )}
             {data.meals?.length > 0 && (
               <>
-                <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",marginBottom:"8px"}}>REPAS</div>
+                <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",marginBottom:"8px"}}>{tr("historique.mealsLabel")}</div>
                 {data.meals.map((m,i)=>(
                   <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:`1px solid rgba(255,255,255,0.04)`,fontSize:"12px"}}>
                     <span style={{color:"#bbb"}}>{m.name}</span>
@@ -2575,9 +2829,9 @@ function ViewHistorique({ premium, onShowPaywall }) {
             )}
             {(macros.protein > 0 || macros.carbs > 0) && (
               <>
-                <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",margin:"12px 0 8px"}}>MACROS</div>
+                <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",margin:"12px 0 8px"}}>{tr("historique.macrosLabel")}</div>
                 <div style={{display:"flex",gap:"8px"}}>
-                  {[{val:`${macros.protein}g`,label:"Protéines",color:"#7DF9FF"},{val:`${macros.carbs}g`,label:"Glucides",color:"#FFB347"},{val:`${macros.fat}g`,label:"Lipides",color:"#FF8C69"}].map((m,i)=>(
+                  {[{val:`${macros.protein}g`,label:tr("historique.protein"),color:"#7DF9FF"},{val:`${macros.carbs}g`,label:tr("historique.carbs"),color:"#FFB347"},{val:`${macros.fat}g`,label:tr("historique.fat"),color:"#FF8C69"}].map((m,i)=>(
                     <div key={i} style={{flex:1,background:"rgba(255,255,255,0.03)",borderRadius:"8px",padding:"8px",textAlign:"center"}}>
                       <div style={{fontSize:"13px",fontWeight:"700",color:m.color}}>{m.val}</div>
                       <div style={{fontSize:"9px",color:C.muted,marginTop:"2px"}}>{m.label}</div>
@@ -2595,7 +2849,7 @@ function ViewHistorique({ premium, onShowPaywall }) {
           <div style={{fontSize:"14px",fontWeight:"700"}}>{monthNames[month]} {year}</div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"3px"}}>
-          {["L","M","M","J","V","S","D"].map((d,i)=>(
+          {(lang==="fr" ? ["L","M","M","J","V","S","D"] : ["M","T","W","T","F","S","S"]).map((d,i)=>(
             <div key={i} style={{fontSize:"9px",color:"#444",textAlign:"center",padding:"3px 0"}}>{d}</div>
           ))}
           {Array.from({length:(firstDay===0?6:firstDay-1)}).map((_,i)=>(
@@ -2622,20 +2876,22 @@ function ViewHistorique({ premium, onShowPaywall }) {
           })}
         </div>
         <div style={{display:"flex",gap:"14px",marginTop:"10px"}}>
-          {[{color:"rgba(125,249,170,0.4)",label:"Dans l'objectif"},{color:"rgba(255,107,107,0.4)",label:"Au-dessus"},{color:"rgba(255,215,0,0.4)",label:"Aujourd'hui"}].map((l,i)=>(
+          {[{color:"rgba(125,249,170,0.4)",label:tr("historique.inGoal")},{color:"rgba(255,107,107,0.4)",label:tr("historique.over")},{color:"rgba(255,215,0,0.4)",label:tr("historique.today")}].map((l,i)=>(
             <div key={i} style={{display:"flex",alignItems:"center",gap:"5px"}}>
               <div style={{width:"10px",height:"10px",borderRadius:"3px",background:l.color}}/>
               <span style={{fontSize:"10px",color:C.muted}}>{l.label}</span>
             </div>
           ))}
         </div>
-        <p style={{fontSize:"11px",color:"#333",marginTop:"8px",textAlign:"center"}}>Clique sur un jour pour voir le détail</p>
+        <p style={{fontSize:"11px",color:"#333",marginTop:"8px",textAlign:"center"}}>{tr("historique.clickDay")}</p>
       </div>
     </div>
   );
 }
 
 function ViewProgression({ premium, onShowPaywall }) {
+  const { tr, trf, lang } = useI18n();
+  const locale = lang === "fr" ? "fr-FR" : "en-US";
   const history = getHistory();
   const [selected, setSelected] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
@@ -2648,7 +2904,7 @@ function ViewProgression({ premium, onShowPaywall }) {
           {/* Teaser flouté */}
           <div style={{filter:"blur(5px)",pointerEvents:"none",userSelect:"none"}}>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"12px"}}>
-              {[{val:"14%",label:"ACTUEL",color:"#7DF9AA"},{val:"−3%",label:"ÉVOLUTION",color:"#7DF9AA"},{val:"8",label:"ANALYSES"}].map((s,i)=>(
+              {[{val:"14%",label:tr("progression.current"),color:"#7DF9AA"},{val:"−3%",label:tr("progression.evolution"),color:"#7DF9AA"},{val:"8",label:tr("progression.analysesCount")}].map((s,i)=>(
                 <div key={i} style={{background:"rgba(255,255,255,0.03)",borderRadius:"12px",padding:"12px",textAlign:"center"}}>
                   <div style={{fontSize:"22px",fontWeight:"800",color:s.color||C.text}}>{s.val}</div>
                   <div style={{fontSize:"9px",color:C.muted,marginTop:"3px"}}>{s.label}</div>
@@ -2656,7 +2912,7 @@ function ViewProgression({ premium, onShowPaywall }) {
               ))}
             </div>
             <div style={{...css.card,marginBottom:"12px"}}>
-              <div style={css.cardTitle}>HISTORIQUE PHOTOS</div>
+              <div style={css.cardTitle}>{tr("progression.photoHistoryTitle")}</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
                 {["#7DF9AA","#7DF9FF","#FFB347","#FFB347","#FF8C69","#FF6B6B"].map((color,i)=>(
                   <div key={i} style={{aspectRatio:"3/4",background:"rgba(255,255,255,0.05)",borderRadius:"10px",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"6px 8px"}}>
@@ -2667,7 +2923,7 @@ function ViewProgression({ premium, onShowPaywall }) {
               </div>
             </div>
             <div style={{...css.card}}>
-              <div style={css.cardTitle}>COURBE BODY FAT</div>
+              <div style={css.cardTitle}>{tr("progression.curveTitle")}</div>
               <svg width="100%" viewBox="0 0 340 80">
                 <path d="M20 65 L70 58 L120 50 L170 44 L220 38 L270 34 L320 28 L320 75 L20 75 Z" fill="rgba(125,249,170,0.1)"/>
                 <path d="M20 65 L70 58 L120 50 L170 44 L220 38 L270 34 L320 28" fill="none" stroke="#7DF9AA" strokeWidth="2.5" strokeLinecap="round"/>
@@ -2677,15 +2933,15 @@ function ViewProgression({ premium, onShowPaywall }) {
 
           {/* Overlay Pro */}
           <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(10,10,15,0.75)",backdropFilter:"blur(3px)",borderRadius:"20px",padding:"28px 20px",textAlign:"center"}}>
-            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"14px"}}>PHYSIQRATE PRO</div>
-            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"10px",lineHeight:"1.3"}}>Suis ta transformation</div>
-            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px",lineHeight:"1.6"}}>Historique de tes photos</div>
-            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px",lineHeight:"1.6"}}>Courbe de progression body fat</div>
-            <div style={{fontSize:"13px",color:"#666",marginBottom:"24px",lineHeight:"1.6"}}>Comparatif IA entre deux dates</div>
+            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"14px"}}>{tr("progression.proTitle")}</div>
+            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"10px",lineHeight:"1.3"}}>{tr("progression.followTransfo")}</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px",lineHeight:"1.6"}}>{tr("progression.photoHistoryPerk")}</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"8px",lineHeight:"1.6"}}>{tr("progression.curvePerk")}</div>
+            <div style={{fontSize:"13px",color:"#666",marginBottom:"24px",lineHeight:"1.6"}}>{tr("progression.comparePerk")}</div>
             <button style={{...css.btn(C.gold),width:"auto",padding:"14px 28px",marginBottom:"8px",fontSize:"14px"}} onClick={onShowPaywall}>
-              Débloquer Pro — 4,99€/mois
+              {tr("progression.unlockPro")}
             </button>
-            <div style={{fontSize:"11px",color:"#333"}}>Résiliation à tout moment</div>
+            <div style={{fontSize:"11px",color:"#333"}}>{tr("progression.cancelAnytime")}</div>
           </div>
         </div>
       </div>
@@ -2708,11 +2964,11 @@ function ViewProgression({ premium, onShowPaywall }) {
   const milestone = (() => {
     if (!stats || stats.diff === null) return null;
     const diff = stats.diff;
-    if (diff <= -5) return { text:`Incroyable — tu as perdu ${Math.abs(diff)}% de body fat. C'est une transformation majeure.`, color:C.green };
-    if (diff <= -3) return { text:`Excellente progression — ${Math.abs(diff)}% de body fat en moins. Tu es sur la bonne voie.`, color:C.green };
-    if (diff <= -1) return { text:`Bonne progression — ${Math.abs(diff)}% de body fat perdu. Continue ta consistance.`, color:"#7DF9FF" };
-    if (diff >= 3 && history[0].bodyfat <= 18) return { text:`Prise de muscle détectée — +${diff}% sur un physique déjà sec. Probablement de la masse musculaire.`, color:C.gold };
-    if (diff >= 3) return { text:`+${diff}% de body fat depuis le début. Il est temps d'ajuster ton alimentation.`, color:"#FFB347" };
+    if (diff <= -5) return { text:trf("progression.milestoneAmazing",{n:Math.abs(diff)}), color:C.green };
+    if (diff <= -3) return { text:trf("progression.milestoneExcellent",{n:Math.abs(diff)}), color:C.green };
+    if (diff <= -1) return { text:trf("progression.milestoneGood",{n:Math.abs(diff)}), color:"#7DF9FF" };
+    if (diff >= 3 && history[0].bodyfat <= 18) return { text:trf("progression.milestoneMuscle",{n:diff}), color:C.gold };
+    if (diff >= 3) return { text:trf("progression.milestoneAdjust",{n:diff}), color:"#FFB347" };
     return null;
   })();
 
@@ -2721,9 +2977,9 @@ function ViewProgression({ premium, onShowPaywall }) {
       {stats && (
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"12px"}}>
           {[
-            {val:`${stats.current}%`,label:"ACTUEL",color:getArchetype(stats.current,getProfile().gender||"male").color},
-            {val:stats.diff!==null?`${stats.diff>0?"+":""}${stats.diff}%`:"—",label:"ÉVOLUTION",color:stats.diff<0?C.green:stats.diff>0?C.red:C.text},
-            {val:stats.count,label:"ANALYSES"},
+            {val:`${stats.current}%`,label:tr("progression.current"),color:getArchetype(stats.current,getProfile().gender||"male").color},
+            {val:stats.diff!==null?`${stats.diff>0?"+":""}${stats.diff}%`:"—",label:tr("progression.evolution"),color:stats.diff<0?C.green:stats.diff>0?C.red:C.text},
+            {val:stats.count,label:tr("progression.analysesCount")},
           ].map((s,i)=>(
             <div key={i} style={{background:"rgba(255,255,255,0.03)",borderRadius:"12px",padding:"12px",textAlign:"center"}}>
               <div style={{fontSize:"22px",fontWeight:"800",color:s.color||C.text}}>{s.val}</div>
@@ -2736,7 +2992,7 @@ function ViewProgression({ premium, onShowPaywall }) {
       {/* Milestone */}
       {milestone && (
         <div style={{...css.card,background:`linear-gradient(135deg,${milestone.color}08,transparent)`,borderColor:`${milestone.color}22`,marginBottom:"12px"}}>
-          <div style={{fontSize:"10px",color:milestone.color,letterSpacing:"2px",marginBottom:"8px"}}>MILESTONE</div>
+          <div style={{fontSize:"10px",color:milestone.color,letterSpacing:"2px",marginBottom:"8px"}}>{tr("progression.milestoneTitle")}</div>
           <div style={{fontSize:"13px",color:"#ccc",lineHeight:"1.6"}}>{milestone.text}</div>
         </div>
       )}
@@ -2744,16 +3000,16 @@ function ViewProgression({ premium, onShowPaywall }) {
       {/* Photos */}
       <div style={css.card}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
-          <div style={css.cardTitle}>HISTORIQUE PHOTOS</div>
-          {!premium && <div style={{fontSize:"10px",color:C.gold,background:"rgba(255,215,0,0.1)",border:`1px solid rgba(255,215,0,0.25)`,padding:"3px 10px",borderRadius:"20px",fontWeight:"600"}}>Comparatif — Pro</div>}
+          <div style={css.cardTitle}>{tr("progression.photoHistoryTitle")}</div>
+          {!premium && <div style={{fontSize:"10px",color:C.gold,background:"rgba(255,215,0,0.1)",border:`1px solid rgba(255,215,0,0.25)`,padding:"3px 10px",borderRadius:"20px",fontWeight:"600"}}>{tr("progression.comparePro")}</div>}
         </div>
         {history.length === 0 ? (
-          <div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:"12px"}}>Aucune analyse encore. Lance ta première analyse photo.</div>
+          <div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:"12px"}}>{tr("progression.noAnalysisYet")}</div>
         ) : (
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"10px"}}>
             {history.slice(0,9).map((h,i)=>{
               const arch = getArchetype(h.bodyfat, h.gender||"male");
-              const date = new Date(h.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+              const date = new Date(h.date).toLocaleDateString(locale,{day:"numeric",month:"short"});
               const isSel = selected.includes(i);
               return (
                 <div key={i} onClick={()=>togglePhoto(i)} style={{position:"relative",borderRadius:"12px",overflow:"hidden",cursor:"pointer",aspectRatio:"3/4",background:`linear-gradient(135deg,${arch.color}18,rgba(0,0,0,0.6))`,border:`${isSel?"2px":"1px"} solid ${isSel?C.gold:arch.color+"44"}`,display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"10px 8px"}}>
@@ -2769,7 +3025,7 @@ function ViewProgression({ premium, onShowPaywall }) {
                   <div>
                     <div style={{fontSize:"18px",fontWeight:"800",color:arch.color}}>{h.bodyfat}%</div>
                     <div style={{fontSize:"9px",color:"#aaa",marginTop:"2px"}}>{date}</div>
-                    <div style={{fontSize:"8px",color:arch.color+"99",marginTop:"1px"}}>{arch.label}</div>
+                    <div style={{fontSize:"8px",color:arch.color+"99",marginTop:"1px"}}>{tr("archetype."+arch.label)}</div>
                   </div>
                 </div>
               );
@@ -2781,20 +3037,20 @@ function ViewProgression({ premium, onShowPaywall }) {
         {!premium && history.length >= 2 && (
           <div style={{position:"relative",marginBottom:"10px",borderRadius:"12px",overflow:"hidden",cursor:"pointer"}} onClick={onShowPaywall}>
             <div style={{filter:"blur(4px)",pointerEvents:"none",background:"rgba(125,249,170,0.05)",border:`1px solid rgba(125,249,170,0.15)`,borderRadius:"12px",padding:"14px"}}>
-              <div style={{fontSize:"13px",fontWeight:"700",color:C.green,marginBottom:"4px"}}>Comparatif IA disponible</div>
-              <div style={{fontSize:"11px",color:C.muted}}>Sélectionne 2 photos pour voir l'évolution de ton physique analysée par l'IA</div>
+              <div style={{fontSize:"13px",fontWeight:"700",color:C.green,marginBottom:"4px"}}>{tr("progression.compareAvailable")}</div>
+              <div style={{fontSize:"11px",color:C.muted}}>{tr("progression.selectTwoPhotos")}</div>
             </div>
             <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(10,10,15,0.7)",backdropFilter:"blur(2px)",borderRadius:"12px"}}>
-              <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"6px"}}>PRO</div>
-              <div style={{fontSize:"13px",fontWeight:"700",color:"white",marginBottom:"4px"}}>Comparatif IA</div>
-              <div style={{fontSize:"11px",color:C.muted}}>Débloquer pour 4,99€/mois</div>
+              <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"6px"}}>{tr("progression.proLabel")}</div>
+              <div style={{fontSize:"13px",fontWeight:"700",color:"white",marginBottom:"4px"}}>{tr("progression.aiCompare")}</div>
+              <div style={{fontSize:"11px",color:C.muted}}>{tr("progression.unlockFor")}</div>
             </div>
           </div>
         )}
 
         {premium && selected.length === 2 && (
           <button style={css.btn(C.gold)} onClick={()=>setShowCompare(true)}>
-            Comparer les 2 photos sélectionnées
+            {tr("progression.compareTwoBtn")}
           </button>
         )}
       </div>
@@ -2806,24 +3062,24 @@ function ViewProgression({ premium, onShowPaywall }) {
         const improved = diff < 0;
         return (
           <div style={{...css.card,background:`rgba(125,249,170,0.05)`,borderColor:`rgba(125,249,170,0.2)`}}>
-            <div style={{...css.cardTitle,color:C.green}}>COMPARATIF IA</div>
+            <div style={{...css.cardTitle,color:C.green}}>{tr("progression.aiCompareTitle")}</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"12px"}}>
               {[b,a].map((h,i)=>(
                 <div key={i} style={{textAlign:"center"}}>
                   <div style={{height:"80px",background:"rgba(255,255,255,0.04)",borderRadius:"10px",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:"6px",border:`1px solid ${getArchetype(h.bodyfat,h.gender||"male").color}22`}}>
                     <span style={{fontSize:"20px",fontWeight:"800",color:getArchetype(h.bodyfat,h.gender||"male").color}}>{h.bodyfat}%</span>
                   </div>
-                  <p style={{fontSize:"10px",color:C.muted}}>{new Date(h.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</p>
+                  <p style={{fontSize:"10px",color:C.muted}}>{new Date(h.date).toLocaleDateString(locale,{day:"numeric",month:"short"})}</p>
                 </div>
               ))}
             </div>
             <div style={{background:`rgba(125,249,170,0.08)`,borderRadius:"12px",padding:"12px",textAlign:"center"}}>
               <div style={{fontSize:"14px",fontWeight:"800",color:improved?C.green:C.red,marginBottom:"4px"}}>
-                {improved?"Perte de graisse confirmée":"Prise de masse détectée"}
+                {improved?tr("progression.fatLossConfirmed"):tr("progression.massGainDetected")}
               </div>
               <div style={{fontSize:"11px",color:C.sub,lineHeight:"1.5"}}>
-                {Math.abs(diff)}% de body fat {improved?"en moins":"en plus"} entre ces deux analyses.
-                {improved?" Définition musculaire améliorée.":" Continue ton travail."}
+                {trf("progression.betweenAnalyses",{n:Math.abs(diff),dir:improved?tr("progression.lessBetween"):tr("progression.moreBetween")})}
+                {improved?tr("progression.definitionImproved"):tr("progression.keepWork")}
               </div>
             </div>
           </div>
@@ -2833,7 +3089,7 @@ function ViewProgression({ premium, onShowPaywall }) {
       {/* Courbe */}
       {history.length >= 2 && (
         <div style={css.card}>
-          <div style={css.cardTitle}>COURBE BODY FAT</div>
+          <div style={css.cardTitle}>{tr("progression.curveTitle")}</div>
           <svg width="100%" viewBox="0 0 340 100" style={{overflow:"visible"}}>
             <defs>
               <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
@@ -2872,6 +3128,7 @@ function ViewProgression({ premium, onShowPaywall }) {
 }
 
 function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
+  const { tr, lang } = useI18n();
   const [profile, setProfile] = useState(getProfile());
   const [saved, setSaved] = useState(false);
   const completion = getProfileCompletion(profile);
@@ -2918,95 +3175,95 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
   return (
     <div style={{width:"100%",maxWidth:"420px"}}>
       <div style={css.card}>
-        <div style={css.cardTitle}>COMPLÉTION DU PROFIL</div>
+        <div style={css.cardTitle}>{tr("profil.completionTitle")}</div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
-          <span style={{fontSize:"13px",fontWeight:"700"}}>Profil</span>
+          <span style={{fontSize:"13px",fontWeight:"700"}}>{tr("nav.profil")}</span>
           <span style={{fontSize:"20px",fontWeight:"800",color:completion===100?C.green:C.gold}}>{completion}%</span>
         </div>
         <div style={{height:"5px",background:"rgba(255,255,255,0.06)",borderRadius:"3px",overflow:"hidden",marginBottom:"6px"}}>
           <div style={{height:"100%",width:`${completion}%`,background:`linear-gradient(90deg,${C.gold},#FFA500)`,borderRadius:"3px",transition:"width 0.4s"}}/>
         </div>
-        <div style={{fontSize:"11px",color:"#444",marginBottom:"6px"}}>Plus ton profil est complet, plus l'analyse est précise</div>
+        <div style={{fontSize:"11px",color:"#444",marginBottom:"6px"}}>{tr("profil.completionHint")}</div>
 
-        <span style={css.label}>Genre</span>
+        <span style={css.label}>{tr("analyze.genre")}</span>
         <div style={{display:"flex",gap:"8px",marginTop:"8px"}}>
-          <button style={{...css.optBtn(profile.gender==="male"),flex:1,textAlign:"center"}} onClick={()=>update("gender","male")}>Homme</button>
-          <button style={{...css.optBtn(profile.gender==="female"),flex:1,textAlign:"center"}} onClick={()=>update("gender","female")}>Femme</button>
+          <button style={{...css.optBtn(profile.gender==="male"),flex:1,textAlign:"center"}} onClick={()=>update("gender","male")}>{tr("analyze.homme")}</button>
+          <button style={{...css.optBtn(profile.gender==="female"),flex:1,textAlign:"center"}} onClick={()=>update("gender","female")}>{tr("analyze.femme")}</button>
         </div>
 
-        <span style={css.label}>Âge</span>
-        <input style={css.input} type="text" inputMode="numeric" placeholder="Ex : 24" maxLength={3}
+        <span style={css.label}>{tr("profil.ageLabel")}</span>
+        <input style={css.input} type="text" inputMode="numeric" placeholder={tr("analyze.agePlaceholder")} maxLength={3}
           value={profile.age||""}
           onChange={e=>{ const raw=e.target.value.replace(/[^0-9]/g,"").slice(0,3); const v=parseInt(raw)||""; update("age",v>100?100:v||""); }}/>
 
-        <span style={css.label}>Taille (cm)</span>
-        <input style={css.input} type="text" inputMode="numeric" placeholder="Ex : 178" maxLength={3}
+        <span style={css.label}>{tr("profil.heightLabel")}</span>
+        <input style={css.input} type="text" inputMode="numeric" placeholder={tr("profil.heightPlaceholder")} maxLength={3}
           value={profile.height||""}
           onChange={e=>{ const raw=e.target.value.replace(/[^0-9]/g,"").slice(0,3); const v=parseInt(raw)||""; update("height",v>250?250:v||""); }}/>
 
-        <span style={css.label}>Poids de référence (kg)</span>
-        <input style={css.input} type="text" inputMode="decimal" placeholder="Ex : 75" maxLength={5}
+        <span style={css.label}>{tr("profil.refWeightLabel")}</span>
+        <input style={css.input} type="text" inputMode="decimal" placeholder={tr("analyze.weightPlaceholder")} maxLength={5}
           value={profile.weight||""}
           onChange={e=>{ const raw=e.target.value.replace(/[^0-9.]/g,"").slice(0,5); const v=parseFloat(raw)||""; update("weight",v>300?300:raw||""); }}/>
-        <div style={{fontSize:"11px",color:"#444",marginTop:"4px"}}>Mis à jour automatiquement à chaque analyse</div>
+        <div style={{fontSize:"11px",color:"#444",marginTop:"4px"}}>{tr("profil.autoUpdated")}</div>
 
-        <span style={css.label}>Niveau d'activité</span>
+        <span style={css.label}>{tr("profil.activityLabel")}</span>
         <div style={{display:"flex",flexDirection:"column",gap:"6px",marginTop:"8px"}}>
           {ACTIVITY_LEVELS.map(l=>(
-            <button key={l.key} style={css.optBtn(profile.activity===l.key)} onClick={()=>update("activity",l.key)}>{l.label}</button>
+            <button key={l.key} style={css.optBtn(profile.activity===l.key)} onClick={()=>update("activity",l.key)}>{tr("activityLevels."+l.key)}</button>
           ))}
         </div>
 
-        <span style={css.label}>Pas moyens par jour</span>
+        <span style={css.label}>{tr("profil.stepsLabel")}</span>
         <div style={{display:"flex",flexDirection:"column",gap:"6px",marginTop:"8px"}}>
           {DAILY_STEPS.map(s=>(
-            <button key={s.key} style={css.optBtn(profile.steps===s.key)} onClick={()=>update("steps",s.key)}>{s.label}</button>
+            <button key={s.key} style={css.optBtn(profile.steps===s.key)} onClick={()=>update("steps",s.key)}>{tr("dailySteps."+s.key)}</button>
           ))}
         </div>
 
-        <span style={css.label}>Type d'entraînement</span>
+        <span style={css.label}>{tr("profil.trainingLabel")}</span>
         <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginTop:"8px"}}>
-          {[["strength","Muscu"],["cardio","Cardio"],["mixed","Mixte"],["sport","Sport"]].map(([val,label])=>(
+          {[["strength",tr("profil.strength")],["cardio",tr("profil.cardio")],["mixed",tr("profil.mixed")],["sport",tr("profil.sport")]].map(([val,label])=>(
             <button key={val} style={css.optBtn(profile.trainingType===val)} onClick={()=>update("trainingType",val)}>{label}</button>
           ))}
         </div>
 
-        <span style={css.label}>Objectif</span>
+        <span style={css.label}>{tr("profil.goalLabel")}</span>
         <div style={{display:"flex",flexDirection:"column",gap:"6px",marginTop:"8px"}}>
           {GOALS.map(g=>(
-            <button key={g.key} style={css.optBtn(profile.goal===g.key)} onClick={()=>update("goal",g.key)}>{g.label}</button>
+            <button key={g.key} style={css.optBtn(profile.goal===g.key)} onClick={()=>update("goal",g.key)}>{tr("goals."+g.key)}</button>
           ))}
         </div>
 
         <button onClick={handleSave} style={{...css.btn(saved ? C.green : C.gold), marginTop:"18px"}}>
-          {saved ? "✓ Profil sauvegardé" : "Sauvegarder le profil"}
+          {saved ? tr("profil.saved") : tr("profil.saveBtn")}
         </button>
       </div>
 
       {tdee && (
         <div style={{background:`linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))`,border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"16px",padding:"16px",marginBottom:"12px"}}>
-          <div style={css.cardTitle}>TDEE — FORMULE MIFFLIN-ST JEOR</div>
+          <div style={css.cardTitle}>{tr("profil.tdeeTitle")}</div>
           <div style={{fontSize:"11px",color:"#444",marginBottom:"14px"}}>
-            {profile.gender==="male"?"Homme":"Femme"} · {profile.age} ans · {profile.height} cm · {w} kg · {ACTIVITY_LEVELS.find(l=>l.key===profile.activity)?.label?.split("—")[0].trim()}
+            {profile.gender==="male"?tr("profil.homme"):tr("profil.femme")} · {profile.age} {tr("profil.yearsOld")} · {profile.height} cm · {w} kg · {profile.activity ? tr("activityLevelsShort."+profile.activity) : ""}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
             <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"12px",padding:"14px",textAlign:"center"}}>
               <div style={{fontSize:"20px",fontWeight:"800",color:C.gold}}>{tdee.toLocaleString()}</div>
-              <div style={{fontSize:"9px",color:C.muted,marginTop:"3px"}}>Maintien (kcal/jour)</div>
+              <div style={{fontSize:"9px",color:C.muted,marginTop:"3px"}}>{tr("profil.maintenanceKcal")}</div>
             </div>
             {goalCals && (
               <div style={{background:"rgba(125,249,170,0.06)",border:`1px solid rgba(125,249,170,0.15)`,borderRadius:"12px",padding:"14px",textAlign:"center"}}>
                 <div style={{fontSize:"20px",fontWeight:"800",color:C.green}}>{goalCals.toLocaleString()}</div>
-                <div style={{fontSize:"9px",color:C.muted,marginTop:"3px"}}>Objectif (kcal/jour)</div>
+                <div style={{fontSize:"9px",color:C.muted,marginTop:"3px"}}>{tr("profil.goalKcal")}</div>
               </div>
             )}
           </div>
           <div style={{background:"rgba(255,255,255,0.03)",borderRadius:"10px",padding:"12px"}}>
-            <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",marginBottom:"8px"}}>DÉTAIL DU CALCUL</div>
+            <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px",marginBottom:"8px"}}>{tr("profil.calcDetail")}</div>
             {[
-              {label:"Métabolisme de base (TMB)", val:`${Math.round(profile.gender==="male"?(10*w)+(6.25*parseFloat(profile.height))-(5*parseFloat(profile.age))+5:(10*w)+(6.25*parseFloat(profile.height))-(5*parseFloat(profile.age))-161)} kcal`},
-              {label:"Multiplicateur activité", val:`×${ACTIVITY_LEVELS.find(l=>l.key===profile.activity)?.factor}`},
-              ...(profile.steps ? [{label:"Bonus pas quotidiens", val:`+${Math.round(0.045 * w * (DAILY_STEPS.find(s=>s.key===profile.steps)?.steps||0) / 1000)} kcal`}] : []),
+              {label:tr("profil.bmr"), val:`${Math.round(profile.gender==="male"?(10*w)+(6.25*parseFloat(profile.height))-(5*parseFloat(profile.age))+5:(10*w)+(6.25*parseFloat(profile.height))-(5*parseFloat(profile.age))-161)} kcal`},
+              {label:tr("profil.activityMult"), val:`×${ACTIVITY_LEVELS.find(l=>l.key===profile.activity)?.factor}`},
+              ...(profile.steps ? [{label:tr("profil.stepsBonus"), val:`+${Math.round(0.045 * w * (DAILY_STEPS.find(s=>s.key===profile.steps)?.steps||0) / 1000)} kcal`}] : []),
             ].map((row,i)=>(
               <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:"11px",marginBottom:"5px"}}>
                 <span style={{color:"#666"}}>{row.label}</span>
@@ -3018,7 +3275,7 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
               <span style={{color:C.gold,fontWeight:"700"}}>{tdee.toLocaleString()} kcal</span>
             </div>
           </div>
-          <div style={{fontSize:"10px",color:"#444",marginTop:"10px",textAlign:"center"}}>Formule Mifflin-St Jeor · Référence clinique internationale</div>
+          <div style={{fontSize:"10px",color:"#444",marginTop:"10px",textAlign:"center"}}>{tr("profil.mifflinRef")}</div>
 
           {/* Objectifs macros avec édition manuelle */}
           {goalCals && profile.weight && (() => {
@@ -3030,23 +3287,23 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
             return (
               <div style={{marginTop:"14px",background:"rgba(255,255,255,0.03)",borderRadius:"12px",padding:"12px"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
-                  <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px"}}>OBJECTIFS MACROS JOURNALIERS</div>
+                  <div style={{fontSize:"10px",color:C.muted,letterSpacing:"1px"}}>{tr("profil.dailyMacroGoals")}</div>
                   <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
                     {isCustom && (
                       <button onClick={()=>{saveCustomMacros(null);setProfile({...profile});}}
                         style={{fontSize:"9px",color:C.muted,background:"transparent",border:`1px solid ${C.border}`,borderRadius:"6px",padding:"2px 8px",cursor:"pointer",fontFamily:"inherit"}}>
-                        Réinitialiser
+                        {tr("profil.reset")}
                       </button>
                     )}
-                    {isCustom && <div style={{fontSize:"9px",color:C.gold,background:"rgba(255,215,0,0.1)",padding:"2px 8px",borderRadius:"6px"}}>Modifié</div>}
+                    {isCustom && <div style={{fontSize:"9px",color:C.gold,background:"rgba(255,215,0,0.1)",padding:"2px 8px",borderRadius:"6px"}}>{tr("profil.modified")}</div>}
                   </div>
                 </div>
 
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"8px"}}>
                   {[
-                    {key:"protein",label:"Protéines",val:display.protein,color:"#7DF9FF",base:isCustom?"Personnalisé":`${GOALS.find(g=>g.key===profile.goal)?.protein_per_kg}g/kg`},
-                    {key:"carbs",  label:"Glucides", val:display.carbs,  color:"#FFB347",base:isCustom?"Personnalisé":"Reste des cals"},
-                    {key:"fat",    label:"Lipides",  val:display.fat,    color:"#FF8C69",base:isCustom?"Personnalisé":`${GOALS.find(g=>g.key===profile.goal)?.fat_per_kg}g/kg`},
+                    {key:"protein",label:tr("jour.protein"),val:display.protein,color:"#7DF9FF",base:isCustom?tr("profil.custom"):`${GOALS.find(g=>g.key===profile.goal)?.protein_per_kg}g/kg`},
+                    {key:"carbs",  label:tr("jour.carbs"), val:display.carbs,  color:"#FFB347",base:isCustom?tr("profil.custom"):tr("profil.remainingCals")},
+                    {key:"fat",    label:tr("jour.fat"),  val:display.fat,    color:"#FF8C69",base:isCustom?tr("profil.custom"):`${GOALS.find(g=>g.key===profile.goal)?.fat_per_kg}g/kg`},
                   ].map((m,i)=>(
                     <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"10px",padding:"10px",textAlign:"center"}}>
                       <div style={{fontSize:"18px",fontWeight:"800",color:m.color}}>{m.val}g</div>
@@ -3058,7 +3315,7 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
 
                 {/* Calories totales custom */}
                 <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px",padding:"8px 0",borderTop:`1px solid ${C.border}`,marginBottom:"10px"}}>
-                  <span style={{color:C.muted}}>Total calculé</span>
+                  <span style={{color:C.muted}}>{tr("profil.totalCalculated")}</span>
                   <span style={{color:C.gold,fontWeight:"700"}}>{display.protein*4 + display.carbs*4 + display.fat*9} kcal</span>
                 </div>
 
@@ -3071,7 +3328,7 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
       )}
     {/* Section compte utilisateur */}
     <div style={{...css.card,marginTop:"4px"}}>
-      <div style={css.cardTitle}>MON COMPTE</div>
+      <div style={css.cardTitle}>{tr("profil.accountTitle")}</div>
       {user ? (
         <>
           <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"14px"}}>
@@ -3080,7 +3337,7 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
             </div>
             <div>
               <div style={{fontSize:"13px",fontWeight:"600"}}>{user.email}</div>
-              <div style={{fontSize:"11px",color:premium?C.green:C.muted}}>{premium?"Abonné Pro":"Gratuit"}</div>
+              <div style={{fontSize:"11px",color:premium?C.green:C.muted}}>{premium?tr("profil.proMember"):tr("profil.free")}</div>
             </div>
           </div>
           <button onClick={()=>{
@@ -3091,16 +3348,16 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
             localStorage.removeItem("pq_stripe_session");
             window.location.reload();
           }} style={{...css.btnSec,marginBottom:0,fontSize:"12px",color:"#444"}}>
-            Se déconnecter
+            {tr("profil.logout")}
           </button>
         </>
       ) : (
         <>
           <div style={{fontSize:"12px",color:"#555",marginBottom:"14px",lineHeight:"1.5"}}>
-            Crée un compte pour que ton abonnement Pro soit lié à ton email et accessible sur tous tes appareils.
+            {tr("profil.createAccountHint")}
           </div>
           <button style={css.btn(C.gold)} onClick={onShowAuth}>
-            Créer un compte / Se connecter
+            {tr("profil.createOrLogin")}
           </button>
         </>
       )}
@@ -3109,61 +3366,61 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
     {/* Section abonnement Pro */}
     {isPremium() && (
       <div style={{...css.card,marginTop:"4px"}}>
-        <div style={css.cardTitle}>MON ABONNEMENT</div>
+        <div style={css.cardTitle}>{tr("profil.subscriptionTitle")}</div>
         <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"14px"}}>
           <div style={{width:"8px",height:"8px",borderRadius:"50%",background:C.green}}/>
-          <span style={{fontSize:"13px",fontWeight:"600",color:C.green}}>Physiqrate Pro — Actif</span>
+          <span style={{fontSize:"13px",fontWeight:"600",color:C.green}}>{tr("profil.proActive")}</span>
         </div>
         <div style={{fontSize:"12px",color:"#555",marginBottom:"14px",lineHeight:"1.5"}}>
-          Analyses illimitées · Scans nutrition illimités · Historique complet
+          {tr("profil.proFeatures")}
         </div>
         <a
           href="https://billing.stripe.com/p/login/dRm5kFdx61v70SadROaEE00"
           target="_blank"
           rel="noopener noreferrer"
           style={{...css.btnSec,marginBottom:"4px",display:"block",textDecoration:"none",textAlign:"center"}}>
-          Gérer mon abonnement
+          {tr("profil.manageSubscription")}
         </a>
         <div style={{fontSize:"11px",color:"#333",textAlign:"center"}}>
-          Modifier ta carte · Annuler à tout moment
+          {tr("profil.editCardCancel")}
         </div>
       </div>
     )}
 
     {/* Section installation PWA */}
     <div style={{...css.card, marginTop:"4px"}}>
-      <div style={css.cardTitle}>INSTALLER L'APPLICATION</div>
+      <div style={css.cardTitle}>{tr("profil.installTitle")}</div>
       {(() => {
         const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
         const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
         if (isStandalone) return (
           <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 0"}}>
             <div style={{width:"8px",height:"8px",borderRadius:"50%",background:C.green}}/>
-            <span style={{fontSize:"13px",color:C.green,fontWeight:"600"}}>Application installée</span>
+            <span style={{fontSize:"13px",color:C.green,fontWeight:"600"}}>{tr("profil.appInstalled")}</span>
           </div>
         );
         return (
           <>
             <div style={{fontSize:"12px",color:"#666",marginBottom:"14px",lineHeight:"1.5"}}>
-              Installe Physiqrate sur ton écran d'accueil pour un accès rapide, sans passer par le navigateur.
+              {tr("profil.installHint")}
             </div>
             {isIOS ? (
               <div style={{background:"rgba(255,215,0,0.06)",border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"12px",padding:"14px"}}>
-                <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"10px"}}>SUR IPHONE / IPAD</div>
+                <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"10px"}}>{tr("profil.onIphoneIpad")}</div>
 
                 {/* Bouton ouvrir dans Safari */}
                 <a href="x-safari-https://physiqrate.com"
                   style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",width:"100%",padding:"11px",borderRadius:"10px",background:"linear-gradient(135deg,#FFD700,#FFA500)",color:"#000",fontSize:"13px",fontWeight:"700",textDecoration:"none",marginBottom:"14px",boxSizing:"border-box"}}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-                  Ouvrir dans Safari
+                  {tr("profil.openSafari")}
                 </a>
 
-                <div style={{fontSize:"10px",color:"#444",textAlign:"center",marginBottom:"12px"}}>puis suis ces étapes :</div>
+                <div style={{fontSize:"10px",color:"#444",textAlign:"center",marginBottom:"12px"}}>{tr("profil.followSteps")}</div>
 
                 {[
-                  "Appuie sur le bouton Partager en bas de Safari",
-                  `Sélectionne "Sur l'écran d'accueil"`,
-                  'Appuie sur "Ajouter"'
+                  tr("profil.stepShare"),
+                  tr("profil.stepHomeScreen"),
+                  tr("profil.stepAdd"),
                 ].map((step, i) => (
                   <div key={i} style={{display:"flex",alignItems:"flex-start",gap:"10px",marginBottom:"8px"}}>
                     <div style={{width:"20px",height:"20px",borderRadius:"50%",background:"rgba(255,215,0,0.15)",border:`1px solid rgba(255,215,0,0.3)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:C.gold,fontWeight:"800",flexShrink:0}}>{i+1}</div>
@@ -3173,9 +3430,9 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
               </div>
             ) : (
               <button
-                onClick={()=>{ if(window._pwaInstallPrompt){ window._pwaInstallPrompt.prompt(); } else { alert("Ouvre le menu de ton navigateur et sélectionne 'Ajouter à l\'écran d\'accueil'"); } }}
+                onClick={()=>{ if(window._pwaInstallPrompt){ window._pwaInstallPrompt.prompt(); } else { alert(tr("profil.installAlert")); } }}
                 style={css.btn(C.gold)}>
-                Installer Physiqrate
+                {tr("profil.installBtn")}
               </button>
             )}
           </>
