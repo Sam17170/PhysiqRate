@@ -3,7 +3,7 @@ export const config = { runtime: "edge" };
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE = process.env.SUPABASE_SERVICE_KEY;
 
-async function checkAndIncrementUsage(ip, isPro) {
+async function checkAndIncrementUsage(ip, isPro, adWatched) {
   if (isPro) return { allowed: true };
 
   // Récupère l'usage actuel pour cette IP
@@ -41,8 +41,8 @@ async function checkAndIncrementUsage(ip, isPro) {
   const weeklyUsed = usage.weekly_used ? new Date(usage.weekly_used) : null;
   const daysSinceWeekly = weeklyUsed ? (now - weeklyUsed) / (1000 * 60 * 60 * 24) : 999;
 
-  if (daysSinceWeekly >= 7) {
-    // Une semaine passée — autorise et remet le compteur hebdomadaire
+  // Semaine passée OU pub rewarded regardée (bypass ponctuel du blocage hebdomadaire) — autorise
+  if (daysSinceWeekly >= 7 || adWatched) {
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_usage?ip=eq.${encodeURIComponent(ip)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
@@ -69,12 +69,12 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
-  const { imageBase64, gender, age, weight, profilePrompt, isPro } = body;
+  const { imageBase64, gender, age, weight, profilePrompt, isPro, adWatched } = body;
   if (!imageBase64 || !gender) return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
   if (imageBase64.length > 2_800_000) return new Response(JSON.stringify({ error: "Image trop lourde." }), { status: 413 });
 
   // Vérifie l'usage côté serveur
-  const usageCheck = await checkAndIncrementUsage(ip, !!isPro);
+  const usageCheck = await checkAndIncrementUsage(ip, !!isPro, !!adWatched);
   if (!usageCheck.allowed) {
     return new Response(JSON.stringify({
       error: `Limite atteinte. Prochaine analyse gratuite dans ${usageCheck.daysLeft} jour${usageCheck.daysLeft > 1 ? "s" : ""}.`,
