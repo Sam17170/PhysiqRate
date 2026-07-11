@@ -1778,18 +1778,23 @@ function ViewAnalyze({ premium }) {
             </div>
           </div>
 
-          {/* Conseils compacts en ligne */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
-            {[
-              {icon:"👕",text:"Tenue ajustée"},
-              {icon:"💡",text:"Bonne lumière"},
-              {icon:"📸",text:"De face"},
-            ].map((c,i)=>(
-              <div key={i} style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${C.border}`,borderRadius:"12px",padding:"10px 6px",textAlign:"center"}}>
-                <div style={{fontSize:"20px",marginBottom:"4px"}}>{c.icon}</div>
-                <div style={{fontSize:"10px",color:"#777"}}>{c.text}</div>
-              </div>
-            ))}
+          {/* Conseils d'utilisation — texte clair, sans emoji */}
+          <div style={{...css.card, marginTop:"0"}}>
+            <div style={css.cardTitle}>Conseils d'utilisation</div>
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              {[
+                "Porte une tenue ajustée",
+                "Place-toi dans une pièce bien éclairée",
+                "Prends la photo de face, corps entier",
+              ].map((t,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <div style={{width:"20px",height:"20px",borderRadius:"6px",background:"rgba(255,215,0,0.1)",border:`1px solid rgba(255,215,0,0.25)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:"10px",fontWeight:"700",color:C.gold}}>
+                    {i+1}
+                  </div>
+                  <span style={{fontSize:"13px",color:"#999"}}>{t}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </>
       )}
