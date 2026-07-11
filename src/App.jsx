@@ -663,17 +663,21 @@ const css = {
 };
 
 
-// ─── TOAST ───────────────────────────────────────────────────────────────────
-// ─── PUBLICITÉ (placeholder) ──────────────────────────────────────────────────
-// Composant générique qui simule un affichage publicitaire pendant `duration` secondes.
-// À REMPLACER par l'intégration réelle Google Ad Manager (GPT rewarded ads for web)
-// une fois le compte Ad Manager créé et les ad unit IDs obtenus :
-// https://developers.google.com/publisher-tag/samples/display-rewarded-ad
-// Le reste de l'app (compteurs, déblocage, etc.) n'aura pas besoin de changer —
-// il suffira de brancher le vrai SDK à l'intérieur de ce composant.
+// ─── PUBLICITÉ ─────────────────────────────────────────────────────────────────
+// Affiche une vraie pub AdSense (client ID branché dans index.html) pendant que
+// le minuteur `duration` force l'attente, façon "rewarded ad".
+// ⚠️ AD_SLOT_ID est un espace réservé — remplace-le par le vrai numéro une fois
+// que tu as créé une unité publicitaire dans ton tableau de bord AdSense
+// (Annonces → Par emplacement → Créer une unité publicitaire → copie le data-ad-slot).
+// Tant que AD_SLOT_ID vaut "YOUR_AD_SLOT_ID", un visuel de remplacement s'affiche
+// à la place pour que l'app reste fonctionnelle en attendant.
+const AD_SLOT_ID = "YOUR_AD_SLOT_ID";
+
 function AdPlaceholder({ duration = 15, onComplete }) {
   const { tr, trf } = useI18n();
   const [secondsLeft, setSecondsLeft] = useState(duration);
+  const adRef = useRef(null);
+  const adPushed = useRef(false);
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -681,12 +685,32 @@ function AdPlaceholder({ duration = 15, onComplete }) {
     return () => clearTimeout(t);
   }, [secondsLeft]);
 
+  useEffect(() => {
+    if (AD_SLOT_ID === "YOUR_AD_SLOT_ID" || adPushed.current) return;
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+      adPushed.current = true;
+    } catch {}
+  }, []);
+
   return (
     <div style={{position:"fixed",inset:0,background:"#000",zIndex:400,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px"}}>
       <div style={{fontSize:"9px",letterSpacing:"3px",color:"#555",marginBottom:"20px"}}>{tr("ads.label")}</div>
-      <div style={{width:"100%",maxWidth:"320px",aspectRatio:"16/9",background:"linear-gradient(135deg,#1a1a24,#0f0f1a)",border:`1px solid ${C.border}`,borderRadius:"16px",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"20px",marginBottom:"20px"}}>
-        <div style={{fontSize:"12px",color:"#444",lineHeight:"1.6"}}>{tr("ads.placeholderNote")}</div>
-      </div>
+      {AD_SLOT_ID === "YOUR_AD_SLOT_ID" ? (
+        <div style={{width:"100%",maxWidth:"320px",aspectRatio:"16/9",background:"linear-gradient(135deg,#1a1a24,#0f0f1a)",border:`1px solid ${C.border}`,borderRadius:"16px",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"20px",marginBottom:"20px"}}>
+          <div style={{fontSize:"12px",color:"#444",lineHeight:"1.6"}}>{tr("ads.placeholderNote")}</div>
+        </div>
+      ) : (
+        <div style={{width:"100%",maxWidth:"320px",minHeight:"180px",marginBottom:"20px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <ins className="adsbygoogle"
+            style={{display:"block",width:"100%"}}
+            data-ad-client="ca-pub-2962913569159786"
+            data-ad-slot={AD_SLOT_ID}
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+            ref={adRef}/>
+        </div>
+      )}
       <div style={{width:"180px",height:"4px",background:"rgba(255,255,255,0.1)",borderRadius:"2px",overflow:"hidden",marginBottom:"10px"}}>
         <div style={{height:"100%",width:`${((duration-secondsLeft)/duration)*100}%`,background:C.gold,borderRadius:"2px",transition:"width 1s linear"}}/>
       </div>
