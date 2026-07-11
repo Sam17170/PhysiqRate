@@ -2132,6 +2132,7 @@ function ViewAnalyze({ premium }) {
           gender,
           age: resolvedAge,
           weight: weight || profile.weight || null,
+          height: profile.height || null,
           profilePrompt,
           isPro: !!premium,
           adWatched: !!adWatched
