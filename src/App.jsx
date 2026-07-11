@@ -135,6 +135,8 @@ function applyRemoteProfile(p) {
   if (p.height) merged.height = String(p.height);
   if (p.goal) merged.goal = p.goal;
   if (p.activity) merged.activity = p.activity;
+  if (p.steps) merged.steps = p.steps;
+  if (p.training_type) merged.trainingType = p.training_type;
   set(keys.profile, merged);
   localStorage.setItem("pq_profile_updated_at", p.updated_at || new Date().toISOString());
 }
