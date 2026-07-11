@@ -280,18 +280,7 @@ function Toast({ message, visible }) {
 
 function Logo() {
   return (
-    <div style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"12px",letterSpacing:"4px",color:C.gold,fontWeight:"700"}}>
-      <svg width="20" height="20" viewBox="0 0 40 40" style={{filter:`drop-shadow(0 0 4px ${C.gold}AA)`}}>
-        <rect x="8" y="4" width="24" height="18" rx="5" fill="none" stroke={C.gold} strokeWidth="1.8"/>
-        <rect x="11" y="8" width="6" height="5" rx="1.5" fill={C.gold}/>
-        <rect x="23" y="8" width="6" height="5" rx="1.5" fill={C.gold}/>
-        <rect x="15" y="16" width="10" height="3" rx="1.5" fill={C.gold} opacity="0.5"/>
-        <line x1="20" y1="4" x2="20" y2="1" stroke={C.gold} strokeWidth="1.5"/>
-        <circle cx="20" cy="0.5" r="2" fill={C.gold}/>
-        <rect x="12" y="23" width="16" height="13" rx="4" fill="none" stroke={C.gold} strokeWidth="1.8"/>
-        <rect x="5" y="25" width="6" height="9" rx="3" fill="none" stroke={C.gold} strokeWidth="1.5"/>
-        <rect x="29" y="25" width="6" height="9" rx="3" fill="none" stroke={C.gold} strokeWidth="1.5"/>
-      </svg>
+    <div style={{fontSize:"12px",letterSpacing:"4px",color:C.gold,fontWeight:"700"}}>
       PHYSIQRATE
     </div>
   );
@@ -651,16 +640,6 @@ function PWABanner({ onDismiss }) {
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:500,padding:"12px 16px 24px",background:"linear-gradient(0deg,#0f0f1a 80%,transparent)",borderTop:`1px solid rgba(255,215,0,0.15)`}}>
       <div style={{maxWidth:"420px",margin:"0 auto"}}>
         <div style={{display:"flex",alignItems:"flex-start",gap:"12px",background:"linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.03))",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"16px",padding:"14px"}}>
-          <div style={{width:"44px",height:"44px",borderRadius:"12px",background:"linear-gradient(135deg,#FFD700,#FFA500)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="22" height="22" viewBox="0 0 40 40">
-              <rect x="8" y="4" width="24" height="18" rx="5" fill="none" stroke="#000" strokeWidth="2"/>
-              <rect x="11" y="8" width="6" height="5" rx="1.5" fill="#000"/>
-              <rect x="23" y="8" width="6" height="5" rx="1.5" fill="#000"/>
-              <rect x="12" y="23" width="16" height="13" rx="4" fill="none" stroke="#000" strokeWidth="2"/>
-              <rect x="5" y="25" width="6" height="9" rx="3" fill="none" stroke="#000" strokeWidth="1.8"/>
-              <rect x="29" y="25" width="6" height="9" rx="3" fill="none" stroke="#000" strokeWidth="1.8"/>
-            </svg>
-          </div>
           <div style={{flex:1}}>
             <div style={{fontSize:"13px",fontWeight:"700",marginBottom:"3px"}}>Installe Physiqrate</div>
             <div style={{fontSize:"11px",color:"#888",marginBottom:"10px",lineHeight:"1.4"}}>
@@ -1917,16 +1896,6 @@ function ViewAnalyze({ premium }) {
             return (
               <div style={{...css.card,background:"linear-gradient(135deg,rgba(255,215,0,0.06),transparent)",borderColor:"rgba(255,215,0,0.2)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                  <div style={{width:"40px",height:"40px",borderRadius:"10px",background:"linear-gradient(135deg,#FFD700,#FFA500)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <svg width="20" height="20" viewBox="0 0 40 40">
-                      <rect x="8" y="4" width="24" height="18" rx="5" fill="none" stroke="#000" strokeWidth="2"/>
-                      <rect x="11" y="8" width="6" height="5" rx="1.5" fill="#000"/>
-                      <rect x="23" y="8" width="6" height="5" rx="1.5" fill="#000"/>
-                      <rect x="12" y="23" width="16" height="13" rx="4" fill="none" stroke="#000" strokeWidth="2"/>
-                      <rect x="5" y="25" width="6" height="9" rx="3" fill="none" stroke="#000" strokeWidth="1.8"/>
-                      <rect x="29" y="25" width="6" height="9" rx="3" fill="none" stroke="#000" strokeWidth="1.8"/>
-                    </svg>
-                  </div>
                   <div style={{flex:1}}>
                     <div style={{fontSize:"13px",fontWeight:"700",marginBottom:"3px"}}>Installe Physiqrate</div>
                     <div style={{fontSize:"11px",color:"#666"}}>Reviens chaque semaine suivre ta progression</div>
@@ -3117,6 +3086,7 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [showPostPayment, setShowPostPayment] = useState(false);
   const [postPaymentEmail, setPostPaymentEmail] = useState(null);
+  const [finishAccountDismissed, setFinishAccountDismissed] = useState(false);
   const [user, setUser] = useState(() => {
     const email = localStorage.getItem("pq_email");
     return email ? { email } : null;
@@ -3442,7 +3412,7 @@ export default function App() {
       )}
 
       {/* Force connexion si Pro local sans token Supabase */}
-      {premium && !localStorage.getItem("pq_token") && !showAuth && !showPostPayment && (
+      {premium && !localStorage.getItem("pq_token") && !showAuth && !showPostPayment && !finishAccountDismissed && (
         <div style={{position:"fixed",inset:0,background:"#09090f",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
           <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
             <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>COMPTE REQUIS</div>
@@ -3467,6 +3437,11 @@ export default function App() {
               }
             }}>
               Créer mon compte Pro
+            </button>
+            <button
+              onClick={()=>setFinishAccountDismissed(true)}
+              style={{background:"transparent",border:"none",color:"#444",fontSize:"12px",marginTop:"14px",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>
+              Plus tard
             </button>
           </div>
         </div>
