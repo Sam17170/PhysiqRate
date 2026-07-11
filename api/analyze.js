@@ -92,9 +92,14 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
-  const { imageBase64, gender, age, weight, profilePrompt, isPro, adWatched } = body;
+  const { imageBase64, gender, age, weight, height, profilePrompt, isPro, adWatched } = body;
   if (!imageBase64 || !gender) return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
   if (imageBase64.length > 2_800_000) return new Response(JSON.stringify({ error: "Image trop lourde." }), { status: 413 });
+
+  // Calcule le BMI si poids ET taille sont disponibles — utilisé comme repère de plausibilité, pas comme mesure directe
+  const w = parseFloat(weight) || null;
+  const h = parseFloat(height) || null;
+  const bmi = (w && h) ? Math.round((w / ((h / 100) ** 2)) * 10) / 10 : null;
 
   // Vérifie l'usage côté serveur
   const usageCheck = await checkAndIncrementUsage(ip, !!isPro, !!adWatched);
@@ -112,6 +117,8 @@ PERSON INFO:
 - Gender: ${gender}
 - Age: ${age || "unknown"}
 - Weight: ${weight ? weight + "kg" : "unknown"}
+- Height: ${height ? height + "cm" : "unknown"}
+- BMI: ${bmi ? bmi + " (calculated from height and weight)" : "unknown"}
 ${profilePrompt || ""}
 
 STEP 1 — LIGHTING: WARM/ORANGE indoor: ADD 2-3%. OVERHEAD: ADD 1-2%. DARK: SUBTRACT 1-2%. NATURAL DAYLIGHT: no correction. FLASH: ADD 1-2%.
@@ -120,6 +127,8 @@ STEP 2 — OBSERVE: Abs visible at rest? Belly bulge? Love handles? Arm definiti
 
 STEP 3 — MALE SCALE: 3-5% competition | 6-9% shredded | 10-12% athletic | 13-15% fit | 16-18% above avg | 19-22% average | 23-27% overweight | 28%+ obese
 FEMALE SCALE: 10-14% competition | 15-18% athletic | 19-22% fit | 23-27% toned | 28-32% average | 33%+ above average
+
+STEP 4 — BMI CROSS-CHECK (only if BMI is known): use it as a plausibility check on your visual estimate, not as a direct measurement. BMI under ~21 rarely coexists with body fat above ~25% — there simply isn't enough total mass. If your visual read suggests a high body fat but BMI is low, lean toward the lower end of your visual range. BMI over ~27 can still mean low body fat if the person is visibly heavily muscled (wide shoulders, thick limbs, dense muscle) — in that case trust the visual read over the BMI. If BMI is in a normal, unremarkable range (~21-26), it doesn't move your estimate either way. Visual evidence always stays primary; BMI only narrows your choice between two visually plausible values, it never overrides clear visual signals.
 
 RULES: Males visible abs → max 16%. Males no abs soft belly → min 18%. Females no definition soft → min 27%. Never below 4% male / 10% female. When in doubt → higher estimate.
 
