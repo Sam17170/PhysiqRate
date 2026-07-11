@@ -57,6 +57,9 @@ function validateJournal(journal) {
   };
 }
 
+const VALID_STEPS = ["under_3k", "3k_6k", "6k_10k", "10k_15k", "over_15k"];
+const VALID_TRAINING_TYPES = ["strength", "cardio", "mixed", "sport"];
+
 function validateProfile(profile) {
   if (!profile || typeof profile !== "object") return null;
   return {
@@ -66,6 +69,8 @@ function validateProfile(profile) {
     height: Math.min(Math.max(parseFloat(profile.height) || 0, 0), 300),
     goal: String(profile.goal || "").slice(0, 50),
     activity: String(profile.activity || "").slice(0, 50),
+    steps: VALID_STEPS.includes(profile.steps) ? profile.steps : null,
+    training_type: VALID_TRAINING_TYPES.includes(profile.trainingType) ? profile.trainingType : null,
   };
 }
 
