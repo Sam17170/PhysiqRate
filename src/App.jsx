@@ -348,6 +348,7 @@ const STRINGS = {
     watchAdBtn:     { fr: "Regarder une pub (30s)", en: "Watch an ad (30s)" },
     orUpgrade:      { fr: "ou passe Pro pour un accès illimité", en: "or go Pro for unlimited access" },
     scanUnlockNote: { fr: "Une courte pub pour continuer à scanner gratuitement", en: "A short ad to keep scanning for free" },
+    adAlreadyUsed:  { fr: "Tu as déjà débloqué ton analyse bonus cette semaine. Reviens la semaine prochaine, ou passe Pro pour un accès illimité.", en: "You've already unlocked your bonus analysis this week. Come back next week, or go Pro for unlimited access." },
   },
 };
 
@@ -541,14 +542,16 @@ function incrementScanCount() {
   return n;
 }
 
-function getUsage()    { return get(keys.usage) || { count: 0, weeklyUsed: null }; }
+function getUsage()    { return get(keys.usage) || { count: 0, weeklyUsed: null, weeklyAdUsed: null }; }
 function saveUsage(u)  { set(keys.usage, u); }
 function canAnalyze(u) {
   if (u.count < 2) return { allowed: true };
   if (!u.weeklyUsed) return { allowed: true };
   const days = (Date.now() - new Date(u.weeklyUsed).getTime()) / 86400000;
   if (days >= 7) return { allowed: true };
-  return { allowed: false, daysLeft: Math.ceil(7 - days) };
+  // Quota gratuit de la semaine déjà pris — le bonus pub est-il encore disponible cette semaine ?
+  const adDays = u.weeklyAdUsed ? (Date.now() - new Date(u.weeklyAdUsed).getTime()) / 86400000 : 999;
+  return { allowed: false, daysLeft: Math.ceil(7 - days), adAvailable: adDays >= 7 };
 }
 
 function getNutritionUsage() { return get(keys.nutrition) || { lastUsed: null, todayCount: 0 }; }
@@ -966,7 +969,7 @@ async function redirectToCheckout(type) {
   }
 }
 
-function Paywall({ daysLeft, onClose, onWatchAd }) {
+function Paywall({ daysLeft, onClose, onWatchAd, adAvailable }) {
   const { tr, trf } = useI18n();
   const [loading, setLoading] = useState(false);
 
@@ -984,7 +987,9 @@ function Paywall({ daysLeft, onClose, onWatchAd }) {
         <div style={{fontSize:"11px",letterSpacing:"3px",color:C.gold,marginBottom:"14px",opacity:0.7}}>PHYSIQRATE PRO</div>
         <div style={{fontSize:"22px",fontWeight:"800",marginBottom:"6px",lineHeight:"1.2"}}>{tr("paywall.title")}</div>
         <div style={{fontSize:"13px",color:"#666",marginBottom:"28px"}}>
-          {daysLeft > 0 ? trf("paywall.nextFree",{n:daysLeft,s:daysLeft>1?"s":""}) : tr("paywall.continueProgress")}
+          {daysLeft > 0 && adAvailable === false
+            ? tr("ads.adAlreadyUsed")
+            : daysLeft > 0 ? trf("paywall.nextFree",{n:daysLeft,s:daysLeft>1?"s":""}) : tr("paywall.continueProgress")}
         </div>
 
         {/* Features list */}
@@ -2059,6 +2064,7 @@ function ViewAnalyze({ premium }) {
   const [newWeight, setNewWeight] = useState(null);
   const [showPreAd, setShowPreAd] = useState(false);
   const [showUnlockAd, setShowUnlockAd] = useState(false);
+  const [adAvailable, setAdAvailable] = useState(true);
   const fileRef = useRef();
 
   const profile = getProfile();
@@ -2098,8 +2104,8 @@ function ViewAnalyze({ premium }) {
       // 2ème analyse (count===1 avant incrément) → pub courte obligatoire de 15s, pas de blocage
       if (usage.count === 1) { setShowPreAd(true); return; }
       const check = canAnalyze(usage);
-      // 3ème+ analyse de la semaine déjà utilisée → offre de débloquer via pub au lieu de bloquer direct
-      if (!check.allowed) { setDaysLeft(check.daysLeft); setShowPaywall(true); return; }
+      // 3ème+ analyse de la semaine déjà utilisée → offre de débloquer via pub (si le bonus hebdo n'a pas déjà été utilisé)
+      if (!check.allowed) { setDaysLeft(check.daysLeft); setAdAvailable(check.adAvailable !== false); setShowPaywall(true); return; }
     }
 
     await runAnalysis(false);
@@ -2136,6 +2142,7 @@ function ViewAnalyze({ premium }) {
         const errData = await apiRes.json().catch(()=>({}));
         if (apiRes.status === 429 && errData.daysLeft) {
           setDaysLeft(errData.daysLeft);
+          setAdAvailable(!!errData.adAvailable);
           setShowPaywall(true);
           setStep("form");
           return;
@@ -2152,7 +2159,19 @@ function ViewAnalyze({ premium }) {
       // Usage tracking
       if (!premium) {
         const usage = getUsage();
-        saveUsage({ count: usage.count + 1, weeklyUsed: (usage.count >= 1 || adWatched) ? new Date().toISOString() : usage.weeklyUsed });
+        if (adWatched) {
+          // Déblocage via pub — ne touche pas au cycle de l'analyse gratuite hebdo, juste au bonus pub
+          saveUsage({ ...usage, count: usage.count + 1, weeklyAdUsed: new Date().toISOString() });
+        } else {
+          const startingWeeklyCycle = usage.count === 1; // 2ème analyse : démarre le cycle hebdo
+          const newWeekPassed = usage.weeklyUsed && (Date.now() - new Date(usage.weeklyUsed).getTime()) / 86400000 >= 7;
+          saveUsage({
+            ...usage,
+            count: usage.count + 1,
+            weeklyUsed: (startingWeeklyCycle || newWeekPassed) ? new Date().toISOString() : usage.weeklyUsed,
+            weeklyAdUsed: newWeekPassed ? null : usage.weeklyAdUsed,
+          });
+        }
       }
 
       // Weight update check
@@ -2185,7 +2204,7 @@ function ViewAnalyze({ premium }) {
 
   return (
     <div style={{width:"100%",maxWidth:"420px"}}>
-      {showPaywall && <Paywall daysLeft={daysLeft} onClose={()=>setShowPaywall(false)} onWatchAd={daysLeft>0 ? ()=>{ setShowPaywall(false); setShowUnlockAd(true); } : null}/>}
+      {showPaywall && <Paywall daysLeft={daysLeft} adAvailable={adAvailable} onClose={()=>setShowPaywall(false)} onWatchAd={(daysLeft>0 && adAvailable) ? ()=>{ setShowPaywall(false); setShowUnlockAd(true); } : null}/>}
       {showPreAd && (
         <AdPlaceholder duration={15} onComplete={()=>{ setShowPreAd(false); runAnalysis(false); }}/>
       )}
