@@ -92,9 +92,10 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
-  const { imageBase64, gender, age, weight, height, profilePrompt, isPro, adWatched } = body;
+  const { imageBase64, gender, age, weight, height, profilePrompt, isPro, adWatched, lang } = body;
   if (!imageBase64 || !gender) return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
   if (imageBase64.length > 2_800_000) return new Response(JSON.stringify({ error: "Image trop lourde." }), { status: 413 });
+  const responseLang = lang === "fr" ? "French" : "English";
 
   // Calcule le BMI si poids ET taille sont disponibles — utilisé comme repère de plausibilité, pas comme mesure directe
   const w = parseFloat(weight) || null;
@@ -132,7 +133,8 @@ STEP 4 — BMI CROSS-CHECK (only if BMI is known): use it as a plausibility chec
 
 RULES: Males visible abs → max 16%. Males no abs soft belly → min 18%. Females no definition soft → min 27%. Never below 4% male / 10% female. When in doubt → higher estimate.
 
-Respond ONLY with raw JSON: {"bodyfat":<4-60>,"confidence":"low|medium|high","confidence_reason":"<one sentence>","key_indicators":["<obs 1>","<lighting>","<obs 3>"],"note":"<honest motivating sentence max 15 words>"}`;
+Respond ONLY with raw JSON: {"bodyfat":<4-60>,"confidence":"low|medium|high","confidence_reason":"<one sentence>","key_indicators":["<obs 1>","<lighting>","<obs 3>"],"note":"<honest motivating sentence max 15 words>"}
+IMPORTANT: Write the values of "confidence_reason", "key_indicators" and "note" in ${responseLang}. Keep JSON keys and the "confidence" value in English exactly as specified.`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
