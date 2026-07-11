@@ -122,6 +122,22 @@ function saveProfile(p){
   localStorage.setItem("pq_profile_updated_at", ts);
   syncPush({ profile: { ...p, updated_at: ts } }); 
 }
+// Fusionne un profil distant (venant du pull Supabase) dans l'objet pq_profile réel.
+// Auparavant ce merge écrivait dans des clés séparées (pq_gender, pq_age, ...) que
+// getProfile() ne lit jamais — d'où le profil qui ne se mettait jamais à jour après sync.
+function applyRemoteProfile(p) {
+  if (!p) return;
+  const current = getProfile();
+  const merged = { ...current };
+  if (p.gender) merged.gender = p.gender;
+  if (p.age) merged.age = String(p.age);
+  if (p.weight) merged.weight = String(p.weight);
+  if (p.height) merged.height = String(p.height);
+  if (p.goal) merged.goal = p.goal;
+  if (p.activity) merged.activity = p.activity;
+  set(keys.profile, merged);
+  localStorage.setItem("pq_profile_updated_at", p.updated_at || new Date().toISOString());
+}
 function getCustomMacros() { return get("pq_custom_macros") || null; }
 function saveCustomMacros(m) { set("pq_custom_macros", m); }
 function isPremium()   { const v = localStorage.getItem(keys.premium); return v === true || v === "true"; }
@@ -1476,13 +1492,7 @@ function ViewAnalyze({ premium }) {
           // Si pas de timestamp local → toujours utiliser Supabase
           const useRemote = !localTs || (remoteTs && new Date(remoteTs) > new Date(localTs));
           if (useRemote && (p.gender || p.age || p.weight || p.height)) {
-            if (p.gender) localStorage.setItem("pq_gender", p.gender);
-            if (p.age) localStorage.setItem("pq_age", String(p.age));
-            if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
-            if (p.height) localStorage.setItem("pq_height", String(p.height));
-            if (p.goal) localStorage.setItem("pq_goal", p.goal);
-            if (p.activity) localStorage.setItem("pq_activity", p.activity);
-            localStorage.setItem("pq_profile_updated_at", remoteTs || new Date().toISOString());
+            applyRemoteProfile(p);
             changed = true;
           }
         }
@@ -3141,13 +3151,7 @@ export default function App() {
           // Si pas de timestamp local → toujours utiliser Supabase
           const useRemote = !localTs || (remoteTs && new Date(remoteTs) > new Date(localTs));
           if (useRemote && (p.gender || p.age || p.weight || p.height)) {
-            if (p.gender) localStorage.setItem("pq_gender", p.gender);
-            if (p.age) localStorage.setItem("pq_age", String(p.age));
-            if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
-            if (p.height) localStorage.setItem("pq_height", String(p.height));
-            if (p.goal) localStorage.setItem("pq_goal", p.goal);
-            if (p.activity) localStorage.setItem("pq_activity", p.activity);
-            localStorage.setItem("pq_profile_updated_at", remoteTs || new Date().toISOString());
+            applyRemoteProfile(p);
             changed = true;
           }
         }
@@ -3321,12 +3325,7 @@ export default function App() {
               if (!remote) { setShowAuth(false); return; }
               if (remote.profile) {
                 const p = remote.profile;
-                if (p.gender) localStorage.setItem("pq_gender", p.gender);
-                if (p.age) localStorage.setItem("pq_age", String(p.age));
-                if (p.weight) localStorage.setItem("pq_weight", String(p.weight));
-                if (p.height) localStorage.setItem("pq_height", String(p.height));
-                if (p.goal) localStorage.setItem("pq_goal", p.goal);
-                if (p.activity) localStorage.setItem("pq_activity", p.activity);
+                applyRemoteProfile(p);
               }
               if (remote.journal) {
                 const key = "pq_journal_" + today;
