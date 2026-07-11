@@ -27,6 +27,23 @@ const STRINGS = {
     bulk:         { fr: "Bulk",          en: "Bulk" },
     rebuild:      { fr: "Rebuild",       en: "Rebuild" },
   },
+  archetypeRef: {
+    peakCompetition:      { fr: "Pic de compétition",        en: "Competition peak" },
+    eliteUltraLean:       { fr: "Élite ultra sec",           en: "Elite ultra lean" },
+    builtAthlete:         { fr: "Athlète bâti",               en: "Built athlete" },
+    sculptedFit:          { fr: "Silhouette fit et sculptée", en: "Fit and sculpted" },
+    activeLifestyle:      { fr: "Bien portant, actif",        en: "Healthy and active" },
+    bearMode:             { fr: "Mode décontracté",           en: "Casual mode" },
+    offSeasonLifter:      { fr: "Off-season powerlifter",     en: "Off-season powerlifter" },
+    transformationMission:{ fr: "Mission transformation",     en: "Transformation mission" },
+    bikiniAthlete:        { fr: "Bikini athlète",             en: "Bikini athlete" },
+    eliteAthleteF:        { fr: "Athlète élite",              en: "Elite athlete" },
+    toneFigure:           { fr: "Silhouette tonique",          en: "Toned figure" },
+    fitFigure:            { fr: "Silhouette fit",              en: "Fit figure" },
+    healthyVibes:         { fr: "Healthy vibes",               en: "Healthy vibes" },
+    potentialToUnlock:    { fr: "Du potentiel à débloquer",   en: "Potential to unlock" },
+    comfortZone:          { fr: "Zone de confort",             en: "Comfort zone" },
+  },
   analyze: {
     eyebrow:        { fr: "ANALYSE IA · BODY FAT", en: "AI ANALYSIS · BODY FAT" },
     title:          { fr: "Connaît ton vrai physique", en: "Know your real physique" },
@@ -410,24 +427,24 @@ function useI18n() {
 // ─── ARCHETYPES ───────────────────────────────────────────────────────────────
 const ARCHETYPES = {
   male: [
-    { max: 6,   label: "competition",   ref: "Zyzz / Arnold peak",      color: "#FFD700" },
-    { max: 10,  label: "eliteAthlete", ref: "Brad Pitt Fight Club",     color: "#C0C0FF" },
-    { max: 14,  label: "athlete",       ref: "Chris Hemsworth Thor",     color: "#7DF9AA" },
-    { max: 18,  label: "fit",           ref: "Ryan Reynolds Deadpool",   color: "#7DF9FF" },
-    { max: 22,  label: "lifestyle",     ref: "Chris Pratt post-Marvel",  color: "#A0C4FF" },
-    { max: 27,  label: "casual",        ref: "Vibe bear mode",           color: "#FFB347" },
-    { max: 35,  label: "bulk",          ref: "Off-season powerlifter",   color: "#FF8C69" },
-    { max: 100, label: "rebuild",       ref: "Mission transformation",   color: "#FF6B6B" },
+    { max: 6,   label: "competition",   ref: "peakCompetition",  color: "#FFD700" },
+    { max: 10,  label: "eliteAthlete", ref: "eliteUltraLean",   color: "#C0C0FF" },
+    { max: 14,  label: "athlete",       ref: "builtAthlete",     color: "#7DF9AA" },
+    { max: 18,  label: "fit",           ref: "sculptedFit",      color: "#7DF9FF" },
+    { max: 22,  label: "lifestyle",     ref: "activeLifestyle",  color: "#A0C4FF" },
+    { max: 27,  label: "casual",        ref: "bearMode",         color: "#FFB347" },
+    { max: 35,  label: "bulk",          ref: "offSeasonLifter",  color: "#FF8C69" },
+    { max: 100, label: "rebuild",       ref: "transformationMission", color: "#FF6B6B" },
   ],
   female: [
-    { max: 14,  label: "competition",   ref: "Bikini athlete",           color: "#FFD700" },
-    { max: 18,  label: "eliteAthlete", ref: "Serena Williams",          color: "#C0C0FF" },
-    { max: 22,  label: "athlete",       ref: "Margot Robbie Barbie",     color: "#7DF9AA" },
-    { max: 26,  label: "fit",           ref: "Jennifer Aniston",         color: "#7DF9FF" },
-    { max: 30,  label: "lifestyle",     ref: "Healthy vibes",            color: "#A0C4FF" },
-    { max: 35,  label: "casual",        ref: "Du potentiel à débloquer", color: "#FFB347" },
-    { max: 42,  label: "bulk",          ref: "Zone de confort",          color: "#FF8C69" },
-    { max: 100, label: "rebuild",       ref: "Mission transformation",   color: "#FF6B6B" },
+    { max: 14,  label: "competition",   ref: "bikiniAthlete",    color: "#FFD700" },
+    { max: 18,  label: "eliteAthlete", ref: "eliteAthleteF",    color: "#C0C0FF" },
+    { max: 22,  label: "athlete",       ref: "toneFigure",       color: "#7DF9AA" },
+    { max: 26,  label: "fit",           ref: "fitFigure",        color: "#7DF9FF" },
+    { max: 30,  label: "lifestyle",     ref: "healthyVibes",     color: "#A0C4FF" },
+    { max: 35,  label: "casual",        ref: "potentialToUnlock",color: "#FFB347" },
+    { max: 42,  label: "bulk",          ref: "comfortZone",      color: "#FF8C69" },
+    { max: 100, label: "rebuild",       ref: "transformationMission", color: "#FF6B6B" },
   ],
 };
 function getArchetype(bf, gender) {
@@ -888,7 +905,7 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
       ctx.fillStyle = "rgba(255,255,255,0.55)";
       ctx.font = `${W*0.03}px Arial`;
       ctx.letterSpacing = "0px";
-      ctx.fillText(archetype.ref, W/2, panelY + panelH*0.57);
+      ctx.fillText(tr("archetypeRef." + archetype.ref), W/2, panelY + panelH*0.57);
 
       // ── GAUGE BAR (horizontal) ────────────────────────────────────
       const barY = panelY + panelH * 0.65;
@@ -2377,7 +2394,7 @@ function ViewAnalyze({ premium }) {
 
           <div style={{...css.card,textAlign:"center"}}>
             <div style={{display:"inline-block",padding:"5px 14px",borderRadius:"20px",border:`1px solid ${archetype.color}33`,background:`${archetype.color}11`,color:archetype.color,fontSize:"11px",fontWeight:"700",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"8px"}}>{tr("archetype."+archetype.label)}</div>
-            <div style={{fontSize:"17px",fontWeight:"800",color:archetype.color,marginBottom:"16px"}}>{archetype.ref}</div>
+            <div style={{fontSize:"17px",fontWeight:"800",color:archetype.color,marginBottom:"16px"}}>{tr("archetypeRef."+archetype.ref)}</div>
             <div style={{display:"flex",justifyContent:"center",marginBottom:"8px"}}>
               <GaugeRing percent={result.bodyfat} color={archetype.color}/>
             </div>
@@ -2462,7 +2479,7 @@ function ViewAnalyze({ premium }) {
                   <img src={shareUrl} alt="carte" style={{width:"100%",display:"block"}}/>
                 </div>
                 <button style={css.btn(archetype.color)} onClick={async()=>{
-                  const text=tr("analyze.shareText").replace("{bf}",result.bodyfat).replace("{ref}",archetype.ref);
+                  const text=tr("analyze.shareText").replace("{bf}",result.bodyfat).replace("{ref}",tr("archetypeRef."+archetype.ref));
                   if(navigator.share){try{const blob=await(await fetch(shareUrl)).blob();const file=new File([blob],"physiqrate.png",{type:"image/png"});if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],text});return;}}catch{}}
                   const a=document.createElement("a");a.href=shareUrl;a.download="physiqrate.png";a.click();
                 }}>{tr("analyze.shareBtn")}</button>
