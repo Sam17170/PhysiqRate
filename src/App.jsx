@@ -3882,9 +3882,9 @@ function AppInner() {
             }
           </div>
         </div>
-        <div style={{display:"flex",gap:"2px",background:"rgba(255,255,255,0.03)",borderRadius:"14px",padding:"4px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:"2px",background:"rgba(255,255,255,0.03)",borderRadius:"14px",padding:"4px"}}>
           {tabs.map(tab=>(
-            <button key={tab.key} onClick={()=>setView(tab.key)} style={{flex:1,minWidth:0,padding:"7px 6px",borderRadius:"10px",border:"none",background:view===tab.key?"rgba(255,215,0,0.15)":"transparent",color:view===tab.key?C.gold:C.muted,fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",whiteSpace:"nowrap",textAlign:"center",overflow:"hidden",textOverflow:"ellipsis"}}>
+            <button key={tab.key} onClick={()=>setView(tab.key)} style={{flex:"0 1 auto",padding:"7px 8px",borderRadius:"10px",border:"none",background:view===tab.key?"rgba(255,215,0,0.15)":"transparent",color:view===tab.key?C.gold:C.muted,fontSize:"11px",fontWeight:"600",cursor:"pointer",fontFamily:"inherit",position:"relative",whiteSpace:"nowrap",textAlign:"center"}}>
               {tab.label}
               {tab.dot && <span style={{position:"absolute",top:"3px",right:"3px",width:"6px",height:"6px",borderRadius:"50%",background:C.red}}/>}
             </button>
