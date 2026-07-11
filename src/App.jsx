@@ -192,6 +192,23 @@ const STRINGS = {
     definitionImproved: { fr: " Définition musculaire améliorée.", en: " Muscle definition improved." },
     keepWork:       { fr: " Continue ton travail.", en: " Keep up the work." },
     curveTitle:     { fr: "COURBE BODY FAT", en: "BODY FAT CURVE" },
+    trendTitle:     { fr: "TENDANCE & OBJECTIF", en: "TREND & GOAL" },
+    weeklyRate:     { fr: "{n}%/semaine", en: "{n}%/week" },
+    weightWeeklyRate: { fr: "{n}kg/semaine", en: "{n}kg/week" },
+    notEnoughData:  { fr: "Pas encore assez de données — continue tes analyses régulières pour voir ta tendance se dessiner.", en: "Not enough data yet — keep up your regular analyses to see your trend emerge." },
+    goalReached:    { fr: "Objectif atteint — tu es à {current}%, sous ton objectif de {target}%.", en: "Goal reached — you're at {current}%, below your {target}% target." },
+    projectionText: { fr: "À ce rythme ({rate}%/semaine), tu devrais atteindre {target}% vers le {date}.", en: "At this rate ({rate}%/week), you should reach {target}% around {date}." },
+    stalledText:    { fr: "Ta tendance ne va pas encore dans le sens de ton objectif de {target}%. Ajuste ton alimentation ou ton entraînement pour relancer la perte.", en: "Your trend isn't moving toward your {target}% goal yet. Adjust your diet or training to restart progress." },
+    bulkWeightGain: { fr: "Tu prends du poids à +{rate}kg/semaine — cohérent avec ta phase de prise de masse.", en: "You're gaining weight at +{rate}kg/week — consistent with your bulk phase." },
+    bulkWeightStalled: { fr: "Ton poids ne progresse pas encore vers ta prise de masse. Vérifie ton surplus calorique.", en: "Your weight isn't trending toward your bulk goal yet. Check your calorie surplus." },
+    maintainStable: { fr: "Ton body fat évolue de {rate}%/semaine — reste autour de cette zone pour maintenir.", en: "Your body fat is moving at {rate}%/week — stay around this zone to maintain." },
+    noGoalSet:      { fr: "Renseigne un objectif dans ton profil pour voir une projection personnalisée.", en: "Set a goal in your profile to see a personalized projection." },
+    weightLabel:    { fr: "Poids", en: "Weight" },
+    bodyFatLabel:   { fr: "Body fat", en: "Body fat" },
+    combinedChartTitle: { fr: "POIDS & BODY FAT", en: "WEIGHT & BODY FAT" },
+    combinedChartHint:  { fr: "Les deux courbes qui baissent ensemble = vraie perte de gras. Le poids qui baisse sans que le body fat baisse peut signifier une perte de muscle.", en: "Both curves dropping together = real fat loss. Weight dropping without body fat dropping can mean muscle loss." },
+    markTestToggle: { fr: "Marquer comme test / pas moi (exclu du calcul de tendance)", en: "Mark as test / not me (excluded from trend calculation)" },
+    testLabel:      { fr: "TEST", en: "TEST" },
   },
   activityLevels: {
     sedentary:     { fr: "Sédentaire — peu ou pas d'exercice", en: "Sedentary — little or no exercise" },
@@ -614,6 +631,14 @@ function addToHistory(entry) {
     note: entry.note || null,
     confidence: entry.confidence || null
   }] });
+}
+
+// Marque/démarque une analyse comme "test" (photo d'essai, ancienne photo, autre personne...)
+// pour l'exclure des calculs de tendance/projection sans supprimer la donnée elle-même.
+function toggleHistoryExclusion(dateKey) {
+  const h = getHistory();
+  const updated = h.map(entry => entry.date === dateKey ? { ...entry, excluded: !entry.excluded } : entry);
+  set(keys.history, updated);
 }
 
 function getTodayISO() {
@@ -3047,8 +3072,12 @@ function ViewProgression({ premium, onShowPaywall }) {
   const { tr, trf, lang } = useI18n();
   const locale = lang === "fr" ? "fr-FR" : "en-US";
   const history = getHistory();
+  // Historique utilisé pour les calculs (tendance, projection, graphique) — exclut les analyses
+  // marquées comme "test" (ancienne photo, photo d'une autre personne, etc.)
+  const trackedHistory = history.filter(h => !h.excluded);
   const [selected, setSelected] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [, setRefreshTick] = useState(0);
 
   // Toute la progression est Pro
   if (!premium) {
@@ -3108,11 +3137,76 @@ function ViewProgression({ premium, onShowPaywall }) {
     setSelected([...selected, i]);
   }
 
-  const stats = history.length > 0 ? {
-    current: history[0].bodyfat,
-    diff: history.length > 1 ? history[0].bodyfat - history[history.length-1].bodyfat : null,
-    count: history.length,
+  // Régression linéaire simple (méthode des moindres carrés) sur une série de points {x,y}
+  // Beaucoup plus fiable que "1ère vs dernière valeur" — lisse le bruit d'une photo isolée
+  function linearTrendPerWeek(points) {
+    const n = points.length;
+    if (n < 3) return null;
+    const sumX = points.reduce((s,p)=>s+p.x,0);
+    const sumY = points.reduce((s,p)=>s+p.y,0);
+    const sumXY = points.reduce((s,p)=>s+p.x*p.y,0);
+    const sumXX = points.reduce((s,p)=>s+p.x*p.x,0);
+    const denom = (n*sumXX - sumX*sumX);
+    if (denom === 0) return null;
+    const slopePerDay = (n*sumXY - sumX*sumY) / denom;
+    return slopePerDay * 7; // taux hebdomadaire
+  }
+
+  const GOAL_TARGETS = {
+    male:   { cut_hard: 8,  cut: 12 },
+    female: { cut_hard: 16, cut: 20 },
+  };
+
+  const profileForTrend = getProfile();
+  const goal = profileForTrend.goal;
+  const genderForTrend = profileForTrend.gender || "male";
+  const isCutGoal = goal === "cut_hard" || goal === "cut";
+  const isBulkGoal = goal === "lean_bulk" || goal === "bulk";
+  const isMaintainGoal = goal === "maintain";
+
+  const bfTrend = (() => {
+    if (trackedHistory.length < 3) return null;
+    const sorted = [...trackedHistory].reverse(); // du plus ancien au plus récent
+    const t0 = new Date(sorted[0].date).getTime();
+    const points = sorted.map(h => ({ x: (new Date(h.date).getTime() - t0) / 86400000, y: h.bodyfat }));
+    return linearTrendPerWeek(points);
+  })();
+
+  const weightTrend = (() => {
+    const withWeight = [...trackedHistory].reverse().filter(h => h.weight);
+    if (withWeight.length < 3) return null;
+    const t0 = new Date(withWeight[0].date).getTime();
+    const points = withWeight.map(h => ({ x: (new Date(h.date).getTime() - t0) / 86400000, y: h.weight }));
+    return linearTrendPerWeek(points);
+  })();
+
+  const target = GOAL_TARGETS[genderForTrend]?.[goal] ?? null;
+
+  const stats = trackedHistory.length > 0 ? {
+    current: trackedHistory[0].bodyfat,
+    diff: trackedHistory.length > 1 ? trackedHistory[0].bodyfat - trackedHistory[trackedHistory.length-1].bodyfat : null,
+    count: trackedHistory.length,
   } : null;
+
+  const trendCard = (() => {
+    if (!stats) return null;
+    if (bfTrend === null) return { type:"notEnoughData" };
+
+    if (isCutGoal && target != null) {
+      if (stats.current <= target) return { type:"goalReached", target };
+      if (bfTrend >= -0.05) return { type:"stalled", target };
+      const weeksToGoal = (stats.current - target) / Math.abs(bfTrend);
+      const projectedDate = new Date(Date.now() + weeksToGoal * 7 * 86400000);
+      return { type:"projection", rate:bfTrend.toFixed(1), target, date: projectedDate.toLocaleDateString(locale,{day:"numeric",month:"long"}) };
+    }
+    if (isBulkGoal) {
+      if (weightTrend === null) return { type:"notEnoughData" };
+      if (weightTrend > 0.05) return { type:"bulkGain", rate: weightTrend.toFixed(1) };
+      return { type:"bulkStalled" };
+    }
+    if (isMaintainGoal) return { type:"maintain", rate: bfTrend.toFixed(1) };
+    return { type:"noGoal" };
+  })();
 
   // Milestone detection
   const milestone = (() => {
@@ -3121,7 +3215,7 @@ function ViewProgression({ premium, onShowPaywall }) {
     if (diff <= -5) return { text:trf("progression.milestoneAmazing",{n:Math.abs(diff)}), color:C.green };
     if (diff <= -3) return { text:trf("progression.milestoneExcellent",{n:Math.abs(diff)}), color:C.green };
     if (diff <= -1) return { text:trf("progression.milestoneGood",{n:Math.abs(diff)}), color:"#7DF9FF" };
-    if (diff >= 3 && history[0].bodyfat <= 18) return { text:trf("progression.milestoneMuscle",{n:diff}), color:C.gold };
+    if (diff >= 3 && trackedHistory[0].bodyfat <= 18) return { text:trf("progression.milestoneMuscle",{n:diff}), color:C.gold };
     if (diff >= 3) return { text:trf("progression.milestoneAdjust",{n:diff}), color:"#FFB347" };
     return null;
   })();
@@ -3140,6 +3234,21 @@ function ViewProgression({ premium, onShowPaywall }) {
               <div style={{fontSize:"9px",color:C.muted,marginTop:"3px",letterSpacing:"1px"}}>{s.label}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Tendance & objectif — régression linéaire + projection selon l'objectif du profil */}
+      {trendCard && (
+        <div style={{...css.card, marginBottom:"12px"}}>
+          <div style={css.cardTitle}>{tr("progression.trendTitle")}</div>
+          {trendCard.type === "notEnoughData" && <div style={{fontSize:"13px",color:"#666",lineHeight:"1.6"}}>{tr("progression.notEnoughData")}</div>}
+          {trendCard.type === "noGoal" && <div style={{fontSize:"13px",color:"#666",lineHeight:"1.6"}}>{tr("progression.noGoalSet")}</div>}
+          {trendCard.type === "goalReached" && <div style={{fontSize:"13px",color:C.green,lineHeight:"1.6"}}>{trf("progression.goalReached",{current:stats.current,target:trendCard.target})}</div>}
+          {trendCard.type === "stalled" && <div style={{fontSize:"13px",color:"#FFB347",lineHeight:"1.6"}}>{trf("progression.stalledText",{target:trendCard.target})}</div>}
+          {trendCard.type === "projection" && <div style={{fontSize:"13px",color:C.green,lineHeight:"1.6"}}>{trf("progression.projectionText",{rate:trendCard.rate,target:trendCard.target,date:trendCard.date})}</div>}
+          {trendCard.type === "bulkGain" && <div style={{fontSize:"13px",color:C.gold,lineHeight:"1.6"}}>{trf("progression.bulkWeightGain",{rate:trendCard.rate})}</div>}
+          {trendCard.type === "bulkStalled" && <div style={{fontSize:"13px",color:"#FFB347",lineHeight:"1.6"}}>{tr("progression.bulkWeightStalled")}</div>}
+          {trendCard.type === "maintain" && <div style={{fontSize:"13px",color:"#7DF9FF",lineHeight:"1.6"}}>{trf("progression.maintainStable",{rate:trendCard.rate})}</div>}
         </div>
       )}
 
@@ -3166,7 +3275,15 @@ function ViewProgression({ premium, onShowPaywall }) {
               const date = new Date(h.date).toLocaleDateString(locale,{day:"numeric",month:"short"});
               const isSel = selected.includes(i);
               return (
-                <div key={i} onClick={()=>togglePhoto(i)} style={{position:"relative",borderRadius:"12px",overflow:"hidden",cursor:"pointer",aspectRatio:"3/4",background:`linear-gradient(135deg,${arch.color}18,rgba(0,0,0,0.6))`,border:`${isSel?"2px":"1px"} solid ${isSel?C.gold:arch.color+"44"}`,display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"10px 8px"}}>
+                <div key={i} onClick={()=>togglePhoto(i)} style={{position:"relative",borderRadius:"12px",overflow:"hidden",cursor:"pointer",aspectRatio:"3/4",background:`linear-gradient(135deg,${arch.color}18,rgba(0,0,0,0.6))`,border:`${isSel?"2px":"1px"} solid ${isSel?C.gold:arch.color+"44"}`,display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"10px 8px",opacity:h.excluded?0.4:1}}>
+                  {/* Bouton marquer comme test / pas moi — exclut des calculs de tendance */}
+                  <button
+                    onClick={(e)=>{ e.stopPropagation(); toggleHistoryExclusion(h.date); setRefreshTick(t=>t+1); }}
+                    title={tr("progression.markTestToggle")}
+                    style={{position:"absolute",top:"6px",left:"6px",zIndex:2,width:"18px",height:"18px",borderRadius:"50%",background:h.excluded?C.gold:"rgba(0,0,0,0.5)",border:`1px solid ${h.excluded?C.gold:"rgba(255,255,255,0.3)"}`,display:"flex",alignItems:"center",justifyContent:"center",padding:0,cursor:"pointer"}}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={h.excluded?"#000":"#fff"} strokeWidth="2.5"><path d="M4 4l16 16M4 20L20 4"/></svg>
+                  </button>
+                  {h.excluded && <div style={{position:"absolute",top:"6px",left:"28px",zIndex:2,fontSize:"7px",color:C.gold,background:"rgba(0,0,0,0.6)",padding:"2px 5px",borderRadius:"6px",fontWeight:"700",letterSpacing:"0.5px"}}>{tr("progression.testLabel")}</div>}
                   {/* Badge sélection */}
                   {isSel && <div style={{position:"absolute",top:"6px",right:"6px",width:"18px",height:"18px",borderRadius:"50%",background:C.gold,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",color:"#000",fontWeight:"800"}}>✓</div>}
                   {/* Icône centrale */}
@@ -3240,10 +3357,10 @@ function ViewProgression({ premium, onShowPaywall }) {
         );
       })()}
 
-      {/* Courbe */}
-      {history.length >= 2 && (
+      {/* Courbe combinée poids + body fat */}
+      {trackedHistory.length >= 2 && (
         <div style={css.card}>
-          <div style={css.cardTitle}>{tr("progression.curveTitle")}</div>
+          <div style={css.cardTitle}>{tr("progression.combinedChartTitle")}</div>
           <svg width="100%" viewBox="0 0 340 100" style={{overflow:"visible"}}>
             <defs>
               <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
@@ -3252,7 +3369,7 @@ function ViewProgression({ premium, onShowPaywall }) {
               </linearGradient>
             </defs>
             {(() => {
-              const data = [...history].reverse().slice(-8);
+              const data = [...trackedHistory].reverse().slice(-8);
               const vals = data.map(h=>h.bodyfat);
               const min = Math.max(0,Math.min(...vals)-3), max = Math.min(50,Math.max(...vals)+3);
               const pts = data.map((h,i)=>({
@@ -3261,6 +3378,22 @@ function ViewProgression({ premium, onShowPaywall }) {
                 bf: h.bodyfat,
               }));
               const path = pts.map((p,i)=>`${i===0?"M":"L"}${p.x} ${p.y}`).join(" ");
+
+              // Courbe poids — normalisée indépendamment sur le même espace vertical,
+              // uniquement si au moins 2 points ont un poids renseigné
+              const weightPts = (() => {
+                const withW = data.map((h,i)=>({...h,i})).filter(h=>h.weight);
+                if (withW.length < 2) return null;
+                const wVals = withW.map(h=>h.weight);
+                const wMin = Math.min(...wVals) - 1, wMax = Math.max(...wVals) + 1;
+                return withW.map(h => ({
+                  x: data.length===1?170:(h.i/(data.length-1))*(340-40)+20,
+                  y: 90-((h.weight-wMin)/(wMax-wMin))*(80),
+                  w: h.weight,
+                }));
+              })();
+              const weightPath = weightPts ? weightPts.map((p,i)=>`${i===0?"M":"L"}${p.x} ${p.y}`).join(" ") : null;
+
               return (
                 <>
                   <path d={`${path} L${pts[pts.length-1].x} 90 L${pts[0].x} 90 Z`} fill="url(#chartGrad)"/>
@@ -3271,10 +3404,32 @@ function ViewProgression({ premium, onShowPaywall }) {
                       <text x={p.x} y={p.y-10} textAnchor="middle" fill="white" fontSize="9" fontFamily="Arial">{p.bf}%</text>
                     </g>
                   ))}
+                  {weightPath && (
+                    <>
+                      <path d={weightPath} fill="none" stroke={C.gold} strokeWidth="2" strokeDasharray="4 3" strokeLinecap="round" strokeLinejoin="round"/>
+                      {weightPts.map((p,i)=>(
+                        <g key={i}>
+                          <circle cx={p.x} cy={p.y} r="3" fill={C.gold}/>
+                          <text x={p.x} y={p.y+16} textAnchor="middle" fill={C.gold} fontSize="8" fontFamily="Arial">{p.w}kg</text>
+                        </g>
+                      ))}
+                    </>
+                  )}
                 </>
               );
             })()}
           </svg>
+          <div style={{display:"flex",gap:"14px",marginTop:"10px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"5px"}}>
+              <div style={{width:"14px",height:"2.5px",background:C.green,borderRadius:"2px"}}/>
+              <span style={{fontSize:"10px",color:C.muted}}>{tr("progression.bodyFatLabel")}</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:"5px"}}>
+              <div style={{width:"14px",height:"2px",background:C.gold,borderRadius:"2px"}}/>
+              <span style={{fontSize:"10px",color:C.muted}}>{tr("progression.weightLabel")}</span>
+            </div>
+          </div>
+          <div style={{fontSize:"10px",color:"#444",marginTop:"8px",lineHeight:"1.5"}}>{tr("progression.combinedChartHint")}</div>
         </div>
       )}
     </div>
