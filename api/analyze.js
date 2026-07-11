@@ -7,7 +7,7 @@ async function checkAndIncrementUsage(ip, isPro, adWatched) {
   if (isPro) return { allowed: true };
 
   // Récupère l'usage actuel pour cette IP
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/analysis_usage?ip=eq.${encodeURIComponent(ip)}&select=count,first_used,weekly_used`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/analysis_usage?ip=eq.${encodeURIComponent(ip)}&select=count,first_used,weekly_used,weekly_ad_used`, {
     headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
   });
   const rows = await res.json();
@@ -16,19 +16,18 @@ async function checkAndIncrementUsage(ip, isPro, adWatched) {
   const now = new Date();
 
   if (!usage) {
-    // Première analyse — crée l'entrée
+    // 1ère analyse — crée l'entrée, gratuite
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_usage`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
-      body: JSON.stringify({ ip, count: 1, first_used: now.toISOString(), weekly_used: null })
+      body: JSON.stringify({ ip, count: 1, first_used: now.toISOString(), weekly_used: null, weekly_ad_used: null })
     });
     return { allowed: true };
   }
 
   const count = usage.count || 0;
 
-  // Moins de 2 analyses — autorisé
-  if (count < 2) {
+  if (count < 1) {
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_usage?ip=eq.${encodeURIComponent(ip)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
@@ -37,12 +36,8 @@ async function checkAndIncrementUsage(ip, isPro, adWatched) {
     return { allowed: true };
   }
 
-  // 2+ analyses — vérifie la limite hebdomadaire
-  const weeklyUsed = usage.weekly_used ? new Date(usage.weekly_used) : null;
-  const daysSinceWeekly = weeklyUsed ? (now - weeklyUsed) / (1000 * 60 * 60 * 24) : 999;
-
-  // Semaine passée OU pub rewarded regardée (bypass ponctuel du blocage hebdomadaire) — autorise
-  if (daysSinceWeekly >= 7 || adWatched) {
+  if (count === 1) {
+    // 2ème analyse — gratuite (pub courte gérée côté client), et démarre le cycle hebdomadaire à partir de maintenant
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_usage?ip=eq.${encodeURIComponent(ip)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
@@ -51,9 +46,37 @@ async function checkAndIncrementUsage(ip, isPro, adWatched) {
     return { allowed: true };
   }
 
-  // Bloqué — calcule le nombre de jours restants
+  // count >= 2 — phase hebdomadaire : 1 analyse gratuite par semaine + 1 déblocage via pub max par semaine
+  const weeklyUsed = usage.weekly_used ? new Date(usage.weekly_used) : now;
+  const daysSinceWeekly = (now - weeklyUsed) / (1000 * 60 * 60 * 24);
+
+  if (daysSinceWeekly >= 7) {
+    // Nouvelle semaine — 1 analyse gratuite, et le bonus pub est de nouveau disponible
+    await fetch(`${SUPABASE_URL}/rest/v1/analysis_usage?ip=eq.${encodeURIComponent(ip)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
+      body: JSON.stringify({ count: count + 1, weekly_used: now.toISOString(), weekly_ad_used: null, updated_at: now.toISOString() })
+    });
+    return { allowed: true };
+  }
+
+  // Quota gratuit de la semaine déjà utilisé — vérifie si le bonus pub hebdomadaire est encore disponible
+  const weeklyAdUsed = usage.weekly_ad_used ? new Date(usage.weekly_ad_used) : null;
+  const daysSinceAd = weeklyAdUsed ? (now - weeklyAdUsed) / (1000 * 60 * 60 * 24) : 999;
+  const adAvailable = daysSinceAd >= 7;
+
+  if (adWatched && adAvailable) {
+    await fetch(`${SUPABASE_URL}/rest/v1/analysis_usage?ip=eq.${encodeURIComponent(ip)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
+      body: JSON.stringify({ count: count + 1, weekly_ad_used: now.toISOString(), updated_at: now.toISOString() })
+    });
+    return { allowed: true };
+  }
+
+  // Bloqué — calcule le nombre de jours restants et si le bonus pub est encore proposable
   const daysLeft = Math.ceil(7 - daysSinceWeekly);
-  return { allowed: false, daysLeft };
+  return { allowed: false, daysLeft, adAvailable };
 }
 
 export default async function handler(req) {
@@ -78,7 +101,8 @@ export default async function handler(req) {
   if (!usageCheck.allowed) {
     return new Response(JSON.stringify({
       error: `Limite atteinte. Prochaine analyse gratuite dans ${usageCheck.daysLeft} jour${usageCheck.daysLeft > 1 ? "s" : ""}.`,
-      daysLeft: usageCheck.daysLeft
+      daysLeft: usageCheck.daysLeft,
+      adAvailable: !!usageCheck.adAvailable
     }), { status: 429 });
   }
 
