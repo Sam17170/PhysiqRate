@@ -1785,7 +1785,7 @@ function ViewAnalyze({ premium }) {
               {[
                 "Porte une tenue ajustée",
                 "Place-toi dans une pièce bien éclairée",
-                "Prends la photo de face, corps entier",
+                "Prends la photo de face",
               ].map((t,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <div style={{width:"20px",height:"20px",borderRadius:"6px",background:"rgba(255,215,0,0.1)",border:`1px solid rgba(255,215,0,0.25)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:"10px",fontWeight:"700",color:C.gold}}>
