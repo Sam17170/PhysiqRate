@@ -13,7 +13,7 @@ async function verifyStripeSignature(body, signature, secret) {
 }
 
 async function upsertUser(email, isPro, stripeCustomerId = null, sessionId = null) {
-  if (!email) return;
+  if (!email) { console.error("upsertUser: email manquant"); return; }
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE = process.env.SUPABASE_SERVICE_KEY;
 
@@ -31,6 +31,10 @@ async function upsertUser(email, isPro, stripeCustomerId = null, sessionId = nul
       p_stripe_session_id: sessionId || null
     })
   });
+  if (!res.ok) {
+    const errText = await res.text().catch(()=>"(pas de détail)");
+    console.error(`upsertUser ÉCHEC pour ${email} — status ${res.status}: ${errText}`);
+  }
   return res.status;
 }
 
@@ -56,7 +60,12 @@ export default async function handler(req) {
     const linkedAccountEmail = session.client_reference_id;
     const stripeEmail = session.customer_details?.email || session.customer_email;
     const targetEmail = linkedAccountEmail || stripeEmail;
-    if (targetEmail) await upsertUser(targetEmail, true, session.customer, session.id);
+    console.log(`checkout.session.completed — client_reference_id=${linkedAccountEmail || "(vide)"} stripeEmail=${stripeEmail || "(vide)"} targetEmail=${targetEmail || "(AUCUN)"}`);
+    if (targetEmail) {
+      await upsertUser(targetEmail, true, session.customer, session.id);
+    } else {
+      console.error("checkout.session.completed reçu SANS aucun email exploitable — session.id:", session.id);
+    }
   }
 
   if (event.type === "customer.subscription.deleted") {
