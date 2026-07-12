@@ -92,10 +92,30 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
-  const { imageBase64, gender, age, weight, height, profilePrompt, isPro, adWatched, lang } = body;
+  const { imageBase64, gender, age, weight, height, profilePrompt, isPro, adWatched, lang, token } = body;
   if (!imageBase64 || !gender) return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
   if (imageBase64.length > 2_800_000) return new Response(JSON.stringify({ error: "Image trop lourde." }), { status: 413 });
   const responseLang = lang === "fr" ? "French" : "English";
+
+  // Ne fait JAMAIS confiance au champ "isPro" envoyé par le client (facilement falsifiable
+  // depuis les outils dev du navigateur) — revérifie le vrai statut via le token, sinon
+  // considère l'utilisateur comme gratuit par défaut.
+  let verifiedIsPro = false;
+  if (token) {
+    try {
+      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { "apikey": process.env.SUPABASE_ANON_KEY, "Authorization": `Bearer ${token}` }
+      });
+      const user = await userRes.json();
+      if (user.email) {
+        const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(user.email)}&select=is_pro`, {
+          headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
+        });
+        const rows = await dbRes.json();
+        verifiedIsPro = Array.isArray(rows) && rows[0]?.is_pro === true;
+      }
+    } catch { verifiedIsPro = false; }
+  }
 
   // Calcule le BMI si poids ET taille sont disponibles — utilisé comme repère de plausibilité, pas comme mesure directe
   const w = parseFloat(weight) || null;
@@ -103,7 +123,7 @@ export default async function handler(req) {
   const bmi = (w && h) ? Math.round((w / ((h / 100) ** 2)) * 10) / 10 : null;
 
   // Vérifie l'usage côté serveur
-  const usageCheck = await checkAndIncrementUsage(ip, !!isPro, !!adWatched);
+  const usageCheck = await checkAndIncrementUsage(ip, verifiedIsPro, !!adWatched);
   if (!usageCheck.allowed) {
     return new Response(JSON.stringify({
       error: `Limite atteinte. Prochaine analyse gratuite dans ${usageCheck.daysLeft} jour${usageCheck.daysLeft > 1 ? "s" : ""}.`,
