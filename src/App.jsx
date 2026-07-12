@@ -1707,7 +1707,7 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
         if (sessionId) {
           await fetch("/api/auth", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${loginData.token}` },
             body: JSON.stringify({ action: "transfer_pro", email, sessionId })
           });
         }
@@ -2350,6 +2350,7 @@ function ViewAnalyze({ premium }) {
           height: profile.height || null,
           profilePrompt,
           isPro: !!premium,
+          token: localStorage.getItem("pq_token") || null,
           adWatched: !!adWatched,
           lang
         })
@@ -4219,7 +4220,7 @@ function AppInner() {
                 try {
                   const res = await fetch("/api/auth", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                     body: JSON.stringify({ action: "transfer_pro", email, sessionId })
                   });
                   const data = await res.json();
