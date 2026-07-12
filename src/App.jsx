@@ -1663,10 +1663,11 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
 
     try {
       if (!accountExists) {
+        const sessionId = localStorage.getItem("pq_stripe_session");
         const res = await fetch("/api/auth", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "signup", email, password })
+          body: JSON.stringify({ action: "signup", email, password, sessionId })
         });
         const data = await res.json();
         const alreadyExists = data.error && data.error.toLowerCase().includes("already");
