@@ -45,10 +45,19 @@ export default async function handler(req) {
   const signature = req.headers.get("stripe-signature") || "";
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (secret && signature) {
-    const valid = await verifyStripeSignature(body, signature, secret);
-    if (!valid) return new Response("Invalid signature", { status: 400 });
+  // La vérification de signature est TOUJOURS obligatoire — jamais sautée, même si
+  // la config ou l'en-tête semble manquant. Sans ça, n'importe qui pourrait forger
+  // un faux événement Stripe (ex: s'attribuer le Pro gratuitement) en appelant
+  // directement cet endpoint.
+  if (!secret) {
+    console.error("STRIPE_WEBHOOK_SECRET manquant côté serveur — requête refusée.");
+    return new Response("Server misconfigured", { status: 500 });
   }
+  if (!signature) {
+    return new Response("Missing signature", { status: 400 });
+  }
+  const valid = await verifyStripeSignature(body, signature, secret);
+  if (!valid) return new Response("Invalid signature", { status: 400 });
 
   let event;
   try { event = JSON.parse(body); } catch { return new Response("Invalid payload", { status: 400 }); }
