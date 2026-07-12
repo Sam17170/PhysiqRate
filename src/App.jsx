@@ -3924,7 +3924,6 @@ function AppInner() {
   const [showAuth, setShowAuth] = useState(false);
   const [showPostPayment, setShowPostPayment] = useState(false);
   const [postPaymentEmail, setPostPaymentEmail] = useState(null);
-  const [finishAccountDismissed, setFinishAccountDismissed] = useState(false);
   const [emailMismatch, setEmailMismatch] = useState(null); // { paidEmail, currentEmail }
   const [user, setUser] = useState(() => {
     const email = localStorage.getItem("pq_email");
@@ -4291,7 +4290,7 @@ function AppInner() {
       )}
 
       {/* Force connexion si Pro local sans token Supabase */}
-      {premium && !localStorage.getItem("pq_token") && !showAuth && !showPostPayment && !finishAccountDismissed && (
+      {premium && !localStorage.getItem("pq_token") && !showAuth && !showPostPayment && (
         <div style={{position:"fixed",inset:0,background:"#09090f",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
           <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
             <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>COMPTE REQUIS</div>
@@ -4316,11 +4315,6 @@ function AppInner() {
               }
             }}>
               Créer mon compte Pro
-            </button>
-            <button
-              onClick={()=>setFinishAccountDismissed(true)}
-              style={{background:"transparent",border:"none",color:"#444",fontSize:"12px",marginTop:"14px",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>
-              Plus tard
             </button>
           </div>
         </div>
