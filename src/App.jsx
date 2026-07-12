@@ -111,6 +111,7 @@ const STRINGS = {
     weightPlaceholder: { fr: "Ex : 75", en: "E.g. 75" },
     extraFieldsToggle:   { fr: "+ Ajouter âge et poids (optionnel, améliore la précision)", en: "+ Add age and weight (optional, improves accuracy)" },
     extraFieldsPrefilled:{ fr: "✓ Âge et poids de ton profil utilisés automatiquement", en: "✓ Age and weight from your profile used automatically" },
+    saveToHistory: { fr: "Enregistrer cette analyse dans l'historique", en: "Save this analysis to history" },
     analyzeBtn:     { fr: "Analyser mon physique", en: "Analyze my physique" },
     changePhoto:    { fr: "Changer de photo", en: "Change photo" },
     analyzing:      { fr: "Analyse en cours", en: "Analysis in progress" },
@@ -270,8 +271,8 @@ const STRINGS = {
     bodyFatLabel:   { fr: "Body fat", en: "Body fat" },
     combinedChartTitle: { fr: "POIDS & BODY FAT", en: "WEIGHT & BODY FAT" },
     combinedChartHint:  { fr: "Les deux courbes qui baissent ensemble = vraie perte de gras. Le poids qui baisse sans que le body fat baisse peut signifier une perte de muscle.", en: "Both curves dropping together = real fat loss. Weight dropping without body fat dropping can mean muscle loss." },
-    markTestToggle: { fr: "Marquer comme test / pas moi (exclu du calcul de tendance)", en: "Mark as test / not me (excluded from trend calculation)" },
-    testLabel:      { fr: "TEST", en: "TEST" },
+    deleteEntry: { fr: "Supprimer cette analyse", en: "Delete this analysis" },
+    deleteConfirm: { fr: "Supprimer définitivement cette analyse de ton historique ?", en: "Permanently delete this analysis from your history?" },
   },
   activityLevels: {
     sedentary:     { fr: "Sédentaire — peu ou pas d'exercice", en: "Sedentary — little or no exercise" },
@@ -748,12 +749,13 @@ function addToHistory(entry) {
   }] });
 }
 
-// Marque/démarque une analyse comme "test" (photo d'essai, ancienne photo, autre personne...)
-// pour l'exclure des calculs de tendance/projection sans supprimer la donnée elle-même.
-function toggleHistoryExclusion(dateKey) {
+// Supprime réellement une analyse de l'historique (locale + Supabase) — remplace
+// l'ancien marquage "test" qui se contentait de l'exclure des calculs sans la retirer.
+function deleteHistoryEntry(entry) {
   const h = getHistory();
-  const updated = h.map(entry => entry.date === dateKey ? { ...entry, excluded: !entry.excluded } : entry);
+  const updated = h.filter(e => e.date !== entry.date);
   set(keys.history, updated);
+  syncPush({ deleteAnalysis: { date: entry.date.slice(0,10), bodyfat: entry.bodyfat } });
 }
 
 function getTodayISO() {
@@ -2339,6 +2341,7 @@ function ViewAnalyze({ premium }) {
   const [adAvailable, setAdAvailable] = useState(true);
   const [adUnlockedPending, setAdUnlockedPending] = useState(false); // pub regardée depuis l'écran d'accueil, avant même d'avoir choisi une photo
   const [showExtraFields, setShowExtraFields] = useState(false);
+  const [saveToHistory, setSaveToHistory] = useState(true);
   const [, setCountdownTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setCountdownTick(t => t + 1), 60000); // rafraîchit le compte à rebours chaque minute
@@ -2442,7 +2445,7 @@ function ViewAnalyze({ premium }) {
 
       const archetype = getArchetype(data.bodyfat, gender);
       const entry = { bodyfat: data.bodyfat, gender, age: resolvedAge, weight: parseFloat(weight)||null, archetype };
-      addToHistory(entry);
+      if (!premium || saveToHistory) addToHistory(entry);
 
       // Usage tracking
       if (!premium) {
@@ -2486,6 +2489,7 @@ function ViewAnalyze({ premium }) {
   function reset() {
     setStep("upload"); setResult(null); setImagePreview(null); setImageBase64(null);
     setGender(null); setAge(""); setWeight(""); setShareUrl(null); setError(null);
+    setSaveToHistory(true);
   }
 
   const archetype = result?.archetype;
@@ -2662,6 +2666,15 @@ function ViewAnalyze({ premium }) {
           )}
 
           {error && <div style={{marginTop:"10px",color:C.red,fontSize:"12px",textAlign:"center"}}>{error}</div>}
+
+          {premium && (
+            <div style={{display:"flex",alignItems:"center",gap:"8px",marginTop:"14px",cursor:"pointer"}} onClick={()=>setSaveToHistory(!saveToHistory)}>
+              <input type="checkbox" checked={saveToHistory} onChange={e=>setSaveToHistory(e.target.checked)}
+                style={{flexShrink:0,cursor:"pointer"}}/>
+              <span style={{fontSize:"12px",color:"#888"}}>{tr("analyze.saveToHistory")}</span>
+            </div>
+          )}
+
           <div style={{marginTop:"16px"}}>
             <button style={{...css.btn(C.gold),opacity:!gender?0.4:1,cursor:!gender?"not-allowed":"pointer"}} onClick={analyze} disabled={!gender}>{tr("analyze.analyzeBtn")}</button>
             <button style={css.btnSec} onClick={()=>setStep("upload")}>{tr("analyze.changePhoto")}</button>
@@ -3587,15 +3600,14 @@ function ViewProgression({ premium, onShowPaywall }) {
               const date = new Date(h.date).toLocaleDateString(locale,{day:"numeric",month:"short"});
               const isSel = selected.includes(i);
               return (
-                <div key={i} onClick={()=>togglePhoto(i)} style={{position:"relative",borderRadius:"12px",overflow:"hidden",cursor:"pointer",aspectRatio:"3/4",background:`linear-gradient(135deg,${arch.color}18,rgba(0,0,0,0.6))`,border:`${isSel?"2px":"1px"} solid ${isSel?C.gold:arch.color+"44"}`,display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"10px 8px",opacity:h.excluded?0.4:1}}>
-                  {/* Bouton marquer comme test / pas moi — exclut des calculs de tendance */}
+                <div key={i} onClick={()=>togglePhoto(i)} style={{position:"relative",borderRadius:"12px",overflow:"hidden",cursor:"pointer",aspectRatio:"3/4",background:`linear-gradient(135deg,${arch.color}18,rgba(0,0,0,0.6))`,border:`${isSel?"2px":"1px"} solid ${isSel?C.gold:arch.color+"44"}`,display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"10px 8px"}}>
+                  {/* Suppression réelle de l'analyse */}
                   <button
-                    onClick={(e)=>{ e.stopPropagation(); toggleHistoryExclusion(h.date); setRefreshTick(t=>t+1); }}
-                    title={tr("progression.markTestToggle")}
-                    style={{position:"absolute",top:"6px",left:"6px",zIndex:2,width:"18px",height:"18px",borderRadius:"50%",background:h.excluded?C.gold:"rgba(0,0,0,0.5)",border:`1px solid ${h.excluded?C.gold:"rgba(255,255,255,0.3)"}`,display:"flex",alignItems:"center",justifyContent:"center",padding:0,cursor:"pointer"}}>
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={h.excluded?"#000":"#fff"} strokeWidth="2.5"><path d="M4 4l16 16M4 20L20 4"/></svg>
+                    onClick={(e)=>{ e.stopPropagation(); if(window.confirm(tr("progression.deleteConfirm"))){ deleteHistoryEntry(h); setRefreshTick(t=>t+1); } }}
+                    title={tr("progression.deleteEntry")}
+                    style={{position:"absolute",top:"6px",left:"6px",zIndex:2,width:"18px",height:"18px",borderRadius:"50%",background:"rgba(0,0,0,0.5)",border:`1px solid rgba(255,255,255,0.3)`,display:"flex",alignItems:"center",justifyContent:"center",padding:0,cursor:"pointer"}}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M4 4l16 16M4 20L20 4"/></svg>
                   </button>
-                  {h.excluded && <div style={{position:"absolute",top:"6px",left:"28px",zIndex:2,fontSize:"7px",color:C.gold,background:"rgba(0,0,0,0.6)",padding:"2px 5px",borderRadius:"6px",fontWeight:"700",letterSpacing:"0.5px"}}>{tr("progression.testLabel")}</div>}
                   {/* Badge sélection */}
                   {isSel && <div style={{position:"absolute",top:"6px",right:"6px",width:"18px",height:"18px",borderRadius:"50%",background:C.gold,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",color:"#000",fontWeight:"800"}}>✓</div>}
                   {/* Icône centrale */}
