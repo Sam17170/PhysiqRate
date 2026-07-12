@@ -52,6 +52,9 @@ const STRINGS = {
     confHigh: { fr: "Élevée", en: "High" },
     confMedium: { fr: "Moyenne", en: "Medium" },
     confLow: { fr: "Faible", en: "Low" },
+    muscleMassLabel: { fr: "MASSE MUSCULAIRE", en: "MUSCLE MASS" },
+    estimatedTag: { fr: "Estimation", en: "Estimated" },
+    addProfileTag: { fr: "Complète ton profil", en: "Complete your profile" },
   },
   analyze: {
     eyebrow:        { fr: "ANALYSE IA · BODY FAT", en: "AI ANALYSIS · BODY FAT" },
@@ -815,7 +818,25 @@ function GaugeRing({ percent, color }) {
   );
 }
 
-function ShareCard({ imagePreview, result, archetype, onReady }) {
+// Estimation de la masse musculaire (%) à partir du body fat, du poids et de la taille.
+// Méthode : masse maigre (poids × (1 − bodyfat/100)), puis fraction de cette masse maigre
+// qui correspond typiquement au muscle squelettique (base physiologique ~55% hommes / 45% femmes),
+// légèrement ajustée selon la taille (les gabarits plus grands portent proportionnellement
+// un peu plus de masse musculaire squelettique). Reste une ESTIMATION, pas une mesure clinique.
+function calcMuscleMassPercent(bodyfatPercent, weightKg, heightCm, gender) {
+  const w = parseFloat(weightKg), h = parseFloat(heightCm);
+  if (!w || !h || !bodyfatPercent) return null;
+  const leanFraction = 1 - bodyfatPercent / 100;
+  const isFemale = gender === "female";
+  const baseMuscleFraction = isFemale ? 0.45 : 0.55;
+  const avgHeight = isFemale ? 160 : 172;
+  const heightAdj = ((h - avgHeight) / 5) * 0.01;
+  const muscleFraction = Math.min(Math.max(baseMuscleFraction + heightAdj, 0.35), 0.65);
+  const musclePercent = leanFraction * muscleFraction * 100;
+  return Math.round(musclePercent * 10) / 10;
+}
+
+function ShareCard({ imagePreview, result, archetype, onReady, weightKg, heightCm, gender }) {
   const ref = useRef();
   const { tr, lang } = useI18n();
   useEffect(() => {
@@ -893,32 +914,69 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // ── GRILLE DE CARTES STATS ────────────────────────────────────
-      const confMap = {
-        high:   { label: tr("shareCard.confHigh"),   ratio: 0.9 },
-        medium: { label: tr("shareCard.confMedium"), ratio: 0.6 },
-        low:    { label: tr("shareCard.confLow"),     ratio: 0.3 },
-      };
-      const conf = confMap[result.confidence] || confMap.medium;
-
-      const cards = [
-        { label: tr("shareCard.bodyFatLabel"), big: `${result.bodyfat}%`, tag: tr("archetype."+archetype.label), ratio: Math.min(result.bodyfat/50,1) },
-        { label: tr("shareCard.categoryLabel"), big: tr("archetype."+archetype.label), tag: tr("archetypeRef."+archetype.ref), ratio: 1 },
-        { label: tr("shareCard.confidenceLabel"), big: conf.label, tag: null, ratio: conf.ratio },
-        ...(result.key_indicators || []).slice(0,3).map(ind => ({ observation: ind })),
-      ];
-
+      // ── CARTE BODY FAT — pleine largeur, en grand ──────────────────
       const padX = 56, gap = 24;
-      const colW = (W - padX*2 - gap) / 2;
-      const rowH = 250;
+      const fullW = W - padX*2;
+      const heroH = 320;
       const gridTop = cy + cr + 70;
 
-      cards.forEach((card, i) => {
-        const col = i % 2, row = Math.floor(i / 2);
-        const x = padX + col * (colW + gap);
-        const y = gridTop + row * (rowH + gap);
+      ctx.beginPath();
+      ctx.roundRect(padX, gridTop, fullW, heroH, 28);
+      ctx.fillStyle = "rgba(255,255,255,0.035)";
+      ctx.fill();
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.35)`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
-        // Fond de carte
+      ctx.textAlign = "left";
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.font = `700 ${W*0.024}px Arial`;
+      ctx.letterSpacing = "3px";
+      ctx.fillText(tr("shareCard.bodyFatLabel"), padX+36, gridTop+56);
+
+      ctx.fillStyle = "white";
+      ctx.font = `800 ${W*0.16}px Arial`;
+      ctx.letterSpacing = "-2px";
+      ctx.fillText(`${result.bodyfat}%`, padX+36, gridTop+190);
+
+      ctx.fillStyle = color;
+      ctx.font = `700 ${W*0.026}px Arial`;
+      ctx.letterSpacing = "1px";
+      ctx.fillText(tr("archetype."+archetype.label), padX+36, gridTop+232);
+
+      // Barre de progression pleine largeur
+      const heroBarY = gridTop + heroH - 44;
+      const heroBarW = fullW - 72;
+      const heroRatio = Math.min(result.bodyfat/50, 1);
+      ctx.beginPath();
+      ctx.roundRect(padX+36, heroBarY, heroBarW, 10, 5);
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(padX+36, heroBarY, heroBarW*heroRatio, 10, 5);
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 14;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // ── RANGÉE 2 : CATÉGORIE + MASSE MUSCULAIRE ────────────────────
+      const musclePercent = calcMuscleMassPercent(result.bodyfat, weightKg, heightCm, gender);
+      const colW = (W - padX*2 - gap) / 2;
+      const rowH = 250;
+      const row2Y = gridTop + heroH + gap;
+
+      const cards = [
+        { label: tr("shareCard.categoryLabel"), big: tr("archetype."+archetype.label), tag: tr("archetypeRef."+archetype.ref), ratio: 1 },
+        musclePercent != null
+          ? { label: tr("shareCard.muscleMassLabel"), big: `${musclePercent}%`, tag: tr("shareCard.estimatedTag"), ratio: Math.min(musclePercent/50,1) }
+          : { label: tr("shareCard.muscleMassLabel"), big: "—", tag: tr("shareCard.addProfileTag"), ratio: 0 },
+      ];
+
+      cards.forEach((card, i) => {
+        const x = padX + i * (colW + gap);
+        const y = row2Y;
+
         ctx.beginPath();
         ctx.roundRect(x, y, colW, rowH, 24);
         ctx.fillStyle = "rgba(255,255,255,0.035)";
@@ -927,60 +985,42 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        if (card.observation) {
-          // ── Carte "observation" (texte de l'IA) ──
-          ctx.textAlign = "left";
-          ctx.fillStyle = color;
-          ctx.font = `700 ${W*0.021}px Arial`;
-          ctx.letterSpacing = "2px";
-          ctx.fillText(tr("shareCard.observationLabel"), x+28, y+42);
+        ctx.textAlign = "left";
+        ctx.fillStyle = "rgba(255,255,255,0.45)";
+        ctx.font = `700 ${W*0.021}px Arial`;
+        ctx.letterSpacing = "2px";
+        const labelLines = wrapText(card.label, colW-56, `700 ${W*0.021}px Arial`);
+        ctx.fillText(labelLines[0], x+28, y+42);
 
-          ctx.fillStyle = "rgba(255,255,255,0.85)";
-          const lines = wrapText(card.observation, colW-56, `${W*0.026}px Arial`);
-          ctx.font = `${W*0.026}px Arial`;
-          ctx.letterSpacing = "0px";
-          lines.slice(0,4).forEach((line, li) => {
-            ctx.fillText(line, x+28, y+82 + li*34);
-          });
-        } else {
-          // ── Carte stat (label + grande valeur + tag + barre) ──
-          ctx.textAlign = "left";
-          ctx.fillStyle = "rgba(255,255,255,0.45)";
-          ctx.font = `700 ${W*0.021}px Arial`;
-          ctx.letterSpacing = "2px";
-          ctx.fillText(card.label, x+28, y+42);
+        ctx.fillStyle = "white";
+        const bigFont = card.big.length > 6 ? W*0.034 : W*0.05;
+        ctx.font = `800 ${bigFont}px Arial`;
+        ctx.letterSpacing = "0px";
+        ctx.fillText(card.big, x+28, y+100);
 
-          ctx.fillStyle = "white";
-          const bigFont = card.big.length > 6 ? W*0.034 : W*0.05;
-          ctx.font = `800 ${bigFont}px Arial`;
-          ctx.letterSpacing = "0px";
-          ctx.fillText(card.big, x+28, y+100);
-
-          if (card.tag) {
-            ctx.fillStyle = `rgba(${r},${g},${b},0.85)`;
-            ctx.font = `${W*0.02}px Arial`;
-            const tagLines = wrapText(card.tag, colW-56, `${W*0.02}px Arial`);
-            ctx.fillText(tagLines[0], x+28, y+130);
-          }
-
-          // Barre de progression
-          const barY = y + rowH - 40;
-          const barW = colW - 56;
-          ctx.beginPath();
-          ctx.roundRect(x+28, barY, barW, 8, 4);
-          ctx.fillStyle = "rgba(255,255,255,0.08)";
-          ctx.fill();
-          ctx.beginPath();
-          ctx.roundRect(x+28, barY, barW*card.ratio, 8, 4);
-          ctx.fillStyle = color;
-          ctx.shadowColor = color;
-          ctx.shadowBlur = 10;
-          ctx.fill();
-          ctx.shadowBlur = 0;
+        if (card.tag) {
+          ctx.fillStyle = `rgba(${r},${g},${b},0.85)`;
+          ctx.font = `${W*0.02}px Arial`;
+          const tagLines = wrapText(card.tag, colW-56, `${W*0.02}px Arial`);
+          ctx.fillText(tagLines[0], x+28, y+130);
         }
+
+        const barY = y + rowH - 40;
+        const barW = colW - 56;
+        ctx.beginPath();
+        ctx.roundRect(x+28, barY, barW, 8, 4);
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.roundRect(x+28, barY, barW*card.ratio, 8, 4);
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
       });
 
-      const gridBottom = gridTop + Math.ceil(cards.length/2) * (rowH + gap);
+      const gridBottom = row2Y + rowH;
 
       // ── PHRASE MOTIVANTE ───────────────────────────────────────────
       let noteBottom = gridBottom + 20;
@@ -2412,7 +2452,8 @@ function ViewAnalyze({ premium }) {
 
       {step === "result" && result && archetype && (
         <>
-          <ShareCard imagePreview={imagePreview} result={result} archetype={archetype} onReady={setShareUrl}/>
+          <ShareCard imagePreview={imagePreview} result={result} archetype={archetype} onReady={setShareUrl}
+            weightKg={weight || profile.weight} heightCm={profile.height} gender={gender}/>
 
           <div style={{...css.card,textAlign:"center"}}>
             <div style={{display:"inline-block",padding:"5px 14px",borderRadius:"20px",border:`1px solid ${archetype.color}33`,background:`${archetype.color}11`,color:archetype.color,fontSize:"11px",fontWeight:"700",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"8px"}}>{tr("archetype."+archetype.label)}</div>
