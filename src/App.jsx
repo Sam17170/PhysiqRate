@@ -62,6 +62,32 @@ const STRINGS = {
     switchBtn:    { fr: "Utiliser le compte {paidEmail}", en: "Use the {paidEmail} account" },
     keepBtn:      { fr: "Garder mon compte actuel", en: "Keep my current account" },
   },
+  authModal: {
+    loginTitle:     { fr: "CONNEXION", en: "LOG IN" },
+    signupTitle:    { fr: "CRÉER UN COMPTE GRATUIT", en: "CREATE A FREE ACCOUNT" },
+    email:          { fr: "Email", en: "Email" },
+    password:       { fr: "Mot de passe", en: "Password" },
+    confirmPassword:{ fr: "Confirme ton mot de passe", en: "Confirm your password" },
+    acceptTermsPre: { fr: "J'accepte les", en: "I accept the" },
+    termsLink:      { fr: "conditions générales d'utilisation", en: "terms of service" },
+    loginBtn:       { fr: "Se connecter", en: "Log in" },
+    signupBtn:      { fr: "Créer mon compte", en: "Create my account" },
+    noAccountYet:   { fr: "Pas encore de compte ? Créer un compte gratuit", en: "No account yet? Create a free account" },
+    alreadyAccount: { fr: "Déjà un compte ? Se connecter", en: "Already have an account? Log in" },
+    forgotPassword: { fr: "Mot de passe oublié ?", en: "Forgot password?" },
+    close:          { fr: "Fermer", en: "Close" },
+    errRequired:        { fr: "Email et mot de passe requis.", en: "Email and password required." },
+    errAccountNotFound: { fr: "Ce compte n'existe pas. Crée un compte gratuit ci-dessous.", en: "This account doesn't exist. Create a free account below." },
+    errConnection:      { fr: "Erreur de connexion. Réessaie.", en: "Connection error. Try again." },
+    errPasswordLength:  { fr: "Mot de passe minimum 6 caractères.", en: "Password minimum 6 characters." },
+    errPasswordMismatch:{ fr: "Les mots de passe ne correspondent pas.", en: "Passwords don't match." },
+    errAcceptTerms:     { fr: "Tu dois accepter les conditions générales d'utilisation.", en: "You must accept the terms of service." },
+    errAccountExists:   { fr: "Un compte existe déjà avec cet email. Connecte-toi plutôt.", en: "An account already exists with this email. Log in instead." },
+    errNetwork:         { fr: "Erreur réseau. Réessaie.", en: "Network error. Try again." },
+    enterEmailForReset: { fr: "Entre ton email pour recevoir le lien.", en: "Enter your email to receive the link." },
+    resetSent:          { fr: "Lien de réinitialisation envoyé. Vérifie ta boîte mail.", en: "Reset link sent. Check your inbox." },
+    createdLoginNow:    { fr: "Compte créé. Connecte-toi maintenant.", en: "Account created. Log in now." },
+  },
   analyze: {
     eyebrow:        { fr: "ANALYSE IA · BODY FAT", en: "AI ANALYSIS · BODY FAT" },
     title:          { fr: "Connaît ton vrai physique", en: "Know your real physique" },
@@ -1615,6 +1641,7 @@ function ProductModal({ product, onConfirm, onClose }) {
 
 // ─── POST PAYMENT ACCOUNT MODAL ───────────────────────────────────────────────
 function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) {
+  const { tr } = useI18n();
   const [email, setEmail] = useState(initialEmail === "unknown" ? "" : initialEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -1624,12 +1651,14 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
   const [error, setError] = useState(null);
   const [accountExists, setAccountExists] = useState(false); // détecté après tentative de création
   const [resetSent, setResetSent] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const hadPaymentEmail = !!initialEmail && initialEmail !== "unknown";
 
   async function handleCreate() {
     if (!email) { setError("Entre ton adresse email."); return; }
     if (!password || password.length < 6) { setError("Minimum 6 caractères."); return; }
     if (!accountExists && password !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
+    if (!accountExists && !acceptedTerms) { setError("Tu dois accepter les conditions générales d'utilisation."); return; }
     setLoading(true); setError(null);
 
     try {
@@ -1772,6 +1801,14 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
             {confirmPassword && confirmPassword === password && (
               <div style={{fontSize:"11px",color:C.green,marginTop:"4px"}}>✓ Mots de passe identiques</div>
             )}
+
+            <div style={{display:"flex",alignItems:"flex-start",gap:"8px",marginTop:"14px",cursor:"pointer"}} onClick={()=>setAcceptedTerms(!acceptedTerms)}>
+              <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)}
+                style={{marginTop:"3px",flexShrink:0,cursor:"pointer"}}/>
+              <span style={{fontSize:"11px",color:"#777",lineHeight:"1.5"}}>
+                {tr("authModal.acceptTermsPre")} <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{color:C.gold}} onClick={e=>e.stopPropagation()}>{tr("authModal.termsLink")}</a>
+              </span>
+            </div>
           </>
         )}
 
@@ -1789,6 +1826,7 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
 
 // ─── AUTH MODAL ───────────────────────────────────────────────────────────────
 function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
+  const { tr } = useI18n();
   const [mode, setMode] = useState("login"); // "login" | "signup"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -1800,7 +1838,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
   const [success, setSuccess] = useState(null);
 
   async function handleLogin() {
-    if (!email || !password) { setError("Email et mot de passe requis."); return; }
+    if (!email || !password) { setError(tr("authModal.errRequired")); return; }
     setLoading(true); setError(null);
     try {
       const res = await fetch("/api/auth", {
@@ -1813,7 +1851,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
       if (data.error) {
         const msg = data.error.toLowerCase();
         if (msg.includes("invalid") || msg.includes("not found") || msg.includes("credentials") || msg.includes("existe pas")) {
-          setError("Ce compte n'existe pas. Crée un compte gratuit ci-dessous.");
+          setError(tr("authModal.errAccountNotFound"));
         } else {
           setError(data.error);
         }
@@ -1832,16 +1870,16 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
       const me = await meRes.json();
       onSuccess({ email, is_pro: me.is_pro, token: data.token });
     } catch {
-      setError("Erreur de connexion. Réessaie.");
+      setError(tr("authModal.errConnection"));
     }
     setLoading(false);
   }
 
   async function handleSignup() {
-    if (!email || !password) { setError("Email et mot de passe requis."); return; }
-    if (password.length < 6) { setError("Mot de passe minimum 6 caractères."); return; }
-    if (password !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
-    if (!acceptedTerms) { setError("Tu dois accepter les conditions générales d'utilisation."); return; }
+    if (!email || !password) { setError(tr("authModal.errRequired")); return; }
+    if (password.length < 6) { setError(tr("authModal.errPasswordLength")); return; }
+    if (password !== confirmPassword) { setError(tr("authModal.errPasswordMismatch")); return; }
+    if (!acceptedTerms) { setError(tr("authModal.errAcceptTerms")); return; }
     setLoading(true); setError(null);
 
     try {
@@ -1855,7 +1893,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
       if (data.error) {
         const msg = data.error.toLowerCase();
         if (msg.includes("already") || msg.includes("existe")) {
-          setError("Un compte existe déjà avec cet email. Connecte-toi plutôt.");
+          setError(tr("authModal.errAccountExists"));
           setMode("login");
         } else {
           setError(data.error);
@@ -1876,11 +1914,11 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
         localStorage.setItem("pq_email", email);
         onSuccess({ email, is_pro: false, token: loginData.token });
       } else {
-        setError("Compte créé. Connecte-toi maintenant.");
+        setError(tr("authModal.createdLoginNow"));
         setMode("login");
       }
     } catch {
-      setError("Erreur réseau. Réessaie.");
+      setError(tr("authModal.errNetwork"));
     }
     setLoading(false);
   }
@@ -1893,23 +1931,23 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",backdropFilter:"blur(10px)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
-          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px"}}>{mode === "login" ? "CONNEXION" : "CRÉER UN COMPTE GRATUIT"}</div>
+          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px"}}>{mode === "login" ? tr("authModal.loginTitle") : tr("authModal.signupTitle")}</div>
           {!blocking && <button onClick={onClose} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>}
         </div>
 
         {success ? (
           <div style={{textAlign:"center",padding:"20px"}}>
             <div style={{fontSize:"14px",color:C.green,marginBottom:"16px",lineHeight:"1.6"}}>{success}</div>
-            <button style={css.btn(C.gold)} onClick={onClose}>Fermer</button>
+            <button style={css.btn(C.gold)} onClick={onClose}>{tr("authModal.close")}</button>
           </div>
         ) : (
           <>
-            <span style={css.label}>Email</span>
+            <span style={css.label}>{tr("authModal.email")}</span>
             <input style={css.input} type="email" placeholder="ton@email.com" value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none"/>
 
-            <span style={css.label}>Mot de passe</span>
+            <span style={css.label}>{tr("authModal.password")}</span>
             <div style={{position:"relative", marginBottom: mode==="signup" ? "8px" : "0"}}>
-              <input style={{...css.input,paddingRight:"44px"}} type={showPwd?"text":"password"} placeholder="Mot de passe" value={password} onChange={e=>setPassword(e.target.value)}
+              <input style={{...css.input,paddingRight:"44px"}} type={showPwd?"text":"password"} placeholder={tr("authModal.password")} value={password} onChange={e=>setPassword(e.target.value)}
                 onKeyDown={e=>e.key==="Enter" && mode==="login" && handleSubmit()}/>
               <button type="button" onClick={()=>setShowPwd(!showPwd)}
                 style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",color:"#555",cursor:"pointer",padding:"4px",display:"flex",alignItems:"center"}}>
@@ -1922,8 +1960,8 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
 
             {mode === "signup" && (
               <>
-                <span style={css.label}>Confirme ton mot de passe</span>
-                <input style={css.input} type={showPwd?"text":"password"} placeholder="Répète ton mot de passe"
+                <span style={css.label}>{tr("authModal.confirmPassword")}</span>
+                <input style={css.input} type={showPwd?"text":"password"} placeholder={tr("authModal.confirmPassword")}
                   value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
 
@@ -1931,7 +1969,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
                   <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)}
                     style={{marginTop:"3px",flexShrink:0,cursor:"pointer"}}/>
                   <span style={{fontSize:"11px",color:"#777",lineHeight:"1.5"}}>
-                    J'accepte les <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{color:C.gold}} onClick={e=>e.stopPropagation()}>conditions générales d'utilisation</a>
+                    {tr("authModal.acceptTermsPre")} <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{color:C.gold}} onClick={e=>e.stopPropagation()}>{tr("authModal.termsLink")}</a>
                   </span>
                 </div>
               </>
@@ -1940,25 +1978,25 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
             {error && <div style={{fontSize:"12px",color:C.red,marginTop:"10px",lineHeight:"1.5"}}>{error}</div>}
 
             <button style={{...css.btn(C.gold),marginTop:"18px",opacity:loading?0.6:1}} onClick={handleSubmit} disabled={loading}>
-              {loading ? "…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
+              {loading ? "…" : mode === "login" ? tr("authModal.loginBtn") : tr("authModal.signupBtn")}
             </button>
 
             <div style={{textAlign:"center",marginTop:"12px",display:"flex",flexDirection:"column",gap:"8px"}}>
               {mode === "login" ? (
                 <button style={{background:"transparent",border:"none",color:"#555",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
                   onClick={()=>{ setMode("signup"); setError(null); }}>
-                  Pas encore de compte ? Créer un compte gratuit
+                  {tr("authModal.noAccountYet")}
                 </button>
               ) : (
                 <button style={{background:"transparent",border:"none",color:"#555",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
                   onClick={()=>{ setMode("login"); setError(null); }}>
-                  Déjà un compte ? Se connecter
+                  {tr("authModal.alreadyAccount")}
                 </button>
               )}
               {mode === "login" && (
                 <button style={{background:"transparent",border:"none",color:"#333",fontSize:"11px",cursor:"pointer",fontFamily:"inherit"}}
                   onClick={async()=>{
-                    if (!email) { setError("Entre ton email pour recevoir le lien."); return; }
+                    if (!email) { setError(tr("authModal.enterEmailForReset")); return; }
                     setLoading(true); setError(null);
                     try {
                       const res = await fetch("/api/auth", {
@@ -1968,11 +2006,11 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
                       });
                       const data = await res.json();
                       if (data.error) { setError(data.error); }
-                      else { setSuccess("Lien de réinitialisation envoyé. Vérifie ta boîte mail."); }
-                    } catch { setError("Erreur réseau."); }
+                      else { setSuccess(tr("authModal.resetSent")); }
+                    } catch { setError(tr("authModal.errNetwork")); }
                     setLoading(false);
                   }}>
-                  Mot de passe oublié ?
+                  {tr("authModal.forgotPassword")}
                 </button>
               )}
             </div>
