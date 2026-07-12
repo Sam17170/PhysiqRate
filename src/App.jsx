@@ -427,6 +427,10 @@ const STRINGS = {
     orUpgrade:      { fr: "ou passe Pro pour un accès illimité", en: "or go Pro for unlimited access" },
     scanUnlockNote: { fr: "Une courte pub pour continuer à scanner gratuitement", en: "A short ad to keep scanning for free" },
     adAlreadyUsed:  { fr: "Tu as déjà débloqué ton analyse bonus cette semaine. Reviens la semaine prochaine, ou passe Pro pour un accès illimité.", en: "You've already unlocked your bonus analysis this week. Come back next week, or go Pro for unlimited access." },
+    unlockedReady:  { fr: "Pub regardée — lance ton analyse !", en: "Ad watched — start your analysis!" },
+    adUsedThisWeek: { fr: "Bonus pub déjà utilisé cette semaine", en: "Ad bonus already used this week" },
+    nextFreeIn:     { fr: "Prochaine analyse gratuite dans", en: "Next free analysis in" },
+    daysHours:      { fr: "{d}j {h}h", en: "{d}d {h}h" },
   },
 };
 
@@ -2080,8 +2084,7 @@ function MacroEditor({ targets, custom, onSave }) {
 // ─── VIEWS ───────────────────────────────────────────────────────────────────
 
 function ViewAnalyze({ premium }) {
-  const { tr, lang } = useI18n();
-  const [step, setStep] = useState("upload");
+  const { tr, trf, lang } = useI18n();
   const [imagePreview, setImagePreview] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [gender, setGender] = useState(null);
@@ -2280,6 +2283,12 @@ function ViewAnalyze({ premium }) {
   const [showPreAd, setShowPreAd] = useState(false);
   const [showUnlockAd, setShowUnlockAd] = useState(false);
   const [adAvailable, setAdAvailable] = useState(true);
+  const [adUnlockedPending, setAdUnlockedPending] = useState(false); // pub regardée depuis l'écran d'accueil, avant même d'avoir choisi une photo
+  const [, setCountdownTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setCountdownTick(t => t + 1), 60000); // rafraîchit le compte à rebours chaque minute
+    return () => clearInterval(id);
+  }, []);
   const fileRef = useRef();
 
   const profile = getProfile();
@@ -2318,6 +2327,12 @@ function ViewAnalyze({ premium }) {
       const usage = getUsage();
       // 2ème analyse (count===1 avant incrément) → pub courte obligatoire de 15s, pas de blocage
       if (usage.count === 1) { setShowPreAd(true); return; }
+      // Pub déjà regardée à l'avance depuis le rappel de l'écran d'accueil → consomme le déblocage
+      if (adUnlockedPending) {
+        setAdUnlockedPending(false);
+        await runAnalysis(true);
+        return;
+      }
       const check = canAnalyze(usage);
       // 3ème+ analyse de la semaine déjà utilisée → offre de débloquer via pub (si le bonus hebdo n'a pas déjà été utilisé)
       if (!check.allowed) { setDaysLeft(check.daysLeft); setAdAvailable(check.adAvailable !== false); setShowPaywall(true); return; }
@@ -2427,7 +2442,16 @@ function ViewAnalyze({ premium }) {
         <AdPlaceholder duration={15} onComplete={()=>{ setShowPreAd(false); runAnalysis(false); }}/>
       )}
       {showUnlockAd && (
-        <AdPlaceholder duration={30} onComplete={()=>{ setShowUnlockAd(false); runAnalysis(true); }}/>
+        <AdPlaceholder duration={30} onComplete={()=>{
+          setShowUnlockAd(false);
+          if (imageBase64 && gender) {
+            // Déclenché en plein flux (photo + genre déjà choisis) → lance direct l'analyse
+            runAnalysis(true);
+          } else {
+            // Déclenché depuis le rappel de l'écran d'accueil, avant d'avoir choisi une photo
+            setAdUnlockedPending(true);
+          }
+        }}/>
       )}
       {showWeightModal && newWeight && (
         <WeightUpdateModal
@@ -2447,19 +2471,46 @@ function ViewAnalyze({ premium }) {
             <p style={{fontSize:"11px",color:C.muted}}>{tr("analyze.subtitle")}</p>
           </div>
 
-          {/* Rappel analyse disponible */}
-          {(() => {
+          {/* Rappel analyse disponible / compte à rebours + déblocage pub */}
+          {!premium && (() => {
             const usage = getUsage();
-            if (usage.count >= 2 && usage.weeklyUsed) {
-              const days = (Date.now() - new Date(usage.weeklyUsed).getTime()) / 86400000;
-              if (days >= 7) return (
+            if (usage.count < 2) return null; // encore dans les 2 analyses gratuites de base, rien à afficher
+
+            const check = canAnalyze(usage);
+
+            if (check.allowed) {
+              return (
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"rgba(125,249,170,0.08)",border:`1px solid rgba(125,249,170,0.2)`,borderRadius:"12px",marginBottom:"8px"}}>
                   <span style={{fontSize:"12px",color:"#aaa"}}>{tr("analyze.weeklyReady")}</span>
                   <span style={{fontSize:"11px",color:C.green,fontWeight:"600"}}>{tr("analyze.go")}</span>
                 </div>
               );
             }
-            return null;
+
+            // Bloqué — compte à rebours des 7 jours + option de déblocage par pub
+            const weeklyUsedTime = usage.weeklyUsed ? new Date(usage.weeklyUsed).getTime() : Date.now();
+            const msLeft = Math.max(0, (weeklyUsedTime + 7*86400000) - Date.now());
+            const d = Math.floor(msLeft / 86400000);
+            const h = Math.floor((msLeft % 86400000) / 3600000);
+
+            return (
+              <div style={{padding:"12px 14px",background:"rgba(255,255,255,0.03)",border:`1px solid ${C.border}`,borderRadius:"12px",marginBottom:"8px"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <span style={{fontSize:"12px",color:"#aaa"}}>{tr("ads.nextFreeIn")}</span>
+                  <span style={{fontSize:"13px",color:C.gold,fontWeight:"700"}}>{trf("ads.daysHours",{d,h})}</span>
+                </div>
+                {adUnlockedPending ? (
+                  <div style={{fontSize:"12px",color:C.green,fontWeight:"600",marginTop:"10px",textAlign:"center"}}>✓ {tr("ads.unlockedReady")}</div>
+                ) : check.adAvailable ? (
+                  <button onClick={()=>setShowUnlockAd(true)}
+                    style={{width:"100%",marginTop:"10px",padding:"9px",borderRadius:"10px",border:`1px solid rgba(255,215,0,0.3)`,background:"rgba(255,215,0,0.06)",color:C.gold,fontSize:"12px",fontWeight:"700",cursor:"pointer",fontFamily:"inherit"}}>
+                    {tr("ads.watchAdBtn")}
+                  </button>
+                ) : (
+                  <div style={{fontSize:"11px",color:"#444",marginTop:"8px",textAlign:"center"}}>{tr("ads.adUsedThisWeek")}</div>
+                )}
+              </div>
+            );
           })()}
 
           {/* Rappel profil incomplet */}
