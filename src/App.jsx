@@ -669,6 +669,7 @@ function saveSessionToList(session) {
 function removeSavedSession(type) {
   const list = getSavedSessions().filter(s => s.type !== type);
   set("pq_saved_sessions", list);
+  syncPush({ deleteSavedSession: type });
 }
 function saveFoodToList(food) {
   const list = getSavedFoods();
@@ -682,6 +683,7 @@ function saveFoodToList(food) {
 function removeSavedFood(name) {
   const list = getSavedFoods().filter(f => f.name !== name);
   set("pq_saved_foods", list);
+  syncPush({ deleteSavedFood: name });
 }
 function addToHistory(entry) {
   const h = getHistory();
