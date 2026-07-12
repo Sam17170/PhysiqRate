@@ -9,6 +9,7 @@ export default async function handler(req) {
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
   const priceId = "price_1TqsRGRvX2XjC4owhAdFoJD1";
+  const accountEmail = body.accountEmail;
 
   const params = new URLSearchParams();
   params.append("line_items[0][price]", priceId);
@@ -18,6 +19,10 @@ export default async function handler(req) {
   params.append("cancel_url", `${origin}/?canceled=true`);
   params.append("allow_promotion_codes", "true");
   params.append("locale", "fr");
+  // Si l'utilisateur est déjà connecté à un compte, on le rattache explicitement à la session
+  // pour que le Pro se lie à SON compte, peu importe l'email utilisé pour payer (ex: Apple Pay)
+  if (accountEmail) params.append("client_reference_id", accountEmail);
+  // En mode subscription, Stripe collecte toujours l'email automatiquement
 
   const session = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
