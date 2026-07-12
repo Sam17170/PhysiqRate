@@ -88,6 +88,19 @@ const STRINGS = {
     resetSent:          { fr: "Lien de réinitialisation envoyé. Vérifie ta boîte mail.", en: "Reset link sent. Check your inbox." },
     createdLoginNow:    { fr: "Compte créé. Connecte-toi maintenant.", en: "Account created. Log in now." },
   },
+  resetPwd: {
+    title:    { fr: "NOUVEAU MOT DE PASSE", en: "NEW PASSWORD" },
+    subtitle: { fr: "Choisis un nouveau mot de passe pour ton compte.", en: "Choose a new password for your account." },
+    newPassword: { fr: "Nouveau mot de passe", en: "New password" },
+    newPasswordPlaceholder: { fr: "6 caractères minimum", en: "6 characters minimum" },
+    confirmPassword: { fr: "Confirme ton mot de passe", en: "Confirm your password" },
+    confirmPasswordPlaceholder: { fr: "Répète ton mot de passe", en: "Repeat your password" },
+    submitBtn: { fr: "Valider mon nouveau mot de passe", en: "Set my new password" },
+    errLength: { fr: "Minimum 6 caractères.", en: "Minimum 6 characters." },
+    errMismatch: { fr: "Les mots de passe ne correspondent pas.", en: "Passwords don't match." },
+    errGeneric: { fr: "Erreur. Réessaie.", en: "Error. Try again." },
+    errNetwork: { fr: "Erreur réseau. Réessaie.", en: "Network error. Try again." },
+  },
   analyze: {
     eyebrow:        { fr: "ANALYSE IA · BODY FAT", en: "AI ANALYSIS · BODY FAT" },
     title:          { fr: "Connaît ton vrai physique", en: "Know your real physique" },
@@ -1889,6 +1902,74 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
 }
 
 // ─── AUTH MODAL ───────────────────────────────────────────────────────────────
+// ─── FINALISATION DE LA RÉINITIALISATION DE MOT DE PASSE ──────────────────────
+function ResetPasswordScreen({ accessToken, onDone }) {
+  const { tr } = useI18n();
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSubmit() {
+    if (!password || password.length < 6) { setError(tr("resetPwd.errLength")); return; }
+    if (password !== confirmPassword) { setError(tr("resetPwd.errMismatch")); return; }
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_password", accessToken, newPassword: password })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || tr("resetPwd.errGeneric"));
+        setLoading(false);
+        return;
+      }
+      localStorage.setItem("pq_token", data.token);
+      localStorage.setItem("pq_email", data.email);
+      onDone({ email: data.email, token: data.token });
+    } catch {
+      setError(tr("resetPwd.errNetwork"));
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.97)",backdropFilter:"blur(10px)",zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%"}}>
+        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>{tr("resetPwd.title")}</div>
+        <div style={{fontSize:"13px",color:"#666",marginBottom:"20px",lineHeight:"1.6"}}>{tr("resetPwd.subtitle")}</div>
+
+        <span style={css.label}>{tr("resetPwd.newPassword")}</span>
+        <div style={{position:"relative",marginBottom:"8px"}}>
+          <input style={{...css.input,paddingRight:"44px"}} type={showPwd?"text":"password"} placeholder={tr("resetPwd.newPasswordPlaceholder")}
+            value={password} onChange={e=>setPassword(e.target.value)} autoFocus/>
+          <button type="button" onClick={()=>setShowPwd(!showPwd)}
+            style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",color:"#555",cursor:"pointer",padding:"4px",display:"flex",alignItems:"center"}}>
+            {showPwd
+              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            }
+          </button>
+        </div>
+
+        <span style={css.label}>{tr("resetPwd.confirmPassword")}</span>
+        <input style={css.input} type={showPwd?"text":"password"} placeholder={tr("resetPwd.confirmPasswordPlaceholder")}
+          value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+
+        {error && <div style={{fontSize:"12px",color:C.red,marginTop:"10px",lineHeight:"1.5"}}>{error}</div>}
+
+        <button style={{...css.btn(C.gold),marginTop:"18px",opacity:loading?0.6:1}} onClick={handleSubmit} disabled={loading}>
+          {loading ? "…" : tr("resetPwd.submitBtn")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
   const { tr } = useI18n();
   const [mode, setMode] = useState("login"); // "login" | "signup"
@@ -4084,6 +4165,14 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 function AppInner() {
   const [view, setView] = useState("analyser");
+  const [recoveryToken, setRecoveryToken] = useState(() => {
+    const hash = window.location.hash || "";
+    if (hash.includes("type=recovery")) {
+      const params = new URLSearchParams(hash.replace(/^#/, ""));
+      return params.get("access_token") || null;
+    }
+    return null;
+  });
   const [premium, setPremiumState] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
@@ -4330,6 +4419,19 @@ function AppInner() {
     { key: "progression", label: tr("nav.progression") },
     { key: "profil",      label: tr("nav.profil"), dot: !profileComplete },
   ];
+
+  if (recoveryToken) {
+    return (
+      <ResetPasswordScreen
+        accessToken={recoveryToken}
+        onDone={({ email }) => {
+          setUser({ email });
+          window.history.replaceState({}, "", window.location.pathname);
+          setRecoveryToken(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div style={css.app}>
