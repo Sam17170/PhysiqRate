@@ -1789,18 +1789,19 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
 
 // ─── AUTH MODAL ───────────────────────────────────────────────────────────────
 function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
+  const [mode, setMode] = useState("login"); // "login" | "signup"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  async function handleSubmit() {
+  async function handleLogin() {
     if (!email || !password) { setError("Email et mot de passe requis."); return; }
-    if (password.length < 6) { setError("Mot de passe minimum 6 caractères."); return; }
     setLoading(true); setError(null);
-
     try {
       const res = await fetch("/api/auth", {
         method: "POST",
@@ -1810,17 +1811,51 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
       const data = await res.json();
 
       if (data.error) {
-        // Message clair si compte inexistant
         const msg = data.error.toLowerCase();
-        if (msg.includes("invalid") || msg.includes("not found") || msg.includes("credentials")) {
-          if (true) {
-            setError("Ce compte n'existe pas. Crée ton compte ci-dessous.");
-            setMode("signup");
-          } else {
-            setError(data.error);
-          }
-        } else if (msg.includes("already") || msg.includes("existe")) {
-          setError("Un compte existe déjà avec cet email. Connecte-toi.");
+        if (msg.includes("invalid") || msg.includes("not found") || msg.includes("credentials") || msg.includes("existe pas")) {
+          setError("Ce compte n'existe pas. Crée un compte gratuit ci-dessous.");
+        } else {
+          setError(data.error);
+        }
+        setLoading(false); return;
+      }
+
+      localStorage.setItem("pq_token", data.token);
+      if (data.refresh_token) localStorage.setItem("pq_refresh_token", data.refresh_token);
+      localStorage.setItem("pq_email", email);
+
+      const meRes = await fetch("/api/me", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: data.token })
+      });
+      const me = await meRes.json();
+      onSuccess({ email, is_pro: me.is_pro, token: data.token });
+    } catch {
+      setError("Erreur de connexion. Réessaie.");
+    }
+    setLoading(false);
+  }
+
+  async function handleSignup() {
+    if (!email || !password) { setError("Email et mot de passe requis."); return; }
+    if (password.length < 6) { setError("Mot de passe minimum 6 caractères."); return; }
+    if (password !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
+    if (!acceptedTerms) { setError("Tu dois accepter les conditions générales d'utilisation."); return; }
+    setLoading(true); setError(null);
+
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "signup", email, password })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        const msg = data.error.toLowerCase();
+        if (msg.includes("already") || msg.includes("existe")) {
+          setError("Un compte existe déjà avec cet email. Connecte-toi plutôt.");
           setMode("login");
         } else {
           setError(data.error);
@@ -1828,54 +1863,37 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
         setLoading(false); return;
       }
 
-      // Sauvegarde token et email
-      localStorage.setItem("pq_token", data.token);
-      localStorage.setItem("pq_email", email);
-
-      if (false) {
-        // Auto login après signup — pas de confirmation email
-        const loginRes = await fetch("/api/auth", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "login", email, password })
-        });
-        const loginData = await loginRes.json();
-        if (loginData.token) {
-          localStorage.setItem("pq_token", loginData.token);
-          if (loginData.refresh_token) localStorage.setItem("pq_refresh_token", loginData.refresh_token);
-          localStorage.setItem("pq_email", email);
-          const meRes = await fetch("/api/me", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: loginData.token })
-          });
-          const me = await meRes.json();
-          onSuccess({ email, is_pro: me.is_pro || false, token: loginData.token });
-        } else {
-          setError("Compte créé. Connecte-toi maintenant.");
-          setMode("login");
-        }
+      // Connexion immédiate après création — pas de confirmation email requise
+      const loginRes = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "login", email, password })
+      });
+      const loginData = await loginRes.json();
+      if (loginData.token) {
+        localStorage.setItem("pq_token", loginData.token);
+        if (loginData.refresh_token) localStorage.setItem("pq_refresh_token", loginData.refresh_token);
+        localStorage.setItem("pq_email", email);
+        onSuccess({ email, is_pro: false, token: loginData.token });
       } else {
-        // Récupère statut Pro
-        const meRes = await fetch("/api/me", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: data.token })
-        });
-        const me = await meRes.json();
-        onSuccess({ email, is_pro: me.is_pro, token: data.token });
+        setError("Compte créé. Connecte-toi maintenant.");
+        setMode("login");
       }
     } catch {
-      setError("Erreur de connexion. Réessaie.");
+      setError("Erreur réseau. Réessaie.");
     }
     setLoading(false);
+  }
+
+  function handleSubmit() {
+    if (mode === "login") handleLogin(); else handleSignup();
   }
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",backdropFilter:"blur(10px)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
-          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px"}}>"CONNEXION"</div>
+          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px"}}>{mode === "login" ? "CONNEXION" : "CRÉER UN COMPTE GRATUIT"}</div>
           {!blocking && <button onClick={onClose} style={{background:"transparent",border:"none",color:"#555",fontSize:"20px",cursor:"pointer"}}>×</button>}
         </div>
 
@@ -1890,9 +1908,9 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
             <input style={css.input} type="email" placeholder="ton@email.com" value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none"/>
 
             <span style={css.label}>Mot de passe</span>
-            <div style={{position:"relative"}}>
+            <div style={{position:"relative", marginBottom: mode==="signup" ? "8px" : "0"}}>
               <input style={{...css.input,paddingRight:"44px"}} type={showPwd?"text":"password"} placeholder="Mot de passe" value={password} onChange={e=>setPassword(e.target.value)}
-                onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+                onKeyDown={e=>e.key==="Enter" && mode==="login" && handleSubmit()}/>
               <button type="button" onClick={()=>setShowPwd(!showPwd)}
                 style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",color:"#555",cursor:"pointer",padding:"4px",display:"flex",alignItems:"center"}}>
                 {showPwd
@@ -1902,37 +1920,61 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
               </button>
             </div>
 
+            {mode === "signup" && (
+              <>
+                <span style={css.label}>Confirme ton mot de passe</span>
+                <input style={css.input} type={showPwd?"text":"password"} placeholder="Répète ton mot de passe"
+                  value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+
+                <div style={{display:"flex",alignItems:"flex-start",gap:"8px",marginTop:"12px",cursor:"pointer"}} onClick={()=>setAcceptedTerms(!acceptedTerms)}>
+                  <input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)}
+                    style={{marginTop:"3px",flexShrink:0,cursor:"pointer"}}/>
+                  <span style={{fontSize:"11px",color:"#777",lineHeight:"1.5"}}>
+                    J'accepte les <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{color:C.gold}} onClick={e=>e.stopPropagation()}>conditions générales d'utilisation</a>
+                  </span>
+                </div>
+              </>
+            )}
+
             {error && <div style={{fontSize:"12px",color:C.red,marginTop:"10px",lineHeight:"1.5"}}>{error}</div>}
 
             <button style={{...css.btn(C.gold),marginTop:"18px",opacity:loading?0.6:1}} onClick={handleSubmit} disabled={loading}>
-              {loading ? "Connexion…" : "Se connecter"}
+              {loading ? "…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
             </button>
 
             <div style={{textAlign:"center",marginTop:"12px",display:"flex",flexDirection:"column",gap:"8px"}}>
-              {/* Pas de compte → aller payer */}
-              <button style={{background:"transparent",border:"none",color:"#555",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
-                onClick={()=>{ if(onGoToPay) onGoToPay(); else if(onClose) onClose(); }}>
-                Pas encore de compte ? Souscrire à Pro
-              </button>
-              {/* Mot de passe oublié */}
-              <button style={{background:"transparent",border:"none",color:"#333",fontSize:"11px",cursor:"pointer",fontFamily:"inherit"}}
-                onClick={async()=>{
-                  if (!email) { setError("Entre ton email pour recevoir le lien."); return; }
-                  setLoading(true); setError(null);
-                  try {
-                    const res = await fetch("/api/auth", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ action: "reset", email })
-                    });
-                    const data = await res.json();
-                    if (data.error) { setError(data.error); }
-                    else { setSuccess("Lien de réinitialisation envoyé. Vérifie ta boîte mail."); }
-                  } catch { setError("Erreur réseau."); }
-                  setLoading(false);
-                }}>
-                Mot de passe oublié ?
-              </button>
+              {mode === "login" ? (
+                <button style={{background:"transparent",border:"none",color:"#555",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
+                  onClick={()=>{ setMode("signup"); setError(null); }}>
+                  Pas encore de compte ? Créer un compte gratuit
+                </button>
+              ) : (
+                <button style={{background:"transparent",border:"none",color:"#555",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}
+                  onClick={()=>{ setMode("login"); setError(null); }}>
+                  Déjà un compte ? Se connecter
+                </button>
+              )}
+              {mode === "login" && (
+                <button style={{background:"transparent",border:"none",color:"#333",fontSize:"11px",cursor:"pointer",fontFamily:"inherit"}}
+                  onClick={async()=>{
+                    if (!email) { setError("Entre ton email pour recevoir le lien."); return; }
+                    setLoading(true); setError(null);
+                    try {
+                      const res = await fetch("/api/auth", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "reset", email })
+                      });
+                      const data = await res.json();
+                      if (data.error) { setError(data.error); }
+                      else { setSuccess("Lien de réinitialisation envoyé. Vérifie ta boîte mail."); }
+                    } catch { setError("Erreur réseau."); }
+                    setLoading(false);
+                  }}>
+                  Mot de passe oublié ?
+                </button>
+              )}
             </div>
           </>
         )}
