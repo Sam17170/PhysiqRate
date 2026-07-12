@@ -46,6 +46,12 @@ const STRINGS = {
   },
   shareCard: {
     bodyFatLabel: { fr: "BODY FAT", en: "BODY FAT" },
+    categoryLabel: { fr: "CATÉGORIE", en: "CATEGORY" },
+    confidenceLabel: { fr: "CONFIANCE", en: "CONFIDENCE" },
+    observationLabel: { fr: "OBSERVATION", en: "OBSERVATION" },
+    confHigh: { fr: "Élevée", en: "High" },
+    confMedium: { fr: "Moyenne", en: "Medium" },
+    confLow: { fr: "Faible", en: "Low" },
   },
   analyze: {
     eyebrow:        { fr: "ANALYSE IA · BODY FAT", en: "AI ANALYSIS · BODY FAT" },
@@ -817,7 +823,7 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const W = 1080, H = 1350; // Format portrait 4:5 — parfait Instagram/TikTok
+    const W = 1080, H = 1920; // Format 9:16 — plein écran vidéo TikTok/Reels, sans bandes noires
     canvas.width = W; canvas.height = H;
 
     const color = archetype.color;
@@ -825,164 +831,175 @@ function ShareCard({ imagePreview, result, archetype, onReady }) {
     const g = parseInt(color.slice(3,5),16);
     const b = parseInt(color.slice(5,7),16);
 
+    // Découpe un texte en plusieurs lignes pour tenir dans une largeur donnée
+    function wrapText(text, maxWidth, font) {
+      ctx.font = font;
+      const words = text.split(" ");
+      const lines = [];
+      let line = "";
+      for (const word of words) {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = test;
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+
     const draw = (photo) => {
       // ── FOND ──────────────────────────────────────────────────────
       ctx.fillStyle = "#09090f";
       ctx.fillRect(0, 0, W, H);
 
-      // Gradient radial ambient color
-      const ambient = ctx.createRadialGradient(W/2, H*0.35, 0, W/2, H*0.35, W*0.8);
-      ambient.addColorStop(0, `rgba(${r},${g},${b},0.18)`);
+      const ambient = ctx.createRadialGradient(W/2, H*0.18, 0, W/2, H*0.18, W*0.9);
+      ambient.addColorStop(0, `rgba(${r},${g},${b},0.16)`);
       ambient.addColorStop(1, "rgba(9,9,15,0)");
       ctx.fillStyle = ambient;
       ctx.fillRect(0, 0, W, H);
 
-      // ── PHOTO ─────────────────────────────────────────────────────
-      if (photo) {
-        const ph = H * 0.52;
-        const sc = Math.max(W / photo.width, ph / photo.height);
-        ctx.drawImage(photo, (W - photo.width*sc)/2, 0, photo.width*sc, photo.height*sc);
-
-        // Léger fondu tout en bas seulement — pour une transition douce avec le panneau du score,
-        // sans assombrir toute la photo
-        const fade = ctx.createLinearGradient(0, ph*0.82, 0, ph);
-        fade.addColorStop(0, "rgba(9,9,15,0)");
-        fade.addColorStop(1, "rgba(9,9,15,1)");
-        ctx.fillStyle = fade;
-        ctx.fillRect(0, 0, W, ph);
-
-        // Vignette très légère sur les bords, la photo reste fidèle à l'originale
-        const vig = ctx.createRadialGradient(W/2, ph/2, W*0.55, W/2, ph/2, W*0.95);
-        vig.addColorStop(0, "rgba(9,9,15,0)");
-        vig.addColorStop(1, "rgba(9,9,15,0.15)");
-        ctx.fillStyle = vig;
-        ctx.fillRect(0, 0, W, ph);
-      } else {
-        // No photo — decorative grid lines
-        ctx.strokeStyle = `rgba(${r},${g},${b},0.06)`;
-        ctx.lineWidth = 1;
-        for (let i = 0; i < W; i += 60) {
-          ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H*0.5); ctx.stroke();
-        }
-        for (let j = 0; j < H*0.5; j += 60) {
-          ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(W, j); ctx.stroke();
-        }
-      }
-
-      // ── SCORE PANEL ───────────────────────────────────────────────
-      const panelY = photo ? H * 0.52 : H * 0.22;
-      const panelH = H - panelY;
-
-      // Big bold score — hero element
+      // ── HEADER : logo + nom ─────────────────────────────────────
       ctx.textAlign = "center";
-      ctx.fillStyle = "white";
-      ctx.font = `bold ${W*0.22}px Arial Black, Arial`;
-      ctx.letterSpacing = "-4px";
-      ctx.fillText(`${result.bodyfat}%`, W/2, panelY + panelH*0.22);
-
-      // BODY FAT label under score
-      ctx.fillStyle = `rgba(${r},${g},${b},0.8)`;
-      ctx.font = `600 ${W*0.04}px Arial`;
-      ctx.letterSpacing = "12px";
-      ctx.fillText(tr("shareCard.bodyFatLabel"), W/2, panelY + panelH*0.3);
-
-      // ── ARCHETYPE BADGE ───────────────────────────────────────────
-      const badgeY = panelY + panelH * 0.4;
-      const badgeW = 440, badgeH = 76;
-      const badgeX = (W - badgeW) / 2;
-
-      // Badge background
-      ctx.beginPath();
-      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 38);
-      ctx.fillStyle = `rgba(${r},${g},${b},0.15)`;
-      ctx.fill();
-      ctx.strokeStyle = `rgba(${r},${g},${b},0.5)`;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
       ctx.fillStyle = color;
-      ctx.font = `bold ${W*0.048}px Arial`;
-      ctx.letterSpacing = "4px";
-      ctx.fillText(tr("archetype." + archetype.label).toUpperCase(), W/2, badgeY + badgeH*0.65);
+      ctx.font = `bold ${W*0.036}px Arial`;
+      ctx.letterSpacing = "6px";
+      ctx.fillText("◈ PHYSIQRATE", W/2, 100);
 
-      // Ref celeb
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
-      ctx.font = `${W*0.03}px Arial`;
-      ctx.letterSpacing = "0px";
-      ctx.fillText(tr("archetypeRef." + archetype.ref), W/2, panelY + panelH*0.57);
-
-      // ── GAUGE BAR (horizontal) ────────────────────────────────────
-      const barY = panelY + panelH * 0.65;
-      const barW = W * 0.72;
-      const barX = (W - barW) / 2;
-      const barH2 = 12;
-      const fillRatio = Math.min(result.bodyfat / 50, 1);
-
-      // Track
+      // ── PHOTO CIRCULAIRE ─────────────────────────────────────────
+      const cx = W/2, cy = 300, cr = 190;
+      ctx.save();
       ctx.beginPath();
-      ctx.roundRect(barX, barY, barW, barH2, 6);
-      ctx.fillStyle = "rgba(255,255,255,0.08)";
-      ctx.fill();
-
-      // Fill with glow
+      ctx.arc(cx, cy, cr, 0, Math.PI*2);
+      ctx.closePath();
+      ctx.clip();
+      if (photo) {
+        const sc = Math.max((cr*2) / photo.width, (cr*2) / photo.height);
+        ctx.drawImage(photo, cx-photo.width*sc/2, cy-photo.height*sc/2, photo.width*sc, photo.height*sc);
+      } else {
+        ctx.fillStyle = `rgba(${r},${g},${b},0.15)`;
+        ctx.fillRect(cx-cr, cy-cr, cr*2, cr*2);
+      }
+      ctx.restore();
+      // Anneau autour de la photo
       ctx.beginPath();
-      ctx.roundRect(barX, barY, barW * fillRatio, barH2, 6);
-      const barGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
-      barGrad.addColorStop(0, `rgba(${r},${g},${b},0.6)`);
-      barGrad.addColorStop(1, color);
-      ctx.fillStyle = barGrad;
+      ctx.arc(cx, cy, cr, 0, Math.PI*2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 6;
       ctx.shadowColor = color;
-      ctx.shadowBlur = 16;
-      ctx.fill();
+      ctx.shadowBlur = 24;
+      ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Scale labels
-      ctx.fillStyle = "rgba(255,255,255,0.25)";
-      ctx.font = `${W*0.022}px Arial`;
-      ctx.letterSpacing = "0px";
-      ["5%","15%","25%","40%+"].forEach((label, i) => {
-        const x = barX + (barW / 3) * i;
-        ctx.fillText(label, x, barY + barH2 + 32);
+      // ── GRILLE DE CARTES STATS ────────────────────────────────────
+      const confMap = {
+        high:   { label: tr("shareCard.confHigh"),   ratio: 0.9 },
+        medium: { label: tr("shareCard.confMedium"), ratio: 0.6 },
+        low:    { label: tr("shareCard.confLow"),     ratio: 0.3 },
+      };
+      const conf = confMap[result.confidence] || confMap.medium;
+
+      const cards = [
+        { label: tr("shareCard.bodyFatLabel"), big: `${result.bodyfat}%`, tag: tr("archetype."+archetype.label), ratio: Math.min(result.bodyfat/50,1) },
+        { label: tr("shareCard.categoryLabel"), big: tr("archetype."+archetype.label), tag: tr("archetypeRef."+archetype.ref), ratio: 1 },
+        { label: tr("shareCard.confidenceLabel"), big: conf.label, tag: null, ratio: conf.ratio },
+        ...(result.key_indicators || []).slice(0,3).map(ind => ({ observation: ind })),
+      ];
+
+      const padX = 56, gap = 24;
+      const colW = (W - padX*2 - gap) / 2;
+      const rowH = 250;
+      const gridTop = cy + cr + 70;
+
+      cards.forEach((card, i) => {
+        const col = i % 2, row = Math.floor(i / 2);
+        const x = padX + col * (colW + gap);
+        const y = gridTop + row * (rowH + gap);
+
+        // Fond de carte
+        ctx.beginPath();
+        ctx.roundRect(x, y, colW, rowH, 24);
+        ctx.fillStyle = "rgba(255,255,255,0.035)";
+        ctx.fill();
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.3)`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        if (card.observation) {
+          // ── Carte "observation" (texte de l'IA) ──
+          ctx.textAlign = "left";
+          ctx.fillStyle = color;
+          ctx.font = `700 ${W*0.021}px Arial`;
+          ctx.letterSpacing = "2px";
+          ctx.fillText(tr("shareCard.observationLabel"), x+28, y+42);
+
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          const lines = wrapText(card.observation, colW-56, `${W*0.026}px Arial`);
+          ctx.font = `${W*0.026}px Arial`;
+          ctx.letterSpacing = "0px";
+          lines.slice(0,4).forEach((line, li) => {
+            ctx.fillText(line, x+28, y+82 + li*34);
+          });
+        } else {
+          // ── Carte stat (label + grande valeur + tag + barre) ──
+          ctx.textAlign = "left";
+          ctx.fillStyle = "rgba(255,255,255,0.45)";
+          ctx.font = `700 ${W*0.021}px Arial`;
+          ctx.letterSpacing = "2px";
+          ctx.fillText(card.label, x+28, y+42);
+
+          ctx.fillStyle = "white";
+          const bigFont = card.big.length > 6 ? W*0.034 : W*0.05;
+          ctx.font = `800 ${bigFont}px Arial`;
+          ctx.letterSpacing = "0px";
+          ctx.fillText(card.big, x+28, y+100);
+
+          if (card.tag) {
+            ctx.fillStyle = `rgba(${r},${g},${b},0.85)`;
+            ctx.font = `${W*0.02}px Arial`;
+            const tagLines = wrapText(card.tag, colW-56, `${W*0.02}px Arial`);
+            ctx.fillText(tagLines[0], x+28, y+130);
+          }
+
+          // Barre de progression
+          const barY = y + rowH - 40;
+          const barW = colW - 56;
+          ctx.beginPath();
+          ctx.roundRect(x+28, barY, barW, 8, 4);
+          ctx.fillStyle = "rgba(255,255,255,0.08)";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.roundRect(x+28, barY, barW*card.ratio, 8, 4);
+          ctx.fillStyle = color;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 10;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
       });
 
-      // ── DIVIDER ───────────────────────────────────────────────────
-      const divY = panelY + panelH * 0.8;
-      ctx.strokeStyle = `rgba(${r},${g},${b},0.2)`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(W*0.15, divY); ctx.lineTo(W*0.85, divY);
-      ctx.stroke();
+      const gridBottom = gridTop + Math.ceil(cards.length/2) * (rowH + gap);
 
-      // ── BRANDING ─────────────────────────────────────────────────
-      // Logo mark
-      ctx.fillStyle = color;
-      ctx.font = `bold ${W*0.032}px Arial`;
-      ctx.letterSpacing = "6px";
-      ctx.fillText("◈ PHYSIQRATE", W/2, divY + 60);
+      // ── PHRASE MOTIVANTE ───────────────────────────────────────────
+      let noteBottom = gridBottom + 20;
+      if (result.note) {
+        ctx.textAlign = "center";
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        const noteFont = `italic ${W*0.024}px Arial`;
+        const noteLines = wrapText(`"${result.note}"`, W*0.8, noteFont);
+        ctx.font = noteFont;
+        noteLines.slice(0,3).forEach((line,li)=>ctx.fillText(line, W/2, gridBottom + 50 + li*32));
+        noteBottom = gridBottom + 50 + noteLines.slice(0,3).length*32;
+      }
 
-      ctx.fillStyle = "rgba(255,255,255,0.2)";
+      // ── BRANDING BAS DE PAGE ────────────────────────────────────────
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(255,255,255,0.25)";
       ctx.font = `${W*0.022}px Arial`;
       ctx.letterSpacing = "2px";
-      ctx.fillText("physiqrate.com", W/2, divY + 100);
-
-      // ── CORNER ACCENT ─────────────────────────────────────────────
-      // Top left dot
-      ctx.beginPath();
-      ctx.arc(60, 60, 6, 0, Math.PI*2);
-      ctx.fillStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 20;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      // Top right dot
-      ctx.beginPath();
-      ctx.arc(W-60, 60, 6, 0, Math.PI*2);
-      ctx.fillStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 20;
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      ctx.fillText("physiqrate.com", W/2, noteBottom + 60);
 
       onReady(canvas.toDataURL("image/png"));
     };
