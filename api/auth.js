@@ -97,17 +97,10 @@ export default async function handler(req) {
     if (session.payment_status !== "paid") {
       return new Response(JSON.stringify({ error: "Paiement non confirmé." }), { status: 400, headers });
     }
-
-    // Empêche la réutilisation d'une même session Stripe payée pour activer le Pro sur
-    // plusieurs comptes différents — une session ne peut servir qu'une seule fois
-    const usedRes = await fetch(`${SUPABASE_URL}/rest/v1/users?stripe_session_id=eq.${encodeURIComponent(sessionId)}&select=email`, {
-      headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
-    });
-    const usedRows = await usedRes.json();
-    const alreadyUsedForOtherEmail = Array.isArray(usedRows) && usedRows.some(r => r.email.toLowerCase() !== email.toLowerCase());
-    if (alreadyUsedForOtherEmail) {
-      return new Response(JSON.stringify({ error: "Cette session de paiement a déjà été utilisée." }), { status: 409, headers });
-    }
+    // Note : la vérification d'identité ci-dessus (le jeton doit correspondre à l'email ciblé)
+    // est la vraie protection ici — un ancien contrôle "session déjà utilisée pour un autre
+    // email" bloquait à tort le cas normal (email de paiement Apple Pay ≠ email choisi pour
+    // le compte), puisque la ligne créée par le webhook a par nature un email différent.
 
     // Active le Pro directement sur l'email CHOISI par l'utilisateur (via la même fonction
     // fiable que le webhook) — plutôt que de tenter de renommer la ligne Stripe/Apple Pay,
@@ -179,25 +172,18 @@ export default async function handler(req) {
     const rowAlreadyExists = Array.isArray(existingRows) && existingRows.length > 0;
 
     if (rowAlreadyExists) {
-      // N'autorise la création que si on peut prouver un paiement Stripe récent, valide,
-      // ET pas déjà utilisé pour un autre email (empêche la réutilisation d'une même
-      // session payée pour s'approprier plusieurs comptes différents)
+      // N'autorise la création que si CE sessionId est bien celui qui a créé CETTE ligne
+      // précise (l'utilisateur garde le même email que celui utilisé pour payer) — empêche
+      // qu'un paiement valide mais sans rapport serve à s'approprier le compte Pro de
+      // quelqu'un d'autre, tout en laissant passer le cas normal.
       let validPayment = false;
       if (sessionId) {
-        try {
-          const stripeRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
-            headers: { "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}` }
-          });
-          const session = await stripeRes.json();
-          if (!session.error && session.payment_status === "paid") {
-            const usedRes = await fetch(`${SUPABASE_URL}/rest/v1/users?stripe_session_id=eq.${encodeURIComponent(sessionId)}&select=email`, {
-              headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
-            });
-            const usedRows = await usedRes.json();
-            const usedForOtherEmail = Array.isArray(usedRows) && usedRows.some(r => r.email.toLowerCase() !== email.toLowerCase());
-            validPayment = !usedForOtherEmail;
-          }
-        } catch {}
+        const rowRes = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}&select=stripe_session_id`, {
+          headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
+        });
+        const rowData = await rowRes.json();
+        const storedSessionId = rowData?.[0]?.stripe_session_id;
+        validPayment = !!(storedSessionId && storedSessionId === sessionId);
       }
       if (!validPayment) {
         return new Response(JSON.stringify({ error: "Un compte existe déjà avec cet email. Connecte-toi, ou si tu viens de payer, réessaie depuis le lien de confirmation." }), { status: 409, headers });
