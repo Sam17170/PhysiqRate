@@ -928,26 +928,27 @@ function ShareCard({ imagePreview, result, archetype, onReady, weightKg, heightC
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      ctx.textAlign = "left";
+      ctx.textAlign = "center";
       ctx.fillStyle = "rgba(255,255,255,0.45)";
       ctx.font = `700 ${W*0.024}px Arial`;
       ctx.letterSpacing = "3px";
-      ctx.fillText(tr("shareCard.bodyFatLabel"), padX+36, gridTop+56);
+      ctx.fillText(tr("shareCard.bodyFatLabel"), W/2, gridTop+56);
 
       ctx.fillStyle = "white";
-      ctx.font = `800 ${W*0.16}px Arial`;
-      ctx.letterSpacing = "-2px";
-      ctx.fillText(`${result.bodyfat}%`, padX+36, gridTop+190);
+      ctx.font = `800 ${W*0.11}px Arial`;
+      ctx.letterSpacing = "-1px";
+      ctx.fillText(`${result.bodyfat}%`, W/2, gridTop+185);
 
       ctx.fillStyle = color;
       ctx.font = `700 ${W*0.026}px Arial`;
       ctx.letterSpacing = "1px";
-      ctx.fillText(tr("archetype."+archetype.label), padX+36, gridTop+232);
+      ctx.fillText(tr("archetype."+archetype.label), W/2, gridTop+228);
 
-      // Barre de progression pleine largeur
+      // Barre de progression pleine largeur — plus le body fat est bas, plus la barre est remplie
+      // (un faible taux de graisse est "meilleur", donc représenté par une barre pleine)
       const heroBarY = gridTop + heroH - 44;
       const heroBarW = fullW - 72;
-      const heroRatio = Math.min(result.bodyfat/50, 1);
+      const heroRatio = Math.max(0, Math.min(1 - (result.bodyfat/45), 1));
       ctx.beginPath();
       ctx.roundRect(padX+36, heroBarY, heroBarW, 10, 5);
       ctx.fillStyle = "rgba(255,255,255,0.08)";
