@@ -129,7 +129,7 @@ export default async function handler(req) {
   const meta = newToken ? { newToken, newRefresh } : {};
 
   if (action === "push") {
-    const { journal, analyses, profile, savedFoods, savedSessions } = data || {};
+    const { journal, analyses, profile, savedFoods, savedSessions, deleteSavedFood, deleteSavedSession } = data || {};
 
     if (journal) {
       const j = validateJournal(journal);
@@ -181,6 +181,16 @@ export default async function handler(req) {
           user_email: email, ...v
         });
       }
+    }
+
+    // Suppression d'un aliment ou d'une séance enregistrée — sans ça, l'élément supprimé
+    // localement réapparaissait après une resynchronisation, puisque Supabase ne recevait
+    // jamais l'ordre de suppression.
+    if (deleteSavedFood) {
+      await db(`saved_foods?user_email=eq.${encodeURIComponent(email)}&name=eq.${encodeURIComponent(String(deleteSavedFood).slice(0,100))}`, "DELETE");
+    }
+    if (deleteSavedSession) {
+      await db(`saved_sessions?user_email=eq.${encodeURIComponent(email)}&type=eq.${encodeURIComponent(String(deleteSavedSession).slice(0,100))}`, "DELETE");
     }
 
     return new Response(JSON.stringify({ success: true, ...meta }), { status: 200, headers });
