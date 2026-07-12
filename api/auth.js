@@ -130,8 +130,12 @@ export default async function handler(req) {
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    if (data.error || data.error_description) {
-      return new Response(JSON.stringify({ error: data.error_description || data.error?.message || "Mot de passe incorrect." }), { status: 400, headers });
+    // Vérifie le statut HTTP réel ET la présence d'un vrai token — ne se fie plus
+    // uniquement au nom du champ d'erreur, qui varie selon la version de l'API Supabase
+    // (error/error_description vs error_code/msg) et faisait passer un mauvais mot de
+    // passe comme une connexion réussie.
+    if (!res.ok || !data.access_token) {
+      return new Response(JSON.stringify({ error: data.msg || data.error_description || data.error?.message || "Email ou mot de passe incorrect." }), { status: 400, headers });
     }
     return new Response(JSON.stringify({ token: data.access_token, refresh_token: data.refresh_token, user: { email } }), { status: 200, headers });
   }
@@ -179,8 +183,8 @@ export default async function handler(req) {
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    if (data.error || data.error_description) {
-      return new Response(JSON.stringify({ error: data.error_description || data.error?.message || "Erreur d'inscription." }), { status: 400, headers });
+    if (!res.ok || !data.user) {
+      return new Response(JSON.stringify({ error: data.msg || data.error_description || data.error?.message || "Erreur d'inscription." }), { status: 400, headers });
     }
     if (data.user && !rowAlreadyExists) {
       // Vraiment nouveau compte — gratuit par défaut
