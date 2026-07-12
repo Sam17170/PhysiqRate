@@ -94,7 +94,9 @@ function validateSavedSession(s) {
 
 export default async function handler(req) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  const origin = req.headers.get("origin") || "https://physiqrate.com";
+  const rawOrigin = req.headers.get("origin") || "";
+  const allowedOrigins = ["https://physiqrate.com", "https://www.physiqrate.com"];
+  const origin = (allowedOrigins.includes(rawOrigin) || rawOrigin.includes("vercel.app")) ? rawOrigin : "https://physiqrate.com";
   const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": origin };
 
   let body;
