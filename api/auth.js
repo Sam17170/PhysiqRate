@@ -1,6 +1,7 @@
 export const config = { runtime: "edge" };
 
 const loginAttempts = new Map();
+const signupAttempts = new Map();
 
 function isRateLimited(ip) {
   const now = Date.now();
@@ -9,6 +10,20 @@ function isRateLimited(ip) {
   if (!loginAttempts.has(ip)) { loginAttempts.set(ip, { count: 1, start: now }); return false; }
   const entry = loginAttempts.get(ip);
   if (now - entry.start > windowMs) { loginAttempts.set(ip, { count: 1, start: now }); return false; }
+  if (entry.count >= maxAttempts) return true;
+  entry.count++;
+  return false;
+}
+
+// Limite les créations de compte : 3 par IP par heure — empêche la création
+// massive de comptes gratuits en boucle, sans gêner un utilisateur normal
+function isSignupRateLimited(ip) {
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000; // 1 heure
+  const maxAttempts = 3;
+  if (!signupAttempts.has(ip)) { signupAttempts.set(ip, { count: 1, start: now }); return false; }
+  const entry = signupAttempts.get(ip);
+  if (now - entry.start > windowMs) { signupAttempts.set(ip, { count: 1, start: now }); return false; }
   if (entry.count >= maxAttempts) return true;
   entry.count++;
   return false;
@@ -110,6 +125,10 @@ export default async function handler(req) {
   }
 
   if (action === "signup") {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (isSignupRateLimited(ip)) {
+      return new Response(JSON.stringify({ error: "Trop de comptes créés depuis cette connexion. Réessaie dans 1 heure." }), { status: 429, headers });
+    }
     if (!email || !password || password.length < 6) {
       return new Response(JSON.stringify({ error: "Email et mot de passe (6 caractères min) requis." }), { status: 400, headers });
     }
