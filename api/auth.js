@@ -31,7 +31,9 @@ function isSignupRateLimited(ip) {
 
 export default async function handler(req) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  const origin = req.headers.get("origin") || "https://physiqrate.com";
+  const rawOrigin = req.headers.get("origin") || "";
+  const allowedOrigins = ["https://physiqrate.com", "https://www.physiqrate.com"];
+  const origin = (allowedOrigins.includes(rawOrigin) || rawOrigin.includes("vercel.app")) ? rawOrigin : "https://physiqrate.com";
   const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": origin };
 
   const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -74,21 +76,38 @@ export default async function handler(req) {
 
   if (action === "transfer_pro") {
     if (!email || !sessionId) return new Response(JSON.stringify({ error: "Missing params" }), { status: 400, headers });
+    // Le jeton d'auth est maintenant OBLIGATOIRE (plus une simple vérification optionnelle) —
+    // sans ça, n'importe qui connaissant un sessionId payé valide pourrait l'utiliser pour
+    // activer le Pro sur l'email de son choix.
     const authToken = req.headers.get("authorization")?.replace("Bearer ", "");
-    if (authToken) {
-      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: { "apikey": SUPABASE_ANON, "Authorization": `Bearer ${authToken}` }
-      });
-      const user = await userRes.json();
-      if (user.email && user.email.toLowerCase() !== email.toLowerCase()) {
-        return new Response(JSON.stringify({ error: "Non autorisé." }), { status: 403, headers });
-      }
+    if (!authToken) return new Response(JSON.stringify({ error: "Authentification requise." }), { status: 401, headers });
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { "apikey": SUPABASE_ANON, "Authorization": `Bearer ${authToken}` }
+    });
+    const user = await userRes.json();
+    if (!user.email || user.email.toLowerCase() !== email.toLowerCase()) {
+      return new Response(JSON.stringify({ error: "Non autorisé." }), { status: 403, headers });
     }
+
     const stripeRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
       headers: { "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}` }
     });
     const session = await stripeRes.json();
     if (session.error) return new Response(JSON.stringify({ error: "Session invalide." }), { status: 400, headers });
+    if (session.payment_status !== "paid") {
+      return new Response(JSON.stringify({ error: "Paiement non confirmé." }), { status: 400, headers });
+    }
+
+    // Empêche la réutilisation d'une même session Stripe payée pour activer le Pro sur
+    // plusieurs comptes différents — une session ne peut servir qu'une seule fois
+    const usedRes = await fetch(`${SUPABASE_URL}/rest/v1/users?stripe_session_id=eq.${encodeURIComponent(sessionId)}&select=email`, {
+      headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
+    });
+    const usedRows = await usedRes.json();
+    const alreadyUsedForOtherEmail = Array.isArray(usedRows) && usedRows.some(r => r.email.toLowerCase() !== email.toLowerCase());
+    if (alreadyUsedForOtherEmail) {
+      return new Response(JSON.stringify({ error: "Cette session de paiement a déjà été utilisée." }), { status: 409, headers });
+    }
 
     // Active le Pro directement sur l'email CHOISI par l'utilisateur (via la même fonction
     // fiable que le webhook) — plutôt que de tenter de renommer la ligne Stripe/Apple Pay,
@@ -160,8 +179,9 @@ export default async function handler(req) {
     const rowAlreadyExists = Array.isArray(existingRows) && existingRows.length > 0;
 
     if (rowAlreadyExists) {
-      // N'autorise la création que si on peut prouver un paiement Stripe récent et valide
-      // (flux légitime post-paiement) — sinon, on bloque
+      // N'autorise la création que si on peut prouver un paiement Stripe récent, valide,
+      // ET pas déjà utilisé pour un autre email (empêche la réutilisation d'une même
+      // session payée pour s'approprier plusieurs comptes différents)
       let validPayment = false;
       if (sessionId) {
         try {
@@ -169,7 +189,14 @@ export default async function handler(req) {
             headers: { "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}` }
           });
           const session = await stripeRes.json();
-          if (!session.error && session.payment_status === "paid") validPayment = true;
+          if (!session.error && session.payment_status === "paid") {
+            const usedRes = await fetch(`${SUPABASE_URL}/rest/v1/users?stripe_session_id=eq.${encodeURIComponent(sessionId)}&select=email`, {
+              headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
+            });
+            const usedRows = await usedRes.json();
+            const usedForOtherEmail = Array.isArray(usedRows) && usedRows.some(r => r.email.toLowerCase() !== email.toLowerCase());
+            validPayment = !usedForOtherEmail;
+          }
         } catch {}
       }
       if (!validPayment) {
