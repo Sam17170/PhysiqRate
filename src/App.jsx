@@ -4284,7 +4284,7 @@ function AppInner() {
     };
     verifyPro();
   }, []);
-  const [daysLeft] = useState(3);
+  const [daysLeft] = useState(0);
 
   const profile = getProfile();
   const profileComplete = getProfileCompletion(profile) === 100;
