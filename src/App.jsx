@@ -56,6 +56,12 @@ const STRINGS = {
     estimatedTag: { fr: "Estimation", en: "Estimated" },
     addProfileTag: { fr: "Complète ton profil", en: "Complete your profile" },
   },
+  emailMismatch: {
+    title:        { fr: "Email différent détecté", en: "Different email detected" },
+    body:         { fr: "Tu as payé avec {paidEmail}, mais tu es connecté avec {currentEmail}. Ton abonnement Pro est lié à {paidEmail}.", en: "You paid with {paidEmail}, but you're logged in as {currentEmail}. Your Pro subscription is linked to {paidEmail}." },
+    switchBtn:    { fr: "Utiliser le compte {paidEmail}", en: "Use the {paidEmail} account" },
+    keepBtn:      { fr: "Garder mon compte actuel", en: "Keep my current account" },
+  },
   analyze: {
     eyebrow:        { fr: "ANALYSE IA · BODY FAT", en: "AI ANALYSIS · BODY FAT" },
     title:          { fr: "Connaît ton vrai physique", en: "Know your real physique" },
@@ -1060,10 +1066,11 @@ const STRIPE_KEY = "pk_live_51Tqhv1RvX2XjC4owD0T32u2MRFIPduzrTsnnmM4J5Cy1GUlWzZX
 
 async function redirectToCheckout(type) {
   try {
+    const accountEmail = localStorage.getItem("pq_email") || null;
     const res = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type })
+      body: JSON.stringify({ type, accountEmail })
     });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
@@ -1608,32 +1615,48 @@ function ProductModal({ product, onConfirm, onClose }) {
 
 // ─── POST PAYMENT ACCOUNT MODAL ───────────────────────────────────────────────
 function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) {
-  const [email] = useState(initialEmail === "unknown" ? "" : initialEmail);
+  const [email, setEmail] = useState(initialEmail === "unknown" ? "" : initialEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const needsEmail = !initialEmail || initialEmail === "unknown";
+  const [accountExists, setAccountExists] = useState(false); // détecté après tentative de création
+  const [resetSent, setResetSent] = useState(false);
+  const hadPaymentEmail = !!initialEmail && initialEmail !== "unknown";
 
   async function handleCreate() {
-    if (needsEmail && !email) { setError("Entre ton email de paiement."); return; }
+    if (!email) { setError("Entre ton adresse email."); return; }
     if (!password || password.length < 6) { setError("Minimum 6 caractères."); return; }
-    if (password !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
+    if (!accountExists && password !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
     setLoading(true); setError(null);
 
     try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "signup", email, password })
-      });
-      const data = await res.json();
-      if (data.error && !data.error.toLowerCase().includes("already")) {
-        setError(data.error); setLoading(false); return;
+      if (!accountExists) {
+        const res = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "signup", email, password })
+        });
+        const data = await res.json();
+        const alreadyExists = data.error && data.error.toLowerCase().includes("already");
+        if (data.error && !alreadyExists) {
+          setError(data.error); setLoading(false); return;
+        }
+        if (alreadyExists) {
+          // Un compte existe déjà avec cet email — on ne peut pas deviner son mot de passe.
+          // On bascule vers une connexion avec le VRAI mot de passe de ce compte.
+          setAccountExists(true);
+          setPassword("");
+          setConfirmPassword("");
+          setError(null);
+          setLoading(false);
+          return;
+        }
       }
 
+      // Connexion — soit compte fraîchement créé, soit compte existant avec son vrai mot de passe
       const loginRes = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1648,7 +1671,8 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
         // Sur nouvel appareil — efface le timestamp profil pour forcer le pull depuis Supabase
         localStorage.removeItem("pq_profile_updated_at");
 
-        // Si email différent de l'email Stripe, transfère le Pro au bon email
+        // Rattache le Pro (créé sous l'email de paiement Stripe) à ce compte,
+        // même si les emails sont identiques — inoffensif dans ce cas, indispensable sinon
         const sessionId = localStorage.getItem("pq_stripe_session");
         if (sessionId) {
           await fetch("/api/auth", {
@@ -1660,11 +1684,25 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
 
         onSuccess({ email, token: loginData.token });
       } else {
-        setError("Erreur de connexion. Réessaie.");
+        setError(accountExists ? "Mot de passe incorrect." : "Erreur de connexion. Réessaie.");
       }
     } catch {
       setError("Erreur réseau. Réessaie.");
     }
+    setLoading(false);
+  }
+
+  async function handleForgotPassword() {
+    if (!email) { setError("Entre ton adresse email d'abord."); return; }
+    setLoading(true);
+    try {
+      await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset", email })
+      });
+      setResetSent(true);
+    } catch {}
     setLoading(false);
   }
 
@@ -1678,44 +1716,27 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
           Crée ton compte pour accéder à ton Pro sur tous tes appareils.
         </div>
 
-        {needsEmail && (
-          <>
-            <span style={css.label}>Email utilisé pour le paiement</span>
-            <input style={css.input} type="email" placeholder="ton@email.com"
-              value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none"/>
-          </>
+        {hadPaymentEmail && !accountExists && (
+          <div style={{fontSize:"11px",color:"#444",marginBottom:"12px",lineHeight:"1.5"}}>
+            Tu as payé avec <strong style={{color:"#aaa"}}>{initialEmail}</strong>. Tu peux utiliser ce même email ci-dessous, ou en choisir un autre pour ton compte — ton accès Pro suivra celui que tu choisis ici.
+          </div>
         )}
 
-        {/* Email verrouillé sur celui du paiement Stripe */}
-        {needsEmail ? (
-          <>
-            <span style={css.label}>Email</span>
-            <input style={css.input} type="email"
-              value={email}
-              onChange={e=>setEmail(e.target.value)}
-              autoCapitalize="none"
-              placeholder="ton@email.com"
-            />
-          </>
-        ) : (
-          <>
-            <div style={{background:"rgba(255,215,0,0.06)",border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"12px",padding:"12px 14px",marginBottom:"8px"}}>
-              <div style={{fontSize:"10px",color:C.gold,letterSpacing:"1px",marginBottom:"4px"}}>EMAIL DE PAIEMENT</div>
-              <div style={{fontSize:"14px",fontWeight:"700"}}>{email}</div>
-              <div style={{fontSize:"11px",color:"#555",marginTop:"4px",lineHeight:"1.5"}}>
-                Ton compte sera créé avec l'email utilisé lors du paiement. C'est lui qui garantit ton accès Pro.
-              </div>
-            </div>
-            <div style={{fontSize:"11px",color:"#444",marginBottom:"8px",lineHeight:"1.5"}}>
-              Si tu as payé avec Apple Pay, l'email ci-dessus est celui de ton compte Apple.
-            </div>
-          </>
+        {accountExists && (
+          <div style={{fontSize:"11px",color:C.gold,marginBottom:"12px",lineHeight:"1.5",background:"rgba(255,215,0,0.06)",border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"10px",padding:"10px 12px"}}>
+            Un compte existe déjà avec cet email — connecte-toi avec son mot de passe pour y rattacher ton Pro.
+          </div>
         )}
 
-        <span style={css.label}>Choisis un mot de passe</span>
+        <span style={css.label}>Email de ton compte</span>
+        <input style={css.input} type="email" placeholder="ton@email.com"
+          value={email} onChange={e=>{ setEmail(e.target.value); setAccountExists(false); setResetSent(false); }} autoCapitalize="none" disabled={accountExists}/>
+
+        <span style={css.label}>{accountExists ? "Mot de passe de ce compte" : "Choisis un mot de passe"}</span>
         <div style={{position:"relative",marginBottom:"8px"}}>
-          <input style={{...css.input,paddingRight:"44px"}} type={showPwd?"text":"password"} placeholder="6 caractères minimum"
-            value={password} onChange={e=>setPassword(e.target.value)} autoFocus={!needsEmail}/>
+          <input style={{...css.input,paddingRight:"44px"}} type={showPwd?"text":"password"} placeholder={accountExists ? "Ton mot de passe existant" : "6 caractères minimum"}
+            value={password} onChange={e=>setPassword(e.target.value)} autoFocus
+            onKeyDown={e=>e.key==="Enter" && accountExists && handleCreate()}/>
           <button type="button" onClick={()=>setShowPwd(!showPwd)}
             style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",color:"#555",cursor:"pointer",padding:"4px",display:"flex",alignItems:"center"}}>
             {showPwd
@@ -1725,31 +1746,40 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
           </button>
         </div>
 
-        <span style={css.label}>Confirme ton mot de passe</span>
-        <div style={{position:"relative"}}>
-          <input style={{...css.input,paddingRight:"44px",borderColor:confirmPassword && confirmPassword!==password?"rgba(255,80,80,0.5)":undefined}}
-            type={showConfirmPwd?"text":"password"} placeholder="Répète ton mot de passe"
-            value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&handleCreate()}/>
-          <button type="button" onClick={()=>setShowConfirmPwd(!showConfirmPwd)}
-            style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",color:"#555",cursor:"pointer",padding:"4px",display:"flex",alignItems:"center"}}>
-            {showConfirmPwd
-              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            }
+        {accountExists ? (
+          <button type="button" onClick={handleForgotPassword} style={{background:"transparent",border:"none",color:"#555",fontSize:"12px",textDecoration:"underline",cursor:"pointer",fontFamily:"inherit",marginBottom:"8px"}}>
+            Mot de passe oublié ?
           </button>
-        </div>
-        {confirmPassword && confirmPassword !== password && (
-          <div style={{fontSize:"11px",color:C.red,marginTop:"4px"}}>Les mots de passe ne correspondent pas</div>
-        )}
-        {confirmPassword && confirmPassword === password && (
-          <div style={{fontSize:"11px",color:C.green,marginTop:"4px"}}>✓ Mots de passe identiques</div>
+        ) : (
+          <>
+            <span style={css.label}>Confirme ton mot de passe</span>
+            <div style={{position:"relative"}}>
+              <input style={{...css.input,paddingRight:"44px",borderColor:confirmPassword && confirmPassword!==password?"rgba(255,80,80,0.5)":undefined}}
+                type={showConfirmPwd?"text":"password"} placeholder="Répète ton mot de passe"
+                value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&handleCreate()}/>
+              <button type="button" onClick={()=>setShowConfirmPwd(!showConfirmPwd)}
+                style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",color:"#555",cursor:"pointer",padding:"4px",display:"flex",alignItems:"center"}}>
+                {showConfirmPwd
+                  ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+            {confirmPassword && confirmPassword !== password && (
+              <div style={{fontSize:"11px",color:C.red,marginTop:"4px"}}>Les mots de passe ne correspondent pas</div>
+            )}
+            {confirmPassword && confirmPassword === password && (
+              <div style={{fontSize:"11px",color:C.green,marginTop:"4px"}}>✓ Mots de passe identiques</div>
+            )}
+          </>
         )}
 
+        {resetSent && <div style={{fontSize:"12px",color:C.green,marginTop:"8px",lineHeight:"1.5"}}>Email de réinitialisation envoyé à {email}.</div>}
         {error && <div style={{fontSize:"12px",color:C.red,marginTop:"8px",lineHeight:"1.5"}}>{error}</div>}
 
         <button style={{...css.btn(C.gold),marginTop:"18px",opacity:loading?0.6:1}} onClick={handleCreate} disabled={loading}>
-          {loading ? "Création…" : "Créer mon compte Pro"}
+          {loading ? "…" : accountExists ? "Se connecter et activer le Pro" : "Créer mon compte Pro"}
         </button>
         <div style={{fontSize:"11px",color:"#333",marginTop:"10px"}}>Accès Pro immédiat sur tous tes appareils</div>
       </div>
@@ -3853,6 +3883,7 @@ function AppInner() {
   const [showPostPayment, setShowPostPayment] = useState(false);
   const [postPaymentEmail, setPostPaymentEmail] = useState(null);
   const [finishAccountDismissed, setFinishAccountDismissed] = useState(false);
+  const [emailMismatch, setEmailMismatch] = useState(null); // { paidEmail, currentEmail }
   const [user, setUser] = useState(() => {
     const email = localStorage.getItem("pq_email");
     return email ? { email } : null;
@@ -3885,27 +3916,37 @@ function AppInner() {
       // Force re-render propre
       setPremiumState(true);
 
-      // Affiche modal création de compte si pas connecté
+      // Affiche modal création de compte si pas connecté, ou détecte un email différent si déjà connecté
       const token = localStorage.getItem("pq_token");
-      if (!token && sessionId) {
+      if (sessionId) {
         setTimeout(() => {
           fetch("/api/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ sessionId })
           }).then(r=>r.json()).then(data=>{
-            const email = data.email;
-            if (email) {
-              setPostPaymentEmail(email);
-              setShowPostPayment(true);
-            } else {
-              // Fallback — demande l'email manuellement
+            const paidEmail = data.email;
+            if (!token) {
+              // Pas connecté du tout — flux normal de création de compte
+              if (paidEmail) {
+                setPostPaymentEmail(paidEmail);
+                setShowPostPayment(true);
+              } else {
+                setPostPaymentEmail("unknown");
+                setShowPostPayment(true);
+              }
+              return;
+            }
+            // Déjà connecté — vérifie que le paiement correspond bien au compte actuel
+            const currentEmail = localStorage.getItem("pq_email");
+            if (paidEmail && currentEmail && paidEmail.toLowerCase() !== currentEmail.toLowerCase()) {
+              setEmailMismatch({ paidEmail, currentEmail });
+            }
+          }).catch(()=>{
+            if (!token) {
               setPostPaymentEmail("unknown");
               setShowPostPayment(true);
             }
-          }).catch(()=>{
-            setPostPaymentEmail("unknown");
-            setShowPostPayment(true);
           });
         }, 800);
       }
@@ -4064,7 +4105,7 @@ function AppInner() {
     }
   }, []);
 
-  const { lang, setLang, tr } = useI18n();
+  const { lang, setLang, tr, trf } = useI18n();
   const tabs = [
     { key: "analyser",    label: tr("nav.analyser") },
     { key: "jour",        label: tr("nav.jour")  },
@@ -4176,6 +4217,35 @@ function AppInner() {
           }}
           blocking={premium && !user}
         />
+      )}
+
+      {/* Email du paiement différent du compte connecté */}
+      {emailMismatch && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+          <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
+            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>{tr("emailMismatch.title").toUpperCase()}</div>
+            <div style={{fontSize:"13px",color:"#aaa",marginBottom:"24px",lineHeight:"1.6"}}>
+              {trf("emailMismatch.body",{paidEmail:emailMismatch.paidEmail,currentEmail:emailMismatch.currentEmail})}
+            </div>
+            <button style={{...css.btn(C.gold),marginBottom:"10px"}} onClick={()=>{
+              // Déconnecte le compte actuel puis lance la création/liaison du compte payé
+              localStorage.removeItem("pq_token");
+              localStorage.removeItem("pq_refresh_token");
+              localStorage.removeItem("pq_email");
+              localStorage.removeItem("pq_premium");
+              setUser(null);
+              setPremiumState(false);
+              setPostPaymentEmail(emailMismatch.paidEmail);
+              setShowPostPayment(true);
+              setEmailMismatch(null);
+            }}>
+              {trf("emailMismatch.switchBtn",{paidEmail:emailMismatch.paidEmail})}
+            </button>
+            <button style={css.btnSec} onClick={()=>setEmailMismatch(null)}>
+              {tr("emailMismatch.keepBtn")}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Force connexion si Pro local sans token Supabase */}
