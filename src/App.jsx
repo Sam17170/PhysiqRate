@@ -817,6 +817,11 @@ const css = {
 // Tant que AD_SLOT_ID vaut "YOUR_AD_SLOT_ID", un visuel de remplacement s'affiche
 // à la place pour que l'app reste fonctionnelle en attendant.
 const AD_SLOT_ID = "YOUR_AD_SLOT_ID";
+// Tant que AD_SLOT_ID n'est pas configuré, toutes les fonctionnalités liées aux pubs
+// sont désactivées (aucun écran de pub factice affiché aux utilisateurs) — dès que tu
+// remplaces AD_SLOT_ID par ton vrai identifiant, tout se réactive automatiquement,
+// rien d'autre à changer.
+const ADS_LIVE = AD_SLOT_ID !== "YOUR_AD_SLOT_ID";
 
 function AdPlaceholder({ duration = 15, onComplete }) {
   const { tr, trf } = useI18n();
@@ -2384,7 +2389,7 @@ function ViewAnalyze({ premium }) {
     if (!premium) {
       const usage = getUsage();
       // 2ème analyse (count===1 avant incrément) → pub courte obligatoire de 15s, pas de blocage
-      if (usage.count === 1) { setShowPreAd(true); return; }
+      if (usage.count === 1 && ADS_LIVE) { setShowPreAd(true); return; }
       // Pub déjà regardée à l'avance depuis le rappel de l'écran d'accueil → consomme le déblocage
       if (adUnlockedPending) {
         setAdUnlockedPending(false);
@@ -2496,7 +2501,7 @@ function ViewAnalyze({ premium }) {
 
   return (
     <div style={{width:"100%",maxWidth:"420px"}}>
-      {showPaywall && <Paywall daysLeft={daysLeft} adAvailable={adAvailable} onClose={()=>setShowPaywall(false)} onWatchAd={(daysLeft>0 && adAvailable) ? ()=>{ setShowPaywall(false); setShowUnlockAd(true); } : null}/>}
+      {showPaywall && <Paywall daysLeft={daysLeft} adAvailable={adAvailable} onClose={()=>setShowPaywall(false)} onWatchAd={(ADS_LIVE && daysLeft>0 && adAvailable) ? ()=>{ setShowPaywall(false); setShowUnlockAd(true); } : null}/>}
       {showPreAd && (
         <AdPlaceholder duration={15} onComplete={()=>{ setShowPreAd(false); runAnalysis(false); }}/>
       )}
@@ -2558,7 +2563,7 @@ function ViewAnalyze({ premium }) {
                   <span style={{fontSize:"12px",color:"#aaa"}}>{tr("ads.nextFreeIn")}</span>
                   <span style={{fontSize:"13px",color:C.gold,fontWeight:"700"}}>{trf("ads.daysHours",{d,h})}</span>
                 </div>
-                {adUnlockedPending ? (
+                {!ADS_LIVE ? null : adUnlockedPending ? (
                   <div style={{fontSize:"12px",color:C.green,fontWeight:"600",marginTop:"10px",textAlign:"center"}}>✓ {tr("ads.unlockedReady")}</div>
                 ) : check.adAvailable ? (
                   <button onClick={()=>setShowUnlockAd(true)}
@@ -2898,7 +2903,7 @@ function ViewJour({ premium }) {
         <BarcodeScanner
           onResult={(product) => {
             setShowScanner(false);
-            if (!premium) {
+            if (!premium && ADS_LIVE) {
               const n = incrementScanCount();
               // 1 pub toutes les 2 scans pour les utilisateurs gratuits
               if (n % 3 === 0) { setPendingProduct(product); setShowScanAd(true); return; }
