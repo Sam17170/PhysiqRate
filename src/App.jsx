@@ -109,6 +109,8 @@ const STRINGS = {
     agePlaceholder: { fr: "Ex : 24", en: "E.g. 24" },
     weightLabel:    { fr: "Poids (kg) · optionnel", en: "Weight (kg) · optional" },
     weightPlaceholder: { fr: "Ex : 75", en: "E.g. 75" },
+    extraFieldsToggle:   { fr: "+ Ajouter âge et poids (optionnel, améliore la précision)", en: "+ Add age and weight (optional, improves accuracy)" },
+    extraFieldsPrefilled:{ fr: "✓ Âge et poids de ton profil utilisés automatiquement", en: "✓ Age and weight from your profile used automatically" },
     analyzeBtn:     { fr: "Analyser mon physique", en: "Analyze my physique" },
     changePhoto:    { fr: "Changer de photo", en: "Change photo" },
     analyzing:      { fr: "Analyse en cours", en: "Analysis in progress" },
@@ -415,6 +417,52 @@ const STRINGS = {
     barcodePlaceholder: { fr: "Ex: 3017620422003", en: "E.g. 3017620422003" },
     pressEnter:     { fr: "Appuie sur Entrée pour chercher", en: "Press Enter to search" },
     close:          { fr: "Fermer", en: "Close" },
+  },
+  productModal: {
+    scannedProduct: { fr: "PRODUIT SCANNÉ", en: "SCANNED PRODUCT" },
+    food:           { fr: "ALIMENT", en: "FOOD" },
+    quantityConsumed: { fr: "Quantité consommée (g)", en: "Quantity consumed (g)" },
+    valuesFor:      { fr: "Valeurs pour {q}g · Base : {cal} kcal/100g", en: "Values for {q}g · Base: {cal} kcal/100g" },
+    saveThisFood:   { fr: "Enregistrer cet aliment", en: "Save this food" },
+    alreadySaved:   { fr: "Déjà dans tes aliments enregistrés", en: "Already in your saved foods" },
+    addToJournal:   { fr: "Ajouter au journal", en: "Add to journal" },
+  },
+  postPayment: {
+    paymentConfirmed: { fr: "PAIEMENT CONFIRMÉ", en: "PAYMENT CONFIRMED" },
+    welcomeToPro:   { fr: "Bienvenue dans le Pro !", en: "Welcome to Pro!" },
+    createAccount:  { fr: "Crée ton compte pour accéder à ton Pro sur tous tes appareils.", en: "Create your account to access your Pro on all your devices." },
+    paidWithEmail:  { fr: "Tu as payé avec {email}. Tu peux utiliser ce même email ci-dessous, ou en choisir un autre pour ton compte — ton accès Pro suivra celui que tu choisis ici.", en: "You paid with {email}. You can use this same email below, or choose another one for your account — your Pro access will follow whichever you choose here." },
+    accountExistsMsg: { fr: "Un compte existe déjà avec cet email — connecte-toi avec son mot de passe pour y rattacher ton Pro.", en: "An account already exists with this email — log in with its password to link your Pro to it." },
+    emailLabel:     { fr: "Email de ton compte", en: "Your account email" },
+    passwordThisAccount: { fr: "Mot de passe de ce compte", en: "This account's password" },
+    choosePassword: { fr: "Choisis un mot de passe", en: "Choose a password" },
+    existingPasswordPh: { fr: "Ton mot de passe existant", en: "Your existing password" },
+    minSixChars:    { fr: "6 caractères minimum", en: "6 characters minimum" },
+    forgotPassword: { fr: "Mot de passe oublié ?", en: "Forgot password?" },
+    confirmPassword:{ fr: "Confirme ton mot de passe", en: "Confirm your password" },
+    repeatPassword: { fr: "Répète ton mot de passe", en: "Repeat your password" },
+    passwordsMismatch: { fr: "Les mots de passe ne correspondent pas", en: "Passwords don't match" },
+    passwordsMatch: { fr: "✓ Mots de passe identiques", en: "✓ Passwords match" },
+    resetSentTo:    { fr: "Email de réinitialisation envoyé à {email}.", en: "Reset email sent to {email}." },
+    loginAndActivate: { fr: "Se connecter et activer le Pro", en: "Log in and activate Pro" },
+    createProAccount: { fr: "Créer mon compte Pro", en: "Create my Pro account" },
+    immediateAccess: { fr: "Accès Pro immédiat sur tous tes appareils", en: "Immediate Pro access on all your devices" },
+    enterEmail:     { fr: "Entre ton adresse email.", en: "Enter your email address." },
+    minSixCharsErr: { fr: "Minimum 6 caractères.", en: "Minimum 6 characters." },
+    acceptTermsErr: { fr: "Tu dois accepter les conditions générales d'utilisation.", en: "You must accept the terms of service." },
+    wrongPassword:  { fr: "Mot de passe incorrect.", en: "Incorrect password." },
+    connectionError:{ fr: "Erreur de connexion. Réessaie.", en: "Connection error. Try again." },
+    networkError:   { fr: "Erreur réseau. Réessaie.", en: "Network error. Try again." },
+    enterEmailFirst:{ fr: "Entre ton adresse email d'abord.", en: "Enter your email address first." },
+  },
+  macroEditor: {
+    editManually:   { fr: "MODIFIER MANUELLEMENT", en: "EDIT MANUALLY" },
+    suggestion:     { fr: "Suggestion : {p}g · {c}g · {f}g — Méthode g/kg", en: "Suggestion: {p}g · {c}g · {f}g — g/kg method" },
+  },
+  accountRequired: {
+    title:          { fr: "COMPTE REQUIS", en: "ACCOUNT REQUIRED" },
+    finishSignup:   { fr: "Finalise ton inscription", en: "Finish your signup" },
+    createToAccess: { fr: "Crée ton compte pour accéder à Physiqrate Pro sur tous tes appareils.", en: "Create your account to access Physiqrate Pro on all your devices." },
   },
   ads: {
     label:          { fr: "PUBLICITÉ", en: "ADVERTISEMENT" },
@@ -1383,6 +1431,7 @@ async function syncPull(token, date) {
 
 // ─── BARCODE SCANNER ──────────────────────────────────────────────────────────
 function BarcodeScanner({ onResult, onClose }) {
+  const { tr } = useI18n();
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
   const quaggaRef = useRef(null);
@@ -1396,7 +1445,7 @@ function BarcodeScanner({ onResult, onClose }) {
         const n = p.nutriments || {};
         if (quaggaRef.current) quaggaRef.current.stop();
         onResult({
-          name: p.product_name_fr || p.product_name || "Produit scanné",
+          name: p.product_name_fr || p.product_name || tr("scanner.defaultProductName"),
           brand: p.brands || "",
           calories: Math.round(n["energy-kcal_100g"] || n["energy-kcal"] || 0),
           protein: Math.round(n["proteins_100g"] || 0),
@@ -1404,11 +1453,11 @@ function BarcodeScanner({ onResult, onClose }) {
           fat: Math.round(n["fat_100g"] || 0),
         });
       } else {
-        setError("Produit non trouvé. Essaie un autre.");
+        setError(tr("scanner.notFound"));
         setStatus("error");
       }
     } catch {
-      setError("Erreur réseau.");
+      setError(tr("scanner.networkError"));
       setStatus("error");
     }
   }
@@ -1442,9 +1491,9 @@ function BarcodeScanner({ onResult, onClose }) {
       }, (err) => {
         if (err) {
           if (err.name === "NotAllowedError" || (err.message && err.message.includes("Permission"))) {
-            setError("Accès caméra refusé.\nVa dans Réglages → Safari → Caméra → Autoriser.");
+            setError(tr("scanner.cameraDenied"));
           } else {
-            setError("Impossible de démarrer la caméra.");
+            setError(tr("scanner.cameraStartFail"));
           }
           setStatus("error");
           return;
@@ -1480,7 +1529,7 @@ function BarcodeScanner({ onResult, onClose }) {
       });
     };
     script.onerror = () => {
-      setError("Impossible de charger le scanner.");
+      setError(tr("scanner.scannerLoadFail"));
       setStatus("manual");
     };
     document.head.appendChild(script);
@@ -1503,7 +1552,7 @@ function BarcodeScanner({ onResult, onClose }) {
 
       {status === "loading" && (
         <div style={{color:"white",fontSize:"13px",textAlign:"center",zIndex:10}}>
-          Chargement du scanner…
+          {tr("scanner.loading")}
         </div>
       )}
 
@@ -1511,36 +1560,36 @@ function BarcodeScanner({ onResult, onClose }) {
         <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:10}}>
           <div style={{width:"280px",height:"140px",border:`3px solid ${C.gold}`,borderRadius:"12px",boxShadow:`0 0 0 2000px rgba(0,0,0,0.55)`}}/>
           <div style={{color:"white",fontSize:"13px",marginTop:"20px",textShadow:"0 1px 4px #000"}}>
-            Place le code-barres dans le cadre
+            {tr("scanner.placeBarcode")}
           </div>
-          <div style={{color:"#aaa",fontSize:"11px",marginTop:"6px"}}>Tiens le téléphone à 15-20cm</div>
+          <div style={{color:"#aaa",fontSize:"11px",marginTop:"6px"}}>{tr("scanner.holdPhone")}</div>
         </div>
       )}
 
       {status === "found" && (
-        <div style={{color:C.green,fontSize:"16px",fontWeight:"700",zIndex:10}}>Produit trouvé !</div>
+        <div style={{color:C.green,fontSize:"16px",fontWeight:"700",zIndex:10}}>{tr("scanner.productFound")}</div>
       )}
 
       {status === "error" && (
         <div style={{textAlign:"center",padding:"28px",maxWidth:"300px",zIndex:10}}>
           <div style={{fontSize:"13px",color:C.red,marginBottom:"20px",lineHeight:"1.7",whiteSpace:"pre-line"}}>{error}</div>
           <button style={{...css.btn(C.gold),marginBottom:"10px"}} onClick={()=>{ setStatus("loading"); setError(null); }}>
-            Réessayer
+            {tr("scanner.retry")}
           </button>
           <button style={{...css.btnSec,marginBottom:"10px"}} onClick={()=>setStatus("manual")}>
-            Saisir manuellement
+            {tr("scanner.enterManually")}
           </button>
-          <button style={css.btnSec} onClick={onClose}>Annuler</button>
+          <button style={css.btnSec} onClick={onClose}>{tr("scanner.cancel")}</button>
         </div>
       )}
 
       {status === "manual" && (
         <div style={{textAlign:"center",padding:"28px",maxWidth:"320px",width:"100%",zIndex:10}}>
-          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"20px"}}>SAISIE MANUELLE</div>
-          <div style={{fontSize:"13px",color:"#aaa",marginBottom:"16px"}}>Entre les chiffres sous le code-barres</div>
+          <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"20px"}}>{tr("scanner.manualEntryTitle")}</div>
+          <div style={{fontSize:"13px",color:"#aaa",marginBottom:"16px"}}>{tr("scanner.enterDigits")}</div>
           <input
             type="number"
-            placeholder="Ex: 3017620422003"
+            placeholder={tr("scanner.barcodePlaceholder")}
             autoFocus
             style={{...css.input,marginBottom:"12px",textAlign:"center",fontSize:"16px",letterSpacing:"1px"}}
             onKeyDown={async(e)=>{
@@ -1550,15 +1599,15 @@ function BarcodeScanner({ onResult, onClose }) {
               }
             }}
           />
-          <div style={{fontSize:"11px",color:"#444",marginBottom:"16px"}}>Appuie sur Entrée pour chercher</div>
-          <button style={css.btnSec} onClick={onClose}>Annuler</button>
+          <div style={{fontSize:"11px",color:"#444",marginBottom:"16px"}}>{tr("scanner.pressEnter")}</div>
+          <button style={css.btnSec} onClick={onClose}>{tr("scanner.cancel")}</button>
         </div>
       )}
 
       {(status === "scanning" || status === "loading") && (
         <button style={{position:"absolute",top:"20px",right:"20px",background:"rgba(0,0,0,0.7)",border:`1px solid ${C.border}`,color:"white",borderRadius:"20px",padding:"8px 16px",fontSize:"12px",cursor:"pointer",fontFamily:"inherit",zIndex:20}}
           onClick={()=>{ if(quaggaRef.current) try{quaggaRef.current.stop();}catch{}; onClose(); }}>
-          Fermer
+          {tr("scanner.close")}
         </button>
       )}
     </div>
@@ -1567,6 +1616,7 @@ function BarcodeScanner({ onResult, onClose }) {
 
 
 function ProductModal({ product, onConfirm, onClose }) {
+  const { tr, trf } = useI18n();
   const [quantity, setQuantity] = useState("100");
   const [saveFood, setSaveFood] = useState(!getSavedFoods().find(f => f.name === product.name));
 
@@ -1583,12 +1633,12 @@ function ProductModal({ product, onConfirm, onClose }) {
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"#0f0f1a",border:`1px solid ${C.border}`,borderRadius:"24px",padding:"24px",width:"100%",maxWidth:"420px",marginBottom:"10px"}}>
         <div style={{fontSize:"10px",color:C.gold,letterSpacing:"2px",marginBottom:"12px"}}>
-          {product.brand ? "PRODUIT SCANNÉ" : "ALIMENT"}
+          {product.brand ? tr("productModal.scannedProduct") : tr("productModal.food")}
         </div>
         <div style={{fontSize:"16px",fontWeight:"700",marginBottom:"4px"}}>{product.name}</div>
         {product.brand && <div style={{fontSize:"12px",color:"#555",marginBottom:"12px"}}>{product.brand}</div>}
 
-        <div style={{fontSize:"11px",color:C.muted,marginBottom:"6px"}}>Quantité consommée (g)</div>
+        <div style={{fontSize:"11px",color:C.muted,marginBottom:"6px"}}>{tr("productModal.quantityConsumed")}</div>
         <input
           type="number"
           value={quantity}
@@ -1597,7 +1647,7 @@ function ProductModal({ product, onConfirm, onClose }) {
         />
 
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"14px"}}>
-          {[{val:cal,label:"KCAL",color:C.gold},{val:`${prot}g`,label:"PROT.",color:"#7DF9FF"},{val:`${carb}g`,label:"GLUC.",color:"#FFB347"},{val:`${fat2}g`,label:"LIP.",color:"#FF8C69"}].map((m,i)=>(
+          {[{val:cal,label:tr("jour.kcal"),color:C.gold},{val:`${prot}g`,label:tr("jour.protShort"),color:"#7DF9FF"},{val:`${carb}g`,label:tr("jour.carbShort"),color:"#FFB347"},{val:`${fat2}g`,label:tr("jour.fatShort"),color:"#FF8C69"}].map((m,i)=>(
             <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"10px",padding:"8px",textAlign:"center"}}>
               <div style={{fontSize:"15px",fontWeight:"800",color:m.color}}>{m.val}</div>
               <div style={{fontSize:"9px",color:C.muted,marginTop:"2px"}}>{m.label}</div>
@@ -1606,7 +1656,7 @@ function ProductModal({ product, onConfirm, onClose }) {
         </div>
 
         <div style={{fontSize:"10px",color:"#333",marginBottom:"14px",textAlign:"center"}}>
-          Valeurs pour {quantity || 0}g · Base : {product.calories} kcal/100g
+          {trf("productModal.valuesFor",{q:quantity||0,cal:product.calories})}
         </div>
 
         {/* Option sauvegarder */}
@@ -1618,8 +1668,8 @@ function ProductModal({ product, onConfirm, onClose }) {
               {saveFood && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
             </div>
             <div>
-              <div style={{fontSize:"12px",fontWeight:"600",color:saveFood?C.green:"#aaa"}}>Enregistrer cet aliment</div>
-              <div style={{fontSize:"10px",color:"#444"}}>Accessible rapidement la prochaine fois</div>
+              <div style={{fontSize:"12px",fontWeight:"600",color:saveFood?C.green:"#aaa"}}>{tr("productModal.saveThisFood")}</div>
+              <div style={{fontSize:"10px",color:"#444"}}>{tr("common.quickAccess")}</div>
             </div>
           </div>
         )}
@@ -1627,7 +1677,7 @@ function ProductModal({ product, onConfirm, onClose }) {
         {alreadySaved && (
           <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 12px",background:"rgba(125,249,170,0.05)",borderRadius:"10px",marginBottom:"14px",border:"1px solid rgba(125,249,170,0.15)"}}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <span style={{fontSize:"11px",color:C.green}}>Déjà dans tes aliments enregistrés</span>
+            <span style={{fontSize:"11px",color:C.green}}>{tr("productModal.alreadySaved")}</span>
           </div>
         )}
 
@@ -1635,9 +1685,9 @@ function ProductModal({ product, onConfirm, onClose }) {
           if (saveFood && !alreadySaved) saveFoodToList({ name:product.name, brand:product.brand, calories:product.calories, protein:product.protein, carbs:product.carbs, fat:product.fat });
           onConfirm({ name:product.name, calories:cal, protein:prot, carbs:carb, fat:fat2 });
         }}>
-          Ajouter au journal
+          {tr("productModal.addToJournal")}
         </button>
-        <button style={css.btnSec} onClick={onClose}>Annuler</button>
+        <button style={css.btnSec} onClick={onClose}>{tr("common.cancel")}</button>
       </div>
     </div>
   );
@@ -1647,7 +1697,7 @@ function ProductModal({ product, onConfirm, onClose }) {
 
 // ─── POST PAYMENT ACCOUNT MODAL ───────────────────────────────────────────────
 function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) {
-  const { tr } = useI18n();
+  const { tr, trf } = useI18n();
   const [email, setEmail] = useState(initialEmail === "unknown" ? "" : initialEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -1661,10 +1711,10 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
   const hadPaymentEmail = !!initialEmail && initialEmail !== "unknown";
 
   async function handleCreate() {
-    if (!email) { setError("Entre ton adresse email."); return; }
-    if (!password || password.length < 6) { setError("Minimum 6 caractères."); return; }
-    if (!accountExists && password !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
-    if (!accountExists && !acceptedTerms) { setError("Tu dois accepter les conditions générales d'utilisation."); return; }
+    if (!email) { setError(tr("postPayment.enterEmail")); return; }
+    if (!password || password.length < 6) { setError(tr("postPayment.minSixCharsErr")); return; }
+    if (!accountExists && password !== confirmPassword) { setError(tr("postPayment.passwordsMismatch")); return; }
+    if (!accountExists && !acceptedTerms) { setError(tr("postPayment.acceptTermsErr")); return; }
     setLoading(true); setError(null);
 
     try {
@@ -1720,16 +1770,16 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
 
         onSuccess({ email, token: loginData.token });
       } else {
-        setError(accountExists ? "Mot de passe incorrect." : "Erreur de connexion. Réessaie.");
+        setError(accountExists ? tr("postPayment.wrongPassword") : tr("postPayment.connectionError"));
       }
     } catch {
-      setError("Erreur réseau. Réessaie.");
+      setError(tr("postPayment.networkError"));
     }
     setLoading(false);
   }
 
   async function handleForgotPassword() {
-    if (!email) { setError("Entre ton adresse email d'abord."); return; }
+    if (!email) { setError(tr("postPayment.enterEmailFirst")); return; }
     setLoading(true);
     try {
       await fetch("/api/auth", {
@@ -1746,31 +1796,31 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",backdropFilter:"blur(10px)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
       <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
         <div style={{fontSize:"28px",marginBottom:"12px"}}>🎉</div>
-        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"12px"}}>PAIEMENT CONFIRMÉ</div>
-        <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"8px"}}>Bienvenue dans le Pro !</div>
+        <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"12px"}}>{tr("postPayment.paymentConfirmed")}</div>
+        <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"8px"}}>{tr("postPayment.welcomeToPro")}</div>
         <div style={{fontSize:"13px",color:"#555",marginBottom:"24px",lineHeight:"1.6"}}>
-          Crée ton compte pour accéder à ton Pro sur tous tes appareils.
+          {tr("postPayment.createAccount")}
         </div>
 
         {hadPaymentEmail && !accountExists && (
           <div style={{fontSize:"11px",color:"#444",marginBottom:"12px",lineHeight:"1.5"}}>
-            Tu as payé avec <strong style={{color:"#aaa"}}>{initialEmail}</strong>. Tu peux utiliser ce même email ci-dessous, ou en choisir un autre pour ton compte — ton accès Pro suivra celui que tu choisis ici.
+            {trf("postPayment.paidWithEmail",{email:initialEmail})}
           </div>
         )}
 
         {accountExists && (
           <div style={{fontSize:"11px",color:C.gold,marginBottom:"12px",lineHeight:"1.5",background:"rgba(255,215,0,0.06)",border:`1px solid rgba(255,215,0,0.15)`,borderRadius:"10px",padding:"10px 12px"}}>
-            Un compte existe déjà avec cet email — connecte-toi avec son mot de passe pour y rattacher ton Pro.
+            {tr("postPayment.accountExistsMsg")}
           </div>
         )}
 
-        <span style={css.label}>Email de ton compte</span>
+        <span style={css.label}>{tr("postPayment.emailLabel")}</span>
         <input style={css.input} type="email" placeholder="ton@email.com"
           value={email} onChange={e=>{ setEmail(e.target.value); setAccountExists(false); setResetSent(false); }} autoCapitalize="none" disabled={accountExists}/>
 
-        <span style={css.label}>{accountExists ? "Mot de passe de ce compte" : "Choisis un mot de passe"}</span>
+        <span style={css.label}>{accountExists ? tr("postPayment.passwordThisAccount") : tr("postPayment.choosePassword")}</span>
         <div style={{position:"relative",marginBottom:"8px"}}>
-          <input style={{...css.input,paddingRight:"44px"}} type={showPwd?"text":"password"} placeholder={accountExists ? "Ton mot de passe existant" : "6 caractères minimum"}
+          <input style={{...css.input,paddingRight:"44px"}} type={showPwd?"text":"password"} placeholder={accountExists ? tr("postPayment.existingPasswordPh") : tr("postPayment.minSixChars")}
             value={password} onChange={e=>setPassword(e.target.value)} autoFocus
             onKeyDown={e=>e.key==="Enter" && accountExists && handleCreate()}/>
           <button type="button" onClick={()=>setShowPwd(!showPwd)}
@@ -1784,14 +1834,14 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
 
         {accountExists ? (
           <button type="button" onClick={handleForgotPassword} style={{background:"transparent",border:"none",color:"#555",fontSize:"12px",textDecoration:"underline",cursor:"pointer",fontFamily:"inherit",marginBottom:"8px"}}>
-            Mot de passe oublié ?
+            {tr("postPayment.forgotPassword")}
           </button>
         ) : (
           <>
-            <span style={css.label}>Confirme ton mot de passe</span>
+            <span style={css.label}>{tr("postPayment.confirmPassword")}</span>
             <div style={{position:"relative"}}>
               <input style={{...css.input,paddingRight:"44px",borderColor:confirmPassword && confirmPassword!==password?"rgba(255,80,80,0.5)":undefined}}
-                type={showConfirmPwd?"text":"password"} placeholder="Répète ton mot de passe"
+                type={showConfirmPwd?"text":"password"} placeholder={tr("postPayment.repeatPassword")}
                 value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&handleCreate()}/>
               <button type="button" onClick={()=>setShowConfirmPwd(!showConfirmPwd)}
@@ -1803,10 +1853,10 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
               </button>
             </div>
             {confirmPassword && confirmPassword !== password && (
-              <div style={{fontSize:"11px",color:C.red,marginTop:"4px"}}>Les mots de passe ne correspondent pas</div>
+              <div style={{fontSize:"11px",color:C.red,marginTop:"4px"}}>{tr("postPayment.passwordsMismatch")}</div>
             )}
             {confirmPassword && confirmPassword === password && (
-              <div style={{fontSize:"11px",color:C.green,marginTop:"4px"}}>✓ Mots de passe identiques</div>
+              <div style={{fontSize:"11px",color:C.green,marginTop:"4px"}}>{tr("postPayment.passwordsMatch")}</div>
             )}
 
             <div style={{display:"flex",alignItems:"flex-start",gap:"8px",marginTop:"14px",cursor:"pointer"}} onClick={()=>setAcceptedTerms(!acceptedTerms)}>
@@ -1819,13 +1869,13 @@ function PostPaymentModal({ email: initialEmail, onSuccess, blocking = false }) 
           </>
         )}
 
-        {resetSent && <div style={{fontSize:"12px",color:C.green,marginTop:"8px",lineHeight:"1.5"}}>Email de réinitialisation envoyé à {email}.</div>}
+        {resetSent && <div style={{fontSize:"12px",color:C.green,marginTop:"8px",lineHeight:"1.5"}}>{trf("postPayment.resetSentTo",{email})}</div>}
         {error && <div style={{fontSize:"12px",color:C.red,marginTop:"8px",lineHeight:"1.5"}}>{error}</div>}
 
         <button style={{...css.btn(C.gold),marginTop:"18px",opacity:loading?0.6:1}} onClick={handleCreate} disabled={loading}>
-          {loading ? "…" : accountExists ? "Se connecter et activer le Pro" : "Créer mon compte Pro"}
+          {loading ? "…" : accountExists ? tr("postPayment.loginAndActivate") : tr("postPayment.createProAccount")}
         </button>
-        <div style={{fontSize:"11px",color:"#333",marginTop:"10px"}}>Accès Pro immédiat sur tous tes appareils</div>
+        <div style={{fontSize:"11px",color:"#333",marginTop:"10px"}}>{tr("postPayment.immediateAccess")}</div>
       </div>
     </div>
   );
@@ -2030,6 +2080,7 @@ function AuthModal({ onSuccess, onClose, blocking = false, onGoToPay }) {
 
 // ─── MACRO EDITOR ─────────────────────────────────────────────────────────────
 function MacroEditor({ targets, custom, onSave }) {
+  const { tr, trf } = useI18n();
   const init = custom || { protein: targets.protein, carbs: targets.carbs, fat: targets.fat };
   const [vals, setVals] = useState({
     protein: String(init.protein),
@@ -2054,14 +2105,14 @@ function MacroEditor({ targets, custom, onSave }) {
   }
 
   const fields = [
-    { key: "protein", label: "Protéines (g)", color: "#7DF9FF" },
-    { key: "carbs",   label: "Glucides (g)",  color: "#FFB347" },
-    { key: "fat",     label: "Lipides (g)",   color: "#FF8C69" },
+    { key: "protein", label: `${tr("jour.protein")} (g)`, color: "#7DF9FF" },
+    { key: "carbs",   label: `${tr("jour.carbs")} (g)`,  color: "#FFB347" },
+    { key: "fat",     label: `${tr("jour.fat")} (g)`,   color: "#FF8C69" },
   ];
 
   return (
     <div style={{background:"rgba(255,255,255,0.02)",borderRadius:"10px",padding:"12px",border:"1px solid rgba(255,215,0,0.1)"}}>
-      <div style={{fontSize:"10px",color:C.gold,letterSpacing:"1px",marginBottom:"10px"}}>MODIFIER MANUELLEMENT</div>
+      <div style={{fontSize:"10px",color:C.gold,letterSpacing:"1px",marginBottom:"10px"}}>{tr("macroEditor.editManually")}</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"8px"}}>
         {fields.map((m,i) => (
           <div key={i}>
@@ -2077,7 +2128,7 @@ function MacroEditor({ targets, custom, onSave }) {
         ))}
       </div>
       <div style={{fontSize:"10px",color:"#444",textAlign:"center"}}>
-        Suggestion : {targets.protein}g · {targets.carbs}g · {targets.fat}g — Méthode g/kg
+        {trf("macroEditor.suggestion",{p:targets.protein,c:targets.carbs,f:targets.fat})}
       </div>
     </div>
   );
@@ -2287,6 +2338,7 @@ function ViewAnalyze({ premium }) {
   const [showUnlockAd, setShowUnlockAd] = useState(false);
   const [adAvailable, setAdAvailable] = useState(true);
   const [adUnlockedPending, setAdUnlockedPending] = useState(false); // pub regardée depuis l'écran d'accueil, avant même d'avoir choisi une photo
+  const [showExtraFields, setShowExtraFields] = useState(false);
   const [, setCountdownTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setCountdownTick(t => t + 1), 60000); // rafraîchit le compte à rebours chaque minute
@@ -2588,14 +2640,27 @@ function ViewAnalyze({ premium }) {
             <button style={{...css.optBtn(gender==="male"),flex:1,textAlign:"center"}} onClick={()=>setGender("male")}>{tr("analyze.homme")}</button>
             <button style={{...css.optBtn(gender==="female"),flex:1,textAlign:"center"}} onClick={()=>setGender("female")}>{tr("analyze.femme")}</button>
           </div>
-          <span style={css.label}>{tr("analyze.ageLabel")}</span>
-          <input style={css.input} type="text" inputMode="numeric" placeholder={tr("analyze.agePlaceholder")} maxLength={3}
-            value={age}
-            onChange={e=>{ const raw=e.target.value.replace(/[^0-9]/g,"").slice(0,3); const v=parseInt(raw)||""; setAge(v>100?"100":raw); }}/>
-          <span style={css.label}>{tr("analyze.weightLabel")}</span>
-          <input style={css.input} type="text" inputMode="decimal" placeholder={tr("analyze.weightPlaceholder")} maxLength={5}
-            value={weight}
-            onChange={e=>{ const raw=e.target.value.replace(/[^0-9.]/g,"").slice(0,5); const v=parseFloat(raw)||""; setWeight(v>300?"300":raw); }}/>
+
+          {/* Âge/poids repliés par défaut — optionnels, réduisent la friction avant le résultat.
+              Si déjà renseignés dans le profil, ils sont utilisés automatiquement en arrière-plan. */}
+          {!showExtraFields ? (
+            <button onClick={()=>setShowExtraFields(true)}
+              style={{background:"transparent",border:"none",color:"#555",fontSize:"11px",marginTop:"14px",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline",padding:0}}>
+              {(profile.age || profile.weight) ? tr("analyze.extraFieldsPrefilled") : tr("analyze.extraFieldsToggle")}
+            </button>
+          ) : (
+            <>
+              <span style={css.label}>{tr("analyze.ageLabel")}</span>
+              <input style={css.input} type="text" inputMode="numeric" placeholder={tr("analyze.agePlaceholder")} maxLength={3}
+                value={age}
+                onChange={e=>{ const raw=e.target.value.replace(/[^0-9]/g,"").slice(0,3); const v=parseInt(raw)||""; setAge(v>100?"100":raw); }}/>
+              <span style={css.label}>{tr("analyze.weightLabel")}</span>
+              <input style={css.input} type="text" inputMode="decimal" placeholder={tr("analyze.weightPlaceholder")} maxLength={5}
+                value={weight}
+                onChange={e=>{ const raw=e.target.value.replace(/[^0-9.]/g,"").slice(0,5); const v=parseFloat(raw)||""; setWeight(v>300?"300":raw); }}/>
+            </>
+          )}
+
           {error && <div style={{marginTop:"10px",color:C.red,fontSize:"12px",textAlign:"center"}}>{error}</div>}
           <div style={{marginTop:"16px"}}>
             <button style={{...css.btn(C.gold),opacity:!gender?0.4:1,cursor:!gender?"not-allowed":"pointer"}} onClick={analyze} disabled={!gender}>{tr("analyze.analyzeBtn")}</button>
@@ -4387,10 +4452,10 @@ function AppInner() {
       {premium && !localStorage.getItem("pq_token") && !showAuth && !showPostPayment && (
         <div style={{position:"fixed",inset:0,background:"#09090f",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
           <div style={{background:"#0f0f1a",border:`1px solid rgba(255,215,0,0.2)`,borderRadius:"24px",padding:"28px 24px",maxWidth:"380px",width:"100%",textAlign:"center"}}>
-            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>COMPTE REQUIS</div>
-            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"8px"}}>Finalise ton inscription</div>
+            <div style={{fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"16px"}}>{tr("accountRequired.title")}</div>
+            <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"8px"}}>{tr("accountRequired.finishSignup")}</div>
             <div style={{fontSize:"13px",color:"#555",marginBottom:"24px",lineHeight:"1.6"}}>
-              Crée ton compte pour accéder à Physiqrate Pro sur tous tes appareils.
+              {tr("accountRequired.createToAccess")}
             </div>
             <button style={{...css.btn(C.gold),marginBottom:"0"}} onClick={()=>{
               const sessionId = localStorage.getItem("pq_stripe_session");
@@ -4408,7 +4473,7 @@ function AppInner() {
                 setShowPostPayment(true);
               }
             }}>
-              Créer mon compte Pro
+              {tr("postPayment.createProAccount")}
             </button>
           </div>
         </div>
