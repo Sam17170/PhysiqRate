@@ -2826,7 +2826,7 @@ function ViewJour({ premium }) {
 
   const tdee = (() => {
     const p = getProfile();
-    const w = parseFloat(get(keys.weight) || p.weight || 0);
+    const w = parseFloat(p.weight || get(keys.weight) || 0);
     return calcTDEE(p.gender, p.age, p.height, w, p.activity, p.steps);
   })();
   const goalCals = calcGoal(tdee, getProfile().goal);
@@ -2975,7 +2975,7 @@ function ViewJour({ premium }) {
         {/* Objectifs macros — utilise les macros personnalisées si définies */}
         {(() => {
           const p = getProfile();
-          const w = parseFloat(get(keys.weight) || p.weight || 0);
+          const w = parseFloat(p.weight || get(keys.weight) || 0);
           const tdeeLocal = calcTDEE(p.gender, p.age, p.height, w, p.activity, p.steps);
           const goalCalsLocal = calcGoal(tdeeLocal, p.goal);
           const autoTargets = calcTargetMacros(goalCalsLocal, p.goal, w);
@@ -3268,7 +3268,7 @@ function ViewHistorique({ premium, onShowPaywall }) {
     if (!data) return "no-data";
     const totalCals = data.meals?.reduce((s,m)=>s+(m.calories||0),0) || 0;
     const profile = getProfile();
-    const w = parseFloat(get(keys.weight) || profile.weight || 0);
+    const w = parseFloat(profile.weight || get(keys.weight) || 0);
     const tdee = calcTDEE(profile.gender, profile.age, profile.height, w, profile.activity, profile.steps);
     const goal = calcGoal(tdee, profile.goal) || tdee;
     if (!goal || totalCals === 0) return "no-data";
@@ -3765,7 +3765,7 @@ function ViewProfil({ user, premium, onShowAuth, setPremiumState }) {
   const [profile, setProfile] = useState(getProfile());
   const [saved, setSaved] = useState(false);
   const completion = getProfileCompletion(profile);
-  const w = parseFloat(get(keys.weight) || profile.weight || 0);
+  const w = parseFloat(profile.weight || get(keys.weight) || 0);
   const tdee = calcTDEE(profile.gender, profile.age, profile.height, w, profile.activity, profile.steps);
   const goalCals = calcGoal(tdee, profile.goal);
 
