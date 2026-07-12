@@ -51,8 +51,12 @@ export default async function handler(req) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    const email = session.customer_details?.email || session.customer_email;
-    if (email) await upsertUser(email, true, session.customer, session.id);
+    // Priorité au compte déjà connecté (passé via client_reference_id) — pas à l'email
+    // de paiement, qui peut différer (Apple Pay, Google Pay...)
+    const linkedAccountEmail = session.client_reference_id;
+    const stripeEmail = session.customer_details?.email || session.customer_email;
+    const targetEmail = linkedAccountEmail || stripeEmail;
+    if (targetEmail) await upsertUser(targetEmail, true, session.customer, session.id);
   }
 
   if (event.type === "customer.subscription.deleted") {
