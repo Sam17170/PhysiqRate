@@ -142,11 +142,24 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: data.error_description || data.error?.message || "Erreur d'inscription." }), { status: 400, headers });
     }
     if (data.user) {
-      await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "resolution=merge-duplicates,return=minimal" },
-        body: JSON.stringify({ email: data.user.email, is_pro: false })
+      // Vérifie si une ligne existe déjà pour cet email (ex: paiement déjà traité par le webhook,
+      // qui aurait mis is_pro=true) — pour ne JAMAIS l'écraser avec false par erreur
+      const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(data.user.email)}&select=email`, {
+        headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
       });
+      const existingRows = await existingRes.json();
+      const rowAlreadyExists = Array.isArray(existingRows) && existingRows.length > 0;
+
+      if (!rowAlreadyExists) {
+        // Vraiment nouveau compte — gratuit par défaut
+        await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
+          body: JSON.stringify({ email: data.user.email, is_pro: false })
+        });
+      }
+      // Si la ligne existe déjà (ex: Pro déjà activé par un paiement), on ne touche à rien —
+      // is_pro garde sa valeur actuelle, jamais réinitialisé à false ici
     }
     return new Response(JSON.stringify({ token: data.access_token, refresh_token: data.refresh_token, user: { email: data.user?.email } }), { status: 200, headers });
   }
