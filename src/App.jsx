@@ -91,7 +91,7 @@ const STRINGS = {
   analyze: {
     eyebrow:        { fr: "ANALYSE IA · BODY FAT", en: "AI ANALYSIS · BODY FAT" },
     title:          { fr: "Connaît ton vrai physique", en: "Know your real physique" },
-    subtitle:       { fr: "Résultats en secondes", en: "Results in seconds" },
+    subtitle:       { fr: "Résultats en quelques secondes", en: "Results in just seconds" },
     weeklyReady:    { fr: "Analyse hebdomadaire disponible", en: "Weekly analysis available" },
     go:             { fr: "Go →", en: "Go →" },
     completeProfile:{ fr: "Complète ton profil pour plus de précision", en: "Complete your profile for more accuracy" },
