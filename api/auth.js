@@ -89,13 +89,25 @@ export default async function handler(req) {
     });
     const session = await stripeRes.json();
     if (session.error) return new Response(JSON.stringify({ error: "Session invalide." }), { status: 400, headers });
-    const stripeEmail = session.customer_details?.email || session.customer_email;
-    const targetEmail = stripeEmail && stripeEmail !== email ? stripeEmail : email;
-    await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(targetEmail)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
-      body: JSON.stringify({ email, is_pro: true })
+
+    // Active le Pro directement sur l'email CHOISI par l'utilisateur (via la même fonction
+    // fiable que le webhook) — plutôt que de tenter de renommer la ligne Stripe/Apple Pay,
+    // ce qui entrait en conflit avec la ligne déjà créée par "signup" pour ce même email
+    const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/upsert_user_pro`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` },
+      body: JSON.stringify({
+        p_email: email,
+        p_is_pro: true,
+        p_stripe_customer_id: session.customer || null,
+        p_stripe_session_id: sessionId
+      })
     });
+    if (!rpcRes.ok) {
+      const errText = await rpcRes.text().catch(()=>"(pas de détail)");
+      console.error(`transfer_pro ÉCHEC pour ${email} — status ${rpcRes.status}: ${errText}`);
+      return new Response(JSON.stringify({ error: "Impossible d'activer le Pro sur ce compte." }), { status: 500, headers });
+    }
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
   }
 
