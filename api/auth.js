@@ -144,6 +144,35 @@ export default async function handler(req) {
     if (!email || !password || password.length < 6) {
       return new Response(JSON.stringify({ error: "Email et mot de passe (6 caractères min) requis." }), { status: 400, headers });
     }
+
+    // Vérifie AVANT de créer l'identité Auth si une ligne existe déjà pour cet email
+    // (ex: webhook Stripe qui a créé la ligne avec is_pro=true, mais sans mot de passe défini).
+    // Sans ce garde-fou, n'importe qui pourrait "s'approprier" ce compte en tapant cet email
+    // avec n'importe quel mot de passe, puisque Supabase Auth ne connaît pas encore d'identité.
+    const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}&select=email`, {
+      headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
+    });
+    const existingRows = await existingRes.json();
+    const rowAlreadyExists = Array.isArray(existingRows) && existingRows.length > 0;
+
+    if (rowAlreadyExists) {
+      // N'autorise la création que si on peut prouver un paiement Stripe récent et valide
+      // (flux légitime post-paiement) — sinon, on bloque
+      let validPayment = false;
+      if (sessionId) {
+        try {
+          const stripeRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
+            headers: { "Authorization": `Bearer ${process.env.STRIPE_SECRET_KEY}` }
+          });
+          const session = await stripeRes.json();
+          if (!session.error && session.payment_status === "paid") validPayment = true;
+        } catch {}
+      }
+      if (!validPayment) {
+        return new Response(JSON.stringify({ error: "Un compte existe déjà avec cet email. Connecte-toi, ou si tu viens de payer, réessaie depuis le lien de confirmation." }), { status: 409, headers });
+      }
+    }
+
     const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON, "Authorization": `Bearer ${SUPABASE_ANON}` },
@@ -153,26 +182,16 @@ export default async function handler(req) {
     if (data.error || data.error_description) {
       return new Response(JSON.stringify({ error: data.error_description || data.error?.message || "Erreur d'inscription." }), { status: 400, headers });
     }
-    if (data.user) {
-      // Vérifie si une ligne existe déjà pour cet email (ex: paiement déjà traité par le webhook,
-      // qui aurait mis is_pro=true) — pour ne JAMAIS l'écraser avec false par erreur
-      const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(data.user.email)}&select=email`, {
-        headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
+    if (data.user && !rowAlreadyExists) {
+      // Vraiment nouveau compte — gratuit par défaut
+      await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
+        body: JSON.stringify({ email: data.user.email, is_pro: false })
       });
-      const existingRows = await existingRes.json();
-      const rowAlreadyExists = Array.isArray(existingRows) && existingRows.length > 0;
-
-      if (!rowAlreadyExists) {
-        // Vraiment nouveau compte — gratuit par défaut
-        await fetch(`${SUPABASE_URL}/rest/v1/users`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
-          body: JSON.stringify({ email: data.user.email, is_pro: false })
-        });
-      }
-      // Si la ligne existe déjà (ex: Pro déjà activé par un paiement), on ne touche à rien —
-      // is_pro garde sa valeur actuelle, jamais réinitialisé à false ici
     }
+    // Si la ligne existe déjà (paiement déjà traité), on ne touche à rien —
+    // is_pro garde sa valeur actuelle, jamais réinitialisé à false ici
     return new Response(JSON.stringify({ token: data.access_token, refresh_token: data.refresh_token, user: { email: data.user?.email } }), { status: 200, headers });
   }
 
