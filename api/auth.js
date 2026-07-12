@@ -43,7 +43,7 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 }); }
 
-  const { action, email, password, sessionId, refreshToken } = body;
+  const { action, email, password, sessionId, refreshToken, accessToken, newPassword } = body;
 
   // Refresh token
   if (action === "refresh") {
@@ -72,6 +72,25 @@ export default async function handler(req) {
       body: JSON.stringify({ email })
     });
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+  }
+
+  // Finalise la réinitialisation : reçoit le jeton de récupération (depuis le lien du mail)
+  // et le nouveau mot de passe choisi par l'utilisateur.
+  if (action === "update_password") {
+    if (!accessToken || !newPassword || newPassword.length < 6) {
+      return new Response(JSON.stringify({ error: "Mot de passe invalide (6 caractères minimum)." }), { status: 400, headers });
+    }
+    const updateRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON, "Authorization": `Bearer ${accessToken}` },
+      body: JSON.stringify({ password: newPassword })
+    });
+    const updateData = await updateRes.json();
+    if (!updateRes.ok || !updateData.email) {
+      return new Response(JSON.stringify({ error: updateData.msg || updateData.error_description || "Impossible de mettre à jour le mot de passe. Le lien a peut-être expiré — redemande-en un nouveau." }), { status: 400, headers });
+    }
+    // Le jeton de récupération est un vrai jeton de session valide — réutilisable directement
+    return new Response(JSON.stringify({ success: true, email: updateData.email, token: accessToken }), { status: 200, headers });
   }
 
   if (action === "transfer_pro") {
