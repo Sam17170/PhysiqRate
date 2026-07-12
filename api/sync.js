@@ -129,7 +129,7 @@ export default async function handler(req) {
   const meta = newToken ? { newToken, newRefresh } : {};
 
   if (action === "push") {
-    const { journal, analyses, profile, savedFoods, savedSessions, deleteSavedFood, deleteSavedSession } = data || {};
+    const { journal, analyses, profile, savedFoods, savedSessions, deleteSavedFood, deleteSavedSession, deleteAnalysis } = data || {};
 
     if (journal) {
       const j = validateJournal(journal);
@@ -191,6 +191,14 @@ export default async function handler(req) {
     }
     if (deleteSavedSession) {
       await db(`saved_sessions?user_email=eq.${encodeURIComponent(email)}&type=eq.${encodeURIComponent(String(deleteSavedSession).slice(0,100))}`, "DELETE");
+    }
+    if (deleteAnalysis && deleteAnalysis.date) {
+      // Correspondance par date + bodyfat (le stockage ne garde que le jour, pas l'heure exacte) —
+      // suffisant dans l'immense majorité des cas, rare collision possible si 2 analyses le même
+      // jour donnent exactement le même pourcentage.
+      let path = `analyses?user_email=eq.${encodeURIComponent(email)}&date=eq.${encodeURIComponent(deleteAnalysis.date)}`;
+      if (deleteAnalysis.bodyfat != null) path += `&bodyfat=eq.${encodeURIComponent(deleteAnalysis.bodyfat)}`;
+      await db(path, "DELETE");
     }
 
     return new Response(JSON.stringify({ success: true, ...meta }), { status: 200, headers });
