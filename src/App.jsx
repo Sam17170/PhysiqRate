@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useContext, createContext } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 // ─── I18N ─────────────────────────────────────────────────────────────────────
 // Dictionnaire de traductions. Structure: STRINGS.section.cle = { fr: "...", en: "..." }
@@ -4663,6 +4664,7 @@ export default function App() {
   return (
     <LangProvider>
       <AppInner/>
+      <Analytics/>
     </LangProvider>
   );
 }
