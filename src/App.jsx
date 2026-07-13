@@ -486,6 +486,7 @@ const STRINGS = {
     unlockTitle:    { fr: "Débloquer une analyse maintenant", en: "Unlock an analysis now" },
     unlockSub:      { fr: "Regarde une courte pub pour analyser ton physique sans attendre", en: "Watch a short ad to analyze your physique without waiting" },
     watchAdBtn:     { fr: "Regarder une pub (30s)", en: "Watch an ad (30s)" },
+    buyAnalysisBtn: { fr: "Acheter une analyse — 0,99€", en: "Buy an analysis — €0.99" },
     orUpgrade:      { fr: "ou passe Pro pour un accès illimité", en: "or go Pro for unlimited access" },
     scanUnlockNote: { fr: "Une courte pub pour continuer à scanner gratuitement", en: "A short ad to keep scanning for free" },
     adAlreadyUsed:  { fr: "Tu as déjà débloqué ton analyse bonus cette semaine. Reviens la semaine prochaine, ou passe Pro pour un accès illimité.", en: "You've already unlocked your bonus analysis this week. Come back next week, or go Pro for unlimited access." },
@@ -1180,14 +1181,21 @@ async function redirectToCheckout(type) {
   }
 }
 
-function Paywall({ daysLeft, onClose, onWatchAd, adAvailable }) {
+function Paywall({ daysLeft, onClose, onBuyAnalysis, adAvailable }) {
   const { tr, trf } = useI18n();
   const [loading, setLoading] = useState(false);
+  const [buying, setBuying] = useState(false);
 
   async function handleCheckout() {
     setLoading(true);
     await redirectToCheckout("subscription");
     setLoading(false);
+  }
+
+  async function handleBuyAnalysis() {
+    setBuying(true);
+    await onBuyAnalysis();
+    setBuying(false);
   }
 
   return (
@@ -1198,9 +1206,7 @@ function Paywall({ daysLeft, onClose, onWatchAd, adAvailable }) {
         <div style={{fontSize:"10px",letterSpacing:"3px",color:C.gold,marginBottom:"10px",opacity:0.7}}>PHYSIQRATE PRO</div>
         <div style={{fontSize:"19px",fontWeight:"800",marginBottom:"4px",lineHeight:"1.2"}}>{tr("paywall.title")}</div>
         <div style={{fontSize:"12px",color:"#666",marginBottom:"16px"}}>
-          {daysLeft > 0 && adAvailable === false
-            ? tr("ads.adAlreadyUsed")
-            : daysLeft > 0 ? trf("paywall.nextFree",{n:daysLeft,s:daysLeft>1?"s":""}) : tr("paywall.continueProgress")}
+          {daysLeft > 0 ? trf("paywall.nextFree",{n:daysLeft,s:daysLeft>1?"s":""}) : tr("paywall.continueProgress")}
         </div>
 
         {/* Features list */}
@@ -1232,10 +1238,10 @@ function Paywall({ daysLeft, onClose, onWatchAd, adAvailable }) {
           <div style={{fontSize:"10px",color:"#444"}}>{tr("paywall.cancelNoCommit")}</div>
         </div>
 
-        {/* Option : débloquer via pub, si proposée */}
-        {onWatchAd && (
-          <button onClick={onWatchAd} style={{...css.btnSec,marginBottom:"10px",borderColor:"rgba(255,215,0,0.25)",color:C.gold,fontWeight:"700"}}>
-            {tr("ads.watchAdBtn")}
+        {/* Option : acheter une analyse à l'unité, si proposée */}
+        {onBuyAnalysis && (
+          <button onClick={handleBuyAnalysis} disabled={buying} style={{...css.btnSec,marginBottom:"10px",borderColor:"rgba(255,215,0,0.25)",color:C.gold,fontWeight:"700",opacity:buying?0.6:1}}>
+            {buying ? "…" : tr("ads.buyAnalysisBtn")}
           </button>
         )}
 
@@ -2423,9 +2429,8 @@ function ViewAnalyze({ premium }) {
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [newWeight, setNewWeight] = useState(null);
   const [showPreAd, setShowPreAd] = useState(false);
-  const [showUnlockAd, setShowUnlockAd] = useState(false);
   const [adAvailable, setAdAvailable] = useState(true);
-  const [adUnlockedPending, setAdUnlockedPending] = useState(false); // pub regardée depuis l'écran d'accueil, avant même d'avoir choisi une photo
+  const [showBuyAuth, setShowBuyAuth] = useState(false); // connexion requise avant d'acheter une analyse à l'unité
   const [showExtraFields, setShowExtraFields] = useState(false);
   const [saveToHistory, setSaveToHistory] = useState(true);
   const [, setCountdownTick] = useState(0);
@@ -2471,14 +2476,8 @@ function ViewAnalyze({ premium }) {
       const usage = getUsage();
       // 2ème analyse (count===1 avant incrément) → pub courte obligatoire de 15s, pas de blocage
       if (usage.count === 1 && ADS_LIVE) { setShowPreAd(true); return; }
-      // Pub déjà regardée à l'avance depuis le rappel de l'écran d'accueil → consomme le déblocage
-      if (adUnlockedPending) {
-        setAdUnlockedPending(false);
-        await runAnalysis(true);
-        return;
-      }
       const check = canAnalyze(usage);
-      // 3ème+ analyse de la semaine déjà utilisée → offre de débloquer via pub (si le bonus hebdo n'a pas déjà été utilisé)
+      // 3ème+ analyse de la semaine déjà utilisée → propose d'acheter une analyse à l'unité
       if (!check.allowed) { setDaysLeft(check.daysLeft); setAdAvailable(check.adAvailable !== false); setShowPaywall(true); return; }
     }
 
@@ -2578,25 +2577,35 @@ function ViewAnalyze({ premium }) {
     setSaveToHistory(true);
   }
 
+  // Achat d'une analyse à l'unité (0,99€) — nécessite d'être connecté, pour que le
+  // crédit se rattache bien à un compte. Si pas connecté, propose de le faire d'abord.
+  async function buyAnalysis() {
+    const token = localStorage.getItem("pq_token");
+    if (!token) {
+      setShowBuyAuth(true);
+      return;
+    }
+    setShowPaywall(false);
+    await redirectToCheckout("single_analysis");
+  }
+
   const archetype = result?.archetype;
 
   return (
     <div style={{width:"100%",maxWidth:"420px"}}>
-      {showPaywall && <Paywall daysLeft={daysLeft} adAvailable={adAvailable} onClose={()=>setShowPaywall(false)} onWatchAd={(ADS_LIVE && daysLeft>0 && adAvailable) ? ()=>{ setShowPaywall(false); setShowUnlockAd(true); } : null}/>}
+      {showPaywall && <Paywall daysLeft={daysLeft} adAvailable={adAvailable} onClose={()=>setShowPaywall(false)} onBuyAnalysis={buyAnalysis}/>}
+      {showBuyAuth && (
+        <AuthModal
+          blocking={false}
+          onClose={()=>setShowBuyAuth(false)}
+          onSuccess={async ({ email, token }) => {
+            setShowBuyAuth(false);
+            await redirectToCheckout("single_analysis");
+          }}
+        />
+      )}
       {showPreAd && (
         <AdPlaceholder duration={15} onComplete={()=>{ setShowPreAd(false); runAnalysis(false); }}/>
-      )}
-      {showUnlockAd && (
-        <AdPlaceholder duration={30} onComplete={()=>{
-          setShowUnlockAd(false);
-          if (imageBase64 && gender) {
-            // Déclenché en plein flux (photo + genre déjà choisis) → lance direct l'analyse
-            runAnalysis(true);
-          } else {
-            // Déclenché depuis le rappel de l'écran d'accueil, avant d'avoir choisi une photo
-            setAdUnlockedPending(true);
-          }
-        }}/>
       )}
       {showWeightModal && newWeight && (
         <WeightUpdateModal
@@ -2644,16 +2653,10 @@ function ViewAnalyze({ premium }) {
                   <span style={{fontSize:"12px",color:"#aaa"}}>{tr("ads.nextFreeIn")}</span>
                   <span style={{fontSize:"13px",color:C.gold,fontWeight:"700"}}>{trf("ads.daysHours",{d,h})}</span>
                 </div>
-                {!ADS_LIVE ? null : adUnlockedPending ? (
-                  <div style={{fontSize:"12px",color:C.green,fontWeight:"600",marginTop:"10px",textAlign:"center"}}>✓ {tr("ads.unlockedReady")}</div>
-                ) : check.adAvailable ? (
-                  <button onClick={()=>setShowUnlockAd(true)}
-                    style={{width:"100%",marginTop:"10px",padding:"9px",borderRadius:"10px",border:`1px solid rgba(255,215,0,0.3)`,background:"rgba(255,215,0,0.06)",color:C.gold,fontSize:"12px",fontWeight:"700",cursor:"pointer",fontFamily:"inherit"}}>
-                    {tr("ads.watchAdBtn")}
-                  </button>
-                ) : (
-                  <div style={{fontSize:"11px",color:"#444",marginTop:"8px",textAlign:"center"}}>{tr("ads.adUsedThisWeek")}</div>
-                )}
+                <button onClick={buyAnalysis}
+                  style={{width:"100%",marginTop:"10px",padding:"9px",borderRadius:"10px",border:`1px solid rgba(255,215,0,0.3)`,background:"rgba(255,215,0,0.06)",color:C.gold,fontSize:"12px",fontWeight:"700",cursor:"pointer",fontFamily:"inherit"}}>
+                  {tr("ads.buyAnalysisBtn")}
+                </button>
               </div>
             );
           })()}
