@@ -3,7 +3,7 @@ export const config = { runtime: "edge" };
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE = process.env.SUPABASE_SERVICE_KEY;
 
-async function checkAndIncrementUsage(ip, isPro, adWatched) {
+async function checkAndIncrementUsage(ip, isPro, adWatched, email) {
   if (isPro) return { allowed: true };
 
   // Récupère l'usage actuel pour cette IP
@@ -74,6 +74,19 @@ async function checkAndIncrementUsage(ip, isPro, adWatched) {
     return { allowed: true };
   }
 
+  // Bloqué par le quota gratuit/pub — dernière chance : un crédit acheté à l'unité (0,99€) ?
+  if (email) {
+    const creditRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/consume_analysis_credit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` },
+      body: JSON.stringify({ p_email: email })
+    });
+    if (creditRes.ok) {
+      const consumed = await creditRes.json();
+      if (consumed === true) return { allowed: true, usedCredit: true };
+    }
+  }
+
   // Bloqué — calcule le nombre de jours restants et si le bonus pub est encore proposable
   const daysLeft = Math.ceil(7 - daysSinceWeekly);
   return { allowed: false, daysLeft, adAvailable };
@@ -101,6 +114,7 @@ export default async function handler(req) {
   // depuis les outils dev du navigateur) — revérifie le vrai statut via le token, sinon
   // considère l'utilisateur comme gratuit par défaut.
   let verifiedIsPro = false;
+  let verifiedEmail = null;
   if (token) {
     try {
       const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -108,6 +122,7 @@ export default async function handler(req) {
       });
       const user = await userRes.json();
       if (user.email) {
+        verifiedEmail = user.email;
         const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(user.email)}&select=is_pro`, {
           headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
         });
@@ -123,13 +138,24 @@ export default async function handler(req) {
   const bmi = (w && h) ? Math.round((w / ((h / 100) ** 2)) * 10) / 10 : null;
 
   // Vérifie l'usage côté serveur
-  const usageCheck = await checkAndIncrementUsage(ip, verifiedIsPro, !!adWatched);
+  const usageCheck = await checkAndIncrementUsage(ip, verifiedIsPro, !!adWatched, verifiedEmail);
   if (!usageCheck.allowed) {
     return new Response(JSON.stringify({
       error: `Limite atteinte. Prochaine analyse gratuite dans ${usageCheck.daysLeft} jour${usageCheck.daysLeft > 1 ? "s" : ""}.`,
       daysLeft: usageCheck.daysLeft,
       adAvailable: !!usageCheck.adAvailable
     }), { status: 429 });
+  }
+
+  // Trace la date de dernière analyse gratuite sur le COMPTE (pas juste l'IP) — uniquement
+  // pour permettre l'envoi d'un email de relance quand le quota hebdo redevient disponible.
+  // N'a aucun impact sur l'application réelle des limites (qui reste basée sur l'IP).
+  if (!verifiedIsPro && verifiedEmail) {
+    fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(verifiedEmail)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
+      body: JSON.stringify({ weekly_used: new Date().toISOString() })
+    }).catch(()=>{});
   }
 
   const prompt = `You are a world-class body composition analyst with 20 years of experience in sports science and visual body fat estimation. Your job is to analyze the photo provided and estimate body fat percentage as accurately as possible. You tend to be HONEST and slightly conservative — never flattering.
