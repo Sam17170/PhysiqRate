@@ -38,6 +38,45 @@ async function upsertUser(email, isPro, stripeCustomerId = null, sessionId = nul
   return res.status;
 }
 
+async function grantAnalysisCredit(email, sessionId) {
+  if (!email) { console.error("grantAnalysisCredit: email manquant"); return; }
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE = process.env.SUPABASE_SERVICE_KEY;
+
+  // Empêche de compter deux fois la même session (Stripe peut renvoyer le même
+  // événement plusieurs fois — c'est normal et attendu de sa part)
+  const checkRes = await fetch(`${SUPABASE_URL}/rest/v1/consumed_checkout_sessions?session_id=eq.${encodeURIComponent(sessionId)}`, {
+    headers: { "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` }
+  });
+  const existing = await checkRes.json();
+  if (Array.isArray(existing) && existing.length > 0) {
+    console.log(`grantAnalysisCredit — session ${sessionId} déjà traitée, ignorée.`);
+    return;
+  }
+
+  const markRes = await fetch(`${SUPABASE_URL}/rest/v1/consumed_checkout_sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}`, "Prefer": "return=minimal" },
+    body: JSON.stringify({ session_id: sessionId })
+  });
+  if (!markRes.ok) {
+    console.error(`grantAnalysisCredit — impossible de marquer la session ${sessionId} comme consommée, statut ${markRes.status}`);
+    return;
+  }
+
+  const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_analysis_credit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE, "Authorization": `Bearer ${SUPABASE_SERVICE}` },
+    body: JSON.stringify({ p_email: email })
+  });
+  if (!rpcRes.ok) {
+    const errText = await rpcRes.text().catch(()=>"(pas de détail)");
+    console.error(`grantAnalysisCredit ÉCHEC pour ${email} — status ${rpcRes.status}: ${errText}`);
+  } else {
+    console.log(`grantAnalysisCredit — 1 crédit accordé à ${email} (session ${sessionId})`);
+  }
+}
+
 export default async function handler(req) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
@@ -64,6 +103,19 @@ export default async function handler(req) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
+
+    if (session.metadata?.product === "single_analysis") {
+      // Achat ponctuel d'une analyse à 0,99€ — nécessite d'être connecté au moment du
+      // paiement (client_reference_id), pas de rattachement après-coup pour ce produit
+      const targetEmail = session.client_reference_id;
+      if (targetEmail) {
+        await grantAnalysisCredit(targetEmail, session.id);
+      } else {
+        console.error("single_analysis reçu sans client_reference_id — session.id:", session.id);
+      }
+      return new Response(JSON.stringify({ received: true }), { status: 200 });
+    }
+
     // Priorité au compte déjà connecté (passé via client_reference_id) — pas à l'email
     // de paiement, qui peut différer (Apple Pay, Google Pay...)
     const linkedAccountEmail = session.client_reference_id;
