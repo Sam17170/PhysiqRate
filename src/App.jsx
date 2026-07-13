@@ -2476,9 +2476,9 @@ function ViewAnalyze({ premium }) {
       const usage = getUsage();
       // 2ème analyse (count===1 avant incrément) → pub courte obligatoire de 15s, pas de blocage
       if (usage.count === 1 && ADS_LIVE) { setShowPreAd(true); return; }
-      const check = canAnalyze(usage);
-      // 3ème+ analyse de la semaine déjà utilisée → propose d'acheter une analyse à l'unité
-      if (!check.allowed) { setDaysLeft(check.daysLeft); setAdAvailable(check.adAvailable !== false); setShowPaywall(true); return; }
+      // Pas de blocage préventif local ici — le serveur est la seule autorité sur la limite
+      // (il vérifie aussi les crédits achetés à 0,99€, que le compteur local ne connaît pas).
+      // S'il est vraiment bloqué, le serveur répond 429 et le paywall s'affiche à ce moment-là.
     }
 
     await runAnalysis(false);
