@@ -2790,54 +2790,22 @@ function ViewAnalyze({ premium }) {
           <ShareCard imagePreview={imagePreview} result={result} archetype={archetype} onReady={setShareUrl}
             weightKg={weight || profile.weight} heightCm={profile.height} gender={gender}/>
 
-          <div style={{...css.card,textAlign:"center"}}>
-            <div style={{display:"inline-block",padding:"5px 14px",borderRadius:"20px",border:`1px solid ${archetype.color}33`,background:`${archetype.color}11`,color:archetype.color,fontSize:"11px",fontWeight:"700",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"8px"}}>{tr("archetype."+archetype.label)}</div>
-            <div style={{fontSize:"17px",fontWeight:"800",color:archetype.color,marginBottom:"16px"}}>{tr("archetypeRef."+archetype.ref)}</div>
-            <div style={{display:"flex",justifyContent:"center",marginBottom:"8px"}}>
-              <GaugeRing percent={result.bodyfat} color={archetype.color}/>
-            </div>
-            <div style={{fontSize:"12px",color:C.sub,marginBottom:"12px",fontStyle:"italic"}}>"{archetype.desc || tr("analyze.defaultDesc")}"</div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"6px",fontSize:"11px",color:"#444"}}>
-              <div style={{width:"6px",height:"6px",borderRadius:"50%",background:result.confidence==="high"?C.green:result.confidence==="medium"?C.gold:C.red}}/>
-              {result.confidence_reason}
-            </div>
-          </div>
-
-          {result.key_indicators?.length > 0 && (
-            <div style={css.card}>
-              <div style={css.cardTitle}>{tr("analyze.indicatorsTitle")}</div>
-              {result.key_indicators.map((ind,i)=>(
-                <div key={i} style={{display:"flex",gap:"10px",marginBottom:"8px"}}>
-                  <span style={{color:archetype.color,fontSize:"12px",marginTop:"1px"}}>◆</span>
-                  <span style={{fontSize:"12px",color:"#bbb",lineHeight:"1.5"}}>{ind}</span>
+          <div style={css.card}>
+            {shareUrl ? (
+              <>
+                <div style={{borderRadius:"16px",overflow:"hidden",marginBottom:"14px",border:`1px solid ${archetype.color}25`}}>
+                  <img src={shareUrl} alt="résultat" style={{width:"100%",display:"block"}}/>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {result.note && (
-            <div style={{...css.card,background:`linear-gradient(135deg,${archetype.color}08,transparent)`,borderColor:`${archetype.color}18`,textAlign:"center"}}>
-              <div style={{fontSize:"13px",color:"#ccc",fontStyle:"italic"}}>{result.note}</div>
-            </div>
-          )}
-
-          {/* Message personnalisé selon le score */}
-          {(() => {
-            const bf = result.bodyfat;
-            let msg = null;
-            if (bf <= 10)      msg = { text:tr("analyze.msgTop2"), color:C.gold };
-            else if (bf <= 14) msg = { text:tr("analyze.msgElite"), color:C.green };
-            else if (bf <= 18) msg = { text:tr("analyze.msgAthletic"), color:C.green };
-            else if (bf <= 22) msg = { text:tr("analyze.msgGoodBase"), color:"#7DF9FF" };
-            else if (bf <= 27) msg = { text:tr("analyze.msgPotential"), color:"#FFB347" };
-            else               msg = { text:tr("analyze.msgStart"), color:"#FF8C69" };
-            return (
-              <div style={{...css.card,background:`linear-gradient(135deg,${msg.color}08,transparent)`,borderColor:`${msg.color}18`}}>
-                <div style={{fontSize:"10px",color:msg.color,letterSpacing:"2px",marginBottom:"8px"}}>{tr("analyze.personalizedTitle")}</div>
-                <div style={{fontSize:"13px",color:"#ccc",lineHeight:"1.6"}}>{msg.text}</div>
-              </div>
-            );
-          })()}
+                <button style={css.btn(archetype.color)} onClick={async()=>{
+                  const text=tr("analyze.shareText").replace("{bf}",result.bodyfat).replace("{ref}",tr("archetypeRef."+archetype.ref));
+                  if(navigator.share){try{const blob=await(await fetch(shareUrl)).blob();const file=new File([blob],"physiqrate.png",{type:"image/png"});if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],text});return;}}catch{}}
+                  const a=document.createElement("a");a.href=shareUrl;a.download="physiqrate.png";a.click();
+                }}>{tr("analyze.shareBtn")}</button>
+              </>
+            ) : (
+              <div style={{textAlign:"center",padding:"40px 16px",color:C.muted,fontSize:"12px"}}>{tr("analyze.generating")}</div>
+            )}
+          </div>
 
           {/* Install nudge — after result, peak engagement moment */}
           {(() => {
@@ -2870,23 +2838,10 @@ function ViewAnalyze({ premium }) {
           })()}
 
           <div style={css.card}>
-            <div style={css.cardTitle}>{tr("analyze.shareCardTitle")}</div>
-            {shareUrl ? (
-              <>
-                <div style={{borderRadius:"12px",overflow:"hidden",marginBottom:"12px",border:`1px solid ${archetype.color}18`}}>
-                  <img src={shareUrl} alt="carte" style={{width:"100%",display:"block"}}/>
-                </div>
-                <button style={css.btn(archetype.color)} onClick={async()=>{
-                  const text=tr("analyze.shareText").replace("{bf}",result.bodyfat).replace("{ref}",tr("archetypeRef."+archetype.ref));
-                  if(navigator.share){try{const blob=await(await fetch(shareUrl)).blob();const file=new File([blob],"physiqrate.png",{type:"image/png"});if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],text});return;}}catch{}}
-                  const a=document.createElement("a");a.href=shareUrl;a.download="physiqrate.png";a.click();
-                }}>{tr("analyze.shareBtn")}</button>
-              </>
-            ) : <div style={{textAlign:"center",padding:"16px",color:C.muted,fontSize:"12px"}}>{tr("analyze.generating")}</div>}
             <button style={css.btnSec} onClick={reset}>{tr("analyze.newAnalysis")}</button>
-          <button style={{...css.btnSec,color:C.gold,borderColor:"rgba(255,215,0,0.2)"}} onClick={()=>document.dispatchEvent(new CustomEvent("navigate",{detail:"progression"}))}>
-            {tr("analyze.seeProgress")}
-          </button>
+            <button style={{...css.btnSec,color:C.gold,borderColor:"rgba(255,215,0,0.2)"}} onClick={()=>document.dispatchEvent(new CustomEvent("navigate",{detail:"progression"}))}>
+              {tr("analyze.seeProgress")}
+            </button>
           </div>
         </>
       )}
